@@ -551,11 +551,12 @@ def api_audit_data():
     quarter_filter = request.args.get('quarter')
     search_name = request.args.get('search_name')
     search_okpo = request.args.get('search_okpo')
+    region_filter = request.args.get('region')
     
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 50, type=int)
     
-    reports = get_reports_by_status(status, year_filter, quarter_filter)
+    reports = get_reports_by_status(status, year_filter, quarter_filter, region_filter)
     
     if search_name or search_okpo:
         filtered_reports = []
@@ -594,11 +595,11 @@ def api_audit_data():
             })
 
     stats = {
-        'not_viewed': len(get_reports_by_status('not_viewed', year_filter, quarter_filter)),
-        'to_delete': len(get_reports_by_status('to_delete', year_filter, quarter_filter)),
-        'remarks': len(get_reports_by_status('remarks', year_filter, quarter_filter)),
-        'to_download': len(get_reports_by_status('to_download', year_filter, quarter_filter)),
-        'all_reports': len(get_reports_by_status('all_reports', year_filter, quarter_filter))
+        'not_viewed': len(get_reports_by_status('not_viewed', year_filter, quarter_filter, region_filter)),
+        'to_delete': len(get_reports_by_status('to_delete', year_filter, quarter_filter, region_filter)),
+        'remarks': len(get_reports_by_status('remarks', year_filter, quarter_filter, region_filter)),
+        'to_download': len(get_reports_by_status('to_download', year_filter, quarter_filter, region_filter)),
+        'all_reports': len(get_reports_by_status('all_reports', year_filter, quarter_filter, region_filter))
     }
     
     return jsonify({

@@ -190,7 +190,7 @@ EXCLUDED_OKPO_LISTS = { # добавить куда номер региона : 
     6: ['305144986000']
 }
 
-def get_reports_by_status(status, year=None, quarter=None):
+def get_reports_by_status(status, year=None, quarter=None, region=None):
     def translate_status(status):
         status_map = {
             'not_viewed': 'Отправлен',
@@ -215,7 +215,6 @@ def get_reports_by_status(status, year=None, quarter=None):
     
     user_type = current_user.type
     okpo_digit = str(current_user.organization.okpo)[0]
-    # current_app.logger.info(f"Первая цифра OKPO: {okpo_digit}")
 
     special_condition = False
     if okpo_digit.isdigit() and int(okpo_digit) in SPECIAL_OKPO_LISTS:
@@ -225,24 +224,44 @@ def get_reports_by_status(status, year=None, quarter=None):
     if okpo_digit.isdigit() and int(okpo_digit) in EXCLUDED_OKPO_LISTS:
         excluded_condition = True
 
+    # Базовый фильтр по региону из выпадающего списка
+    region_filter = None
+    if region and region.isdigit():
+        region_filter = region
+
     if user_type == "Администратор" or user_type == "Смотрящий":
+        base_query = Report.query.join(Version_report)
+        
+        if region_filter:
+            base_query = base_query.join(Organization).filter(
+                func.substr(Organization.okpo, func.length(Organization.okpo) - 3, 1) == region_filter
+            )
+        
         if status == 'all_reports':
-            return Report.query.join(Version_report).filter(
+            query = base_query.filter(
                 or_(*[Version_report.status == s for s in statuses]),
                 *filters
-            ).order_by().all() 
+            )
         else:
             trans_status = translate_status(status)
             if trans_status:
-                return Report.query.join(Version_report).filter(
+                query = base_query.filter(
                     Version_report.status == trans_status,
                     *filters
-                ).order_by().all()
+                )
             else:
                 return []
+        return query.order_by().all()
+    
     else:
         if status == 'all_reports':
             query = Report.query.join(Version_report).join(Organization)
+            
+            # Добавляем региональный фильтр если он есть
+            if region_filter:
+                query = query.filter(
+                    func.substr(Organization.okpo, func.length(Organization.okpo) - 3, 1) == region_filter
+                )
             
             if special_condition and excluded_condition:
                 return query.filter(
@@ -290,6 +309,12 @@ def get_reports_by_status(status, year=None, quarter=None):
             trans_status = translate_status(status)
             if trans_status:
                 query = Report.query.join(Version_report).join(Organization)
+                
+                # Добавляем региональный фильтр если он есть
+                if region_filter:
+                    query = query.filter(
+                        func.substr(Organization.okpo, func.length(Organization.okpo) - 3, 1) == region_filter
+                    )
                 
                 if special_condition and excluded_condition:
                     return query.filter(

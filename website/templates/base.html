@@ -39,7 +39,7 @@
                     {% endif %}
                     {% if current_user.is_authenticated and (current_user.type == 'Аудитор' or current_user.type == 'Смотрящий' ) %}
                         <li onclick="window.location.href='/audit-area/not_viewed?year={{previous_year}}&quarter={{previous_quarter}}'">
-                            <span class="menu-text">Аудит</span>
+                            <span class="menu-text">Отчеты</span>
                         </li>
                     {% endif %}
                     {% if current_user.is_authenticated and (current_user.type == 'Администратор') %}
@@ -56,7 +56,7 @@
                                 </li>
                                 <li onclick="window.location.href='/audit-area/not_viewed?year={{previous_year}}&quarter={{previous_quarter}}'">
                                     {{ icons.icon_audit() }}
-                                    Аудит
+                                    Просмотр
                                 </li>
                             </ul>
                         </li>

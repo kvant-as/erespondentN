@@ -136,9 +136,7 @@
         <div class="filters-area">
             <div class="search-input-wrapper">
                 <div class="search-cont">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
-                    </svg>
+                    {{ icons.icon_org() }}
                     <input type="text" id="organization-filter"
                         placeholder="{{ _('Введите наименование') }}" 
                         class="app-input search-input" id="search-name">
@@ -146,14 +144,37 @@
             </div>
             <div class="search-input-wrapper">
                 <div class="search-cont"> 
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"></path>
-                    </svg>
+                    {{ icons.icon_okpo() }}
                     <input type="text" id="okpo-filter"
                         placeholder="{{ _('Введите ОКПО') }}" 
                         class="app-input search-input" id="search-okpo">
                 </div>
             </div>
+
+            <div class="search-input-wrapper">
+                <div class="search-cont">
+                    <div class="custom-dropdown" id="region-dropdown">
+                        <div class="dropdown-trigger" id="region-trigger">
+
+                            <span class="dropdown-text">Все регионы</span>
+                            <svg class="dropdown-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </div>
+                        <div class="dropdown-menu" id="region-menu">
+                            <div class="dropdown-item" data-value="">Все регионы</div>
+                            <div class="dropdown-item" data-value="1">Брестское областное</div>
+                            <div class="dropdown-item" data-value="2">Витебское областное</div>
+                            <div class="dropdown-item" data-value="3">Гомельское областное</div>
+                            <div class="dropdown-item" data-value="4">Гродненское областное</div>
+                            <div class="dropdown-item" data-value="5">г. Минск</div>
+                            <div class="dropdown-item" data-value="6">Минское областное</div>
+                            <div class="dropdown-item" data-value="7">Могилевское областное</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
     <div class="report-list">

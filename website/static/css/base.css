@@ -2455,7 +2455,7 @@ main {
     text-shadow: 1px 1px 2px black;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.144);
     font-weight: 600;
-    border-radius: 12px;
+    /* border-radius: 12px; */
 }
 
 .privetstvie_cont a {
@@ -3577,6 +3577,7 @@ main {
     margin: 10px 20px;
     width: 100%;
     box-sizing: border-box;
+    overflow: visible !important;
 }
 
 
@@ -4620,10 +4621,15 @@ main {
     display: flex;
     gap: 10px;
     justify-content: left;
+    z-index: 100;
+    overflow: visible !important;
 }
 
 .search-input-wrapper {
     min-width: 0;
+    overflow: visible !important;
+    position: relative;
+    z-index: 101;
 }
 
 .search-input {
@@ -4689,6 +4695,90 @@ main {
     } */
 }
 
+
+.custom-dropdown {
+    position: relative;
+    width: 100%;
+    max-width: 300px;
+    z-index: 1000;
+}
+
+.dropdown-trigger {
+    width: 100%;
+    padding: 10px 32px 10px 48px;
+    font-size: 15px;
+    color: #212121;
+    background: #f0f2f5;
+    border: none;
+    border-radius: 12px;
+    outline: none;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+}
+
+.dropdown-trigger:hover {
+    background: #e4e6eb;
+}
+
+.dropdown-text {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.dropdown-arrow {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    transition: transform 0.2s ease;
+    stroke: #707579;
+}
+
+.custom-dropdown.open .dropdown-arrow {
+    transform: translateY(-50%) rotate(180deg);
+}
+
+.dropdown-menu {
+    position: absolute;
+    top: calc(100% + 5px);
+    left: 0;
+    right: 0;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    display: none;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.custom-dropdown.open .dropdown-menu {
+    display: block;
+}
+
+.dropdown-item {
+    padding: 10px 16px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    font-size: 14px;
+    color: #212121;
+}
+
+.dropdown-item:hover {
+    background: #f0f2f5;
+}
+
+.dropdown-item.selected {
+    background: #e3f2fd;
+    color: #0088cc;
+}
 
 .search-input:focus ~ .input-icon {
     fill: #0088cc;
@@ -6300,7 +6390,7 @@ th.resizable .resizer {
 }
 
 .print-btn.delete:hover {
-    background: red;
+    background: rgba(255, 28, 28, 1);
     border: none;
     color: white;
     transform: translateY(-1px);

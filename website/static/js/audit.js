@@ -24,12 +24,7 @@ class AuditModule {
         await this.loadData();
         this.attachEventListeners();
         this.attachGlobalEventListeners();
-    }
-
-    async init() {
-        await this.loadData();
-        this.attachEventListeners();
-        this.attachGlobalEventListeners();
+        this.initCustomDropdown(); // ← ДОБАВЬТЕ ЭТУ СТРОКУ
     }
 
     attachGlobalEventListeners() {
@@ -486,7 +481,7 @@ class AuditModule {
         return urlParams.get(param) || '';
     }
 
-        async fetchAuditData(page = 1, append = false) {
+    async fetchAuditData(page = 1, append = false) {
         const params = new URLSearchParams({
             status: this.currentStatus,
             year: this.yearFilter,
@@ -497,8 +492,11 @@ class AuditModule {
         
         const searchName = document.getElementById('organization-filter')?.value;
         const searchOkpo = document.getElementById('okpo-filter')?.value;
+        const regionFilter = document.getElementById('region-filter')?.value;
+        
         if (searchName) params.append('search_name', searchName);
         if (searchOkpo) params.append('search_okpo', searchOkpo);
+        if (regionFilter) params.append('region', regionFilter);
         
         const response = await fetch(`/api/audit-data?${params}`);
         const data = await response.json();
@@ -750,9 +748,56 @@ class AuditModule {
         return `<span class="status-badge status-default"><span>${status}</span></span>`;
     }
 
+    initCustomDropdown() {
+        const dropdown = document.getElementById('region-dropdown');
+        const trigger = document.getElementById('region-trigger');
+        const menu = document.getElementById('region-menu');
+        const dropdownText = trigger.querySelector('.dropdown-text');
+        
+        if (!dropdown || !trigger || !menu) return;
+        
+        // Открытие/закрытие
+        trigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dropdown.classList.toggle('open');
+        });
+        
+        // Выбор значения
+        menu.querySelectorAll('.dropdown-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const value = item.dataset.value;
+                const text = item.textContent;
+                
+                // Обновляем текст
+                dropdownText.textContent = text;
+                
+                // Обновляем выбранный класс
+                menu.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('selected'));
+                item.classList.add('selected');
+                
+                // Закрываем дропдаун
+                dropdown.classList.remove('open');
+                
+                // Вызываем фильтрацию
+                this.filterReports();
+            });
+        });
+        
+        // Закрытие при клике вне
+        document.addEventListener('click', () => {
+            dropdown.classList.remove('open');
+        });
+    }
+
+    // Обновите метод filterReports
     async filterReports() {
         const searchName = document.getElementById('organization-filter')?.value || '';
         const searchOkpo = document.getElementById('okpo-filter')?.value || '';
+        
+        // Получаем выбранное значение из кастомного дропдауна
+        const selectedItem = document.querySelector('#region-menu .dropdown-item.selected');
+        const regionFilter = selectedItem?.dataset.value || '';
         
         const loadingSpinner = document.getElementById('loading-spinner');
         const reportsContent = document.getElementById('reports-content');
@@ -762,7 +807,6 @@ class AuditModule {
         if (reportsContent) reportsContent.style.display = 'none';
         if (emptyState) emptyState.style.display = 'none';
 
-        // Сброс пагинации при фильтрации
         this.currentPage = 1;
         this.hasMore = true;
         this.allReports = [];
@@ -774,6 +818,7 @@ class AuditModule {
                 quarter: this.quarterFilter,
                 search_name: searchName,
                 search_okpo: searchOkpo,
+                region: regionFilter,
                 page: 1,
                 per_page: this.pageSize
             });
@@ -822,6 +867,7 @@ class AuditModule {
     attachEventListeners() {
         const organizationFilter = document.getElementById('organization-filter');
         const okpoFilter = document.getElementById('okpo-filter');
+        const regionFilter = document.getElementById('region-filter');
         
         let searchTimeout;
         const handleSearch = () => {
@@ -838,6 +884,10 @@ class AuditModule {
         if (okpoFilter) {
             okpoFilter.removeEventListener('input', handleSearch);
             okpoFilter.addEventListener('input', handleSearch);
+        }
+        if (regionFilter) {
+            regionFilter.removeEventListener('change', handleSearch);
+            regionFilter.addEventListener('change', handleSearch);
         }
     }
 
