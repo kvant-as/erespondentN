@@ -106,26 +106,16 @@
                                 </a>
                             </section>
                             <section>
-                                <form id = "douwnload_DBF_form" action="/exportDBF" method="POST" style = "display: none;">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <input type = "hidden" name = "year_filter" value = "{% if year_filter == '' and quarter_filter == '' %}{%else%}{{year_filter}}{%endif%}">         
-                                    <input type = "hidden" name = "quarter_filter" value = "{% if year_filter == '' and quarter_filter == '' %}{%else%}{{quarter_filter}}{%endif%}">
-                                </form>  
-                                 <form id = "douwnload_XML_form" action="/exportXML" method="POST" style = "display: none;">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <input type = "hidden" name = "year_filter" value = "{% if year_filter == '' and quarter_filter == '' %}{%else%}{{year_filter}}{%endif%}">         
-                                    <input type = "hidden" name = "quarter_filter" value = "{% if year_filter == '' and quarter_filter == '' %}{%else%}{{quarter_filter}}{%endif%}">
-                                </form>   
                                 <div class = "functions_menu">     
                                     <li id = "link_load">           
                                         <img src="{{ url_for('static', filename='img/upload.png')}}" alt="">
                                         <a class = "li-title">
-                                            <span>Отчеты</span>
+                                            <span>Экспорт</span>
                                         </a>   
                                     </li>  
                                 </div>        
                                 <a class="functions_menu_name">        
-                                    Экспорт
+                                    Прочее
                                 </a>
                             </section>
                         </ul>
@@ -155,13 +145,12 @@
                 <div class="search-cont">
                     <div class="custom-dropdown" id="region-dropdown">
                         <div class="dropdown-trigger" id="region-trigger">
-
                             <span class="dropdown-text">Все регионы</span>
                             <svg class="dropdown-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <polyline points="6 9 12 15 18 9"></polyline>
                             </svg>
                         </div>
-                        <div class="dropdown-menu" id="region-menu">
+                        <div class="dropdown-menu" id="region-menu" data-user-type="{{ current_user.type }}" data-user-okpo-digit="{{ current_user.organization.okpo|string|first }}">
                             <div class="dropdown-item" data-value="">Все регионы</div>
                             <div class="dropdown-item" data-value="1">Брестское областное</div>
                             <div class="dropdown-item" data-value="2">Витебское областное</div>
@@ -174,7 +163,6 @@
                     </div>
                 </div>
             </div>
-
         </div>
     </div>
     <div class="report-list">
@@ -257,9 +245,7 @@
             </div>
             <div id="empty-state" class="empty-state-container" style="display: none;">
                 <div class="empty-state">
-                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m3.75 9v6m3-3H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-                    </svg>
+                    {{ icons.icon_no_file() }}
                     <h3>Нет доступных отчетов</h3>
                     <p>За выбранный период отчеты не найдены.</p>
                 </div>
@@ -327,10 +313,9 @@
         <div class="model_but_area" >
             <button 
                 type="button" 
-                class="blue_btn" 
-                
+                class="blue_btn"
                 onclick="filterSentedReports()">
-                    <img src="/static/img/Calendar.svg" alt="" class="button-icon">
+                    {{ icons.icon_calendar() }}
                     <span>Выбранный период</span>
             </button>
             <button 
@@ -343,36 +328,73 @@
         </div>
     </div>
 </div>
+
 <div id="load_reports_modal" class="modal">
     <div class="modal-content">
-        <div class = "modal-header">
-            <h3 class = "change-position">Экспорт отчетов</h3>
+        <div class="modal-header">
+            <h3 class="change-position">Экспорт одобренных отчетов</h3>
             {{ icons.icon_close() }}
         </div>
-        <div class="answer-highlight-second" style = "max-width: 510px;">
-            <div class="highlight-icon">💡</div>
-            <p>Выберите <strong>формат</strong> для экспорта. Отчёты будут сохранены в <strong>архив</strong> с выбранным расширением.  
-                Подробнее — в <a href="/FAQ#faq14" class="instruction-link">инструкции</a>.</p>
+        <div id="export-loading" class="export-loading" style="display: none;">
+            <div class="loader-pulse"></div>
+            <div class="loading-text">Подготовка архива...</div>
         </div>
         
-        <div class="model_but_area between">
-            <button type="submit" class="blue_btn dbf" id = "douwnload_DBF_link">
-                <svg class="button-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25" />
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 21H5.25a1.5 1.5 0 01-1.5-1.5V4.5a1.5 1.5 0 011.5-1.5h7.5l7.5 7.5v9a1.5 1.5 0 01-1.5 1.5z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 9.75h7.5M8.25 12.75h7.5M8.25 15.75h4.5" />
-                </svg>
-                <span>Формат .dbf</span>
-            </button>
-            <button type="submit" class="blue_btn xml" id = "douwnload_XML_link">
-                <svg class="button-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25" />
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 21H5.25a1.5 1.5 0 01-1.5-1.5V4.5a1.5 1.5 0 011.5-1.5h7.5l7.5 7.5v9a1.5 1.5 0 01-1.5 1.5z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 15.75l2.25-3L9 9.75M15 15.75l-2.25-3 2.25-3" />
-                </svg>
-                <span>Формат .xml</span>
-            </button>
-        </div>
+        <form id="export_form" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="year_filter" value="{% if year_filter == '' and quarter_filter == '' %}{% else %}{{ year_filter }}{% endif %}">         
+            <input type="hidden" name="quarter_filter" value="{% if year_filter == '' and quarter_filter == '' %}{% else %}{{ quarter_filter }}{% endif %}">
+            
+            {% if current_user.type == 'Администратор' or current_user.type == 'Смотрящий' %}
+            <div class="export-region-filter">
+                <label class="export-region-label">Фильтр по региону</label>
+                <select name="export_region" id="export_region" class="export-region-select">
+                    <option value="">Все регионы</option>
+                    <option value="1">Брестское областное</option>
+                    <option value="2">Витебское областное</option>
+                    <option value="3">Гомельское областное</option>
+                    <option value="4">Гродненское областное</option>
+                    <option value="5">г. Минск</option>
+                    <option value="6">Минское областное</option>
+                    <option value="7">Могилевское областное</option>
+                </select>
+                <span class="export-region-hint">по 4-й цифре ОКПО</span>
+            </div>
+            {% endif %}
+            <div class="format-selection-label">
+                <span class="format-selection-title">Выберите формат экспорта</span>
+                <span class="format-selection-required">Обязательно</span>
+            </div>
+            <div class="format-options">
+                <label class="format-option">
+                    <input type="radio" name="format" value="DBF">
+                    <div class="format-option-content">
+                        {{ icons.icon_file() }}
+                        <div class="format-text">
+                            <span class="format-title">Формат .dbf</span>
+                            <span class="format-description">База данных для других систем</span>
+                        </div>
+                    </div>
+                </label>
+                <label class="format-option">
+                    <input type="radio" name="format" value="XML">
+                    <div class="format-option-content">
+                        {{ icons.icon_file() }}
+                        <div class="format-text">
+                            <span class="format-title">Формат .xml</span>
+                            <span class="format-description">Универсальный формат для обмена данными</span>
+                        </div>
+                    </div>
+                </label>
+            </div>
+            
+            <div class="model_but_area between">
+                <button type="submit" class="blue_btn" id="export_submit_btn">
+                    {{ icons.icon_upload() }}
+                    <span>Экспортировать</span>
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 

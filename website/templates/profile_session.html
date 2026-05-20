@@ -71,7 +71,8 @@
             <a class="session-name-card">Это устройство</a>
             <div class="session-this-device">
                 <div class="first-floor">
-                    <img src="{{ url_for('static', filename='img/this_pc.png')}}" alt="">
+                    
+                    {{ icons.icon_mobile_phone() }}
                     <div class="session-text-area">
                         <a class="session-this-device-name">Неизвестное устройство</a>
                         <a class="session-this-device_app">Браузер</a>

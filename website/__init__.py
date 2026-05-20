@@ -76,10 +76,12 @@ def create_app():
     from .routes.views import views
     from .routes.auth import auth
     from .routes.dbs import dbs
+    from .routes.api import api
 
     app.register_blueprint(views, url_prefix='/')
     app.register_blueprint(auth, url_prefix='/')
     app.register_blueprint(dbs, url_prefix='/')
+    app.register_blueprint(api, url_prefix='/api')
 
     with app.app_context():
         create_database(app, db)
@@ -124,48 +126,48 @@ def create_app():
     def unauthorized_handler(error):
         return redirect(url_for("views.login", next=request.url))
  
-    @app.context_processor
-    def inject_online_users():
-        from datetime import datetime, timedelta
-        from website.models import User
-        from website.time import current_utc_time
+    # @app.context_processor
+    # def inject_online_users():
+    #     from datetime import datetime, timedelta
+    #     from website.models import User
+    #     from website.time import current_utc_time
         
-        def get_online_count():
-            try:
-                five_minutes_ago = current_utc_time() - timedelta(minutes=5)
-                return User.query.filter(User.last_active >= five_minutes_ago).count()
-            except:
-                return 0
+    #     def get_online_count():
+    #         try:
+    #             five_minutes_ago = current_utc_time() - timedelta(minutes=5)
+    #             return User.query.filter(User.last_active >= five_minutes_ago).count()
+    #         except:
+    #             return 0
         
-        return dict(online_users_count=get_online_count())
+    #     return dict(online_users_count=get_online_count())
  
-    @app.before_request
-    def update_last_active():
-        from flask_login import current_user
-        from website.time import current_utc_time
-        # app.logger.info(f"before_request called, authenticated: {current_user.is_authenticated}")
+    # @app.before_request
+    # def update_last_active():
+    #     from flask_login import current_user
+    #     from website.time import current_utc_time
+    #     # app.logger.info(f"before_request called, authenticated: {current_user.is_authenticated}")
         
-        if current_user.is_authenticated:
-            # app.logger.info(f"User {current_user.id} is authenticated, last_active: {current_user.last_active}")
+    #     if current_user.is_authenticated:
+    #         # app.logger.info(f"User {current_user.id} is authenticated, last_active: {current_user.last_active}")
             
-            try:
-                if current_user.last_active is None:
-                    current_user.last_active = current_utc_time()
-                    db.session.commit()
-                    # app.logger.debug(f"Set initial last_active for user {current_user.id}")
-                else:
-                    time_diff = (current_utc_time() - current_user.last_active).total_seconds()
-                    # app.logger.debug(f"Time diff for user {current_user.id}: {time_diff}s")
+    #         try:
+    #             if current_user.last_active is None:
+    #                 current_user.last_active = current_utc_time()
+    #                 db.session.commit()
+    #                 # app.logger.debug(f"Set initial last_active for user {current_user.id}")
+    #             else:
+    #                 time_diff = (current_utc_time() - current_user.last_active).total_seconds()
+    #                 # app.logger.debug(f"Time diff for user {current_user.id}: {time_diff}s")
                     
-                    if time_diff > 60:
-                        current_user.last_active = current_utc_time()
-                        db.session.commit()
-                        # app.logger.debug(f"Updated last_active for user {current_user.id}")
-                    # else:
-                        # app.logger.debug(f"Skipped update for user {current_user.id}, diff={time_diff}s")
-            except Exception as e:
-                db.session.rollback()
-                app.logger.error(f"Error updating last_active: {e}")
+    #                 if time_diff > 60:
+    #                     current_user.last_active = current_utc_time()
+    #                     db.session.commit()
+    #                     # app.logger.debug(f"Updated last_active for user {current_user.id}")
+    #                 # else:
+    #                     # app.logger.debug(f"Skipped update for user {current_user.id}, diff={time_diff}s")
+    #         except Exception as e:
+    #             db.session.rollback()
+    #             app.logger.error(f"Error updating last_active: {e}")
         # else:
         #     app.logger.info("User not authenticated")
     

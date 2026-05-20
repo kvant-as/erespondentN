@@ -1,4 +1,7 @@
+from collections import defaultdict
 import io
+import os
+import threading
 import zipfile
 from tempfile import NamedTemporaryFile
 
@@ -8,16 +11,110 @@ import pandas as pd
 from flask import current_app, send_file, Response
 from flask_login import current_user
 
-from website.report import EXCLUDED_OKPO_LISTS, SPECIAL_OKPO_LISTS
-
 from . import db
 from .models import (
     Organization, Report, Version_report, Sections
 )
 
-from sqlalchemy import asc, case, func, desc, or_
-from sqlalchemy import func, String
+from sqlalchemy import and_, asc, case, func, or_
 from sqlalchemy.orm import joinedload
+
+from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment, Border, Side
+from openpyxl.utils import get_column_letter
+
+export_tasks = {}
+
+def create_archive_async(export_format, task_id, user_id, okpo_value, year_filter, quarter_filter):
+    from . import create_app
+    from sqlalchemy import func
+    
+    app = create_app()
+    
+    with app.app_context():
+        try:
+            export_tasks[task_id] = {
+                'status': 'processing', 
+                'progress': 0, 
+                'file_path': None, 
+                'error': None,
+                'format': export_format
+            }
+            
+            export_tasks[task_id]['progress'] = 10
+            
+            filters = []
+            if year_filter and year_filter != '':
+                filters.append(Report.year == year_filter)
+            if quarter_filter and quarter_filter != '':
+                filters.append(Report.quarter == quarter_filter)
+            
+            query = Version_report.query.options(
+                joinedload(Version_report.report).joinedload(Report.organization),
+                joinedload(Version_report.sections).joinedload(Sections.product)
+            ).join(Report)
+            
+            export_tasks[task_id]['progress'] = 20
+            
+            if okpo_value and okpo_value != '8':
+                query = query.join(Organization, Organization.id == Report.org_id).filter(
+                    Version_report.status == "Одобрен",
+                    func.substr(func.cast(Organization.okpo, db.String), func.length(Organization.okpo) - 3, 1) == okpo_value,
+                    *filters
+                )
+            else:
+                query = query.filter(Version_report.status == "Одобрен", *filters)
+            
+            versions = query.all()
+            
+            export_tasks[task_id]['progress'] = 30
+            
+            if not versions:
+                export_tasks[task_id]['status'] = 'error'
+                export_tasks[task_id]['error'] = 'Нет одобренных отчетов'
+                return
+            
+            export_tasks[task_id]['progress'] = 50
+            
+            temp_dir = os.path.join('/tmp', 'exports', task_id)
+            os.makedirs(temp_dir, exist_ok=True)
+            
+            if export_format == 'DBF':
+                try:
+                    zip_buffer = create_dbf_zip(versions)
+                    file_path = os.path.join(temp_dir, f'reports_DBF_{task_id}.zip')
+                    with open(file_path, 'wb') as f:
+                        f.write(zip_buffer.getvalue())
+                except Exception as e:
+                    export_tasks[task_id]['status'] = 'error'
+                    export_tasks[task_id]['error'] = f'Ошибка создания DBF: {str(e)}'
+                    return
+            else:
+                try:
+                    file_path = os.path.join(temp_dir, f'reports_XML_{task_id}.zip')
+                    with zipfile.ZipFile(file_path, mode="w", compression=zipfile.ZIP_DEFLATED) as zipf:
+                        total = len(versions)
+                        for idx, version in enumerate(versions):
+                            report = version.report
+                            xml_data = create_xml_for_version(version)
+                            file_name = f"{report.organization.okpo}_{report.year}_{report.quarter}.xml"
+                            zipf.writestr(file_name, xml_data)
+                            export_tasks[task_id]['progress'] = 50 + int((idx / total) * 40)
+                except Exception as e:
+                    export_tasks[task_id]['status'] = 'error'
+                    export_tasks[task_id]['error'] = f'Ошибка создания XML: {str(e)}'
+                    return
+            
+            export_tasks[task_id]['progress'] = 100
+            export_tasks[task_id]['status'] = 'completed'
+            export_tasks[task_id]['file_path'] = file_path
+            
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            export_tasks[task_id]['status'] = 'error'
+            export_tasks[task_id]['error'] = str(e)
+
 
 def generate_excel_report(version_id):
     current_report = Report.query.filter_by(id=version_id).first()
@@ -41,10 +138,6 @@ def generate_excel_report(version_id):
     sections3 = Sections.query.filter_by(id_version=version_id, section_number=3)\
     .order_by(priority, asc(Sections.code_product)).all()
     
-    
-    from openpyxl import Workbook
-    from openpyxl.styles import Font, Alignment, Border, Side
-    from openpyxl.utils import get_column_letter
 
     regular_font_9 = Font(name="Times New Roman", size=9)
     regular_font_9_italic = Font(name="Times New Roman", size=9, italic=True)
@@ -751,3 +844,267 @@ def send_zip_file(zip_buffer):
         mimetype='application/zip',
         headers={"Content-Disposition": "attachment;filename=reports_DBF.zip"}
     )
+    
+SPECIAL_OKPO_LISTS = { # убрать откуда номер региона : ['ОКПО']        
+    6: ['030662355000'],
+    6: ['020133895000'],
+    5: ['305144986000'],
+}
+
+EXCLUDED_OKPO_LISTS = { # добавить куда номер региона : ['ОКПО']
+    5: ['030662355000'],
+    5: ['020133895000'],
+    6: ['305144986000']
+}
+
+def get_reports_by_status(status, year=None, quarter=None, region=None):
+    def translate_status(status):
+        status_map = {
+            'not_viewed': 'Отправлен',
+            'remarks': 'Есть замечания',
+            'to_download': 'Одобрен',
+            'to_delete': 'Готов к удалению'
+        }
+        return status_map.get(status)
+
+    filters = []
+    statuses = [
+        'Отправлен',
+        'Есть замечания',
+        'Одобрен',
+        'Готов к удалению'
+    ]
+    
+    if year:
+        filters.append(Report.year == year)
+    if quarter:
+        filters.append(Report.quarter == quarter)
+    
+    user_type = current_user.type
+    okpo_digit = str(current_user.organization.okpo)[0]
+
+    special_condition = False
+    if okpo_digit.isdigit() and int(okpo_digit) in SPECIAL_OKPO_LISTS:
+        special_condition = True
+    
+    excluded_condition = False
+    if okpo_digit.isdigit() and int(okpo_digit) in EXCLUDED_OKPO_LISTS:
+        excluded_condition = True
+
+    # Базовый фильтр по региону из выпадающего списка
+    region_filter = None
+    if region and region.isdigit():
+        region_filter = region
+
+    if user_type == "Администратор" or user_type == "Смотрящий":
+        base_query = Report.query.join(Version_report)
+        
+        if region_filter:
+            base_query = base_query.join(Organization).filter(
+                func.substr(Organization.okpo, func.length(Organization.okpo) - 3, 1) == region_filter
+            )
+        
+        if status == 'all_reports':
+            query = base_query.filter(
+                or_(*[Version_report.status == s for s in statuses]),
+                *filters
+            )
+        else:
+            trans_status = translate_status(status)
+            if trans_status:
+                query = base_query.filter(
+                    Version_report.status == trans_status,
+                    *filters
+                )
+            else:
+                return []
+        return query.order_by().all()
+    
+    else:
+        if status == 'all_reports':
+            query = Report.query.join(Version_report).join(Organization)
+            
+            # Добавляем региональный фильтр если он есть
+            if region_filter:
+                query = query.filter(
+                    func.substr(Organization.okpo, func.length(Organization.okpo) - 3, 1) == region_filter
+                )
+            
+            if special_condition and excluded_condition:
+                return query.filter(
+                    or_(
+                        and_(
+                            or_(*[Version_report.status == s for s in statuses]),
+                            func.substr(Organization.okpo, func.length(Organization.okpo) - 3, 1) == okpo_digit
+                        ),
+                        and_(
+                            or_(*[Version_report.status == s for s in statuses]),
+                            Organization.okpo.in_(SPECIAL_OKPO_LISTS[int(okpo_digit)])
+                        )
+                    ),
+                    ~Organization.okpo.in_(EXCLUDED_OKPO_LISTS[int(okpo_digit)]),
+                    *filters
+                ).order_by().all()
+            elif special_condition:
+                return query.filter(
+                    or_(
+                        and_(
+                            or_(*[Version_report.status == s for s in statuses]),
+                            func.substr(Organization.okpo, func.length(Organization.okpo) - 3, 1) == okpo_digit
+                        ),
+                        and_(
+                            or_(*[Version_report.status == s for s in statuses]),
+                            Organization.okpo.in_(SPECIAL_OKPO_LISTS[int(okpo_digit)])
+                        )
+                    ),
+                    *filters
+                ).order_by().all()
+            elif excluded_condition:
+                return query.filter(
+                    or_(*[Version_report.status == s for s in statuses]),
+                    *filters,
+                    func.substr(Organization.okpo, func.length(Organization.okpo) - 3, 1) == okpo_digit,
+                    ~Organization.okpo.in_(EXCLUDED_OKPO_LISTS[int(okpo_digit)])
+                ).order_by().all()
+            else:
+                return query.filter(
+                    or_(*[Version_report.status == s for s in statuses]),
+                    *filters,
+                    func.substr(Organization.okpo, func.length(Organization.okpo) - 3, 1) == okpo_digit
+                ).order_by().all()
+        else:
+            trans_status = translate_status(status)
+            if trans_status:
+                query = Report.query.join(Version_report).join(Organization)
+                
+                # Добавляем региональный фильтр если он есть
+                if region_filter:
+                    query = query.filter(
+                        func.substr(Organization.okpo, func.length(Organization.okpo) - 3, 1) == region_filter
+                    )
+                
+                if special_condition and excluded_condition:
+                    return query.filter(
+                        or_(
+                            and_(
+                                Version_report.status == trans_status,
+                                func.substr(Organization.okpo, func.length(Organization.okpo) - 3, 1) == okpo_digit
+                            ),
+                            and_(
+                                Version_report.status == trans_status,
+                                Organization.okpo.in_(SPECIAL_OKPO_LISTS[int(okpo_digit)])
+                            )
+                        ),
+                        ~Organization.okpo.in_(EXCLUDED_OKPO_LISTS[int(okpo_digit)]),
+                        *filters
+                    ).order_by().all()
+                elif special_condition:
+                    return query.filter(
+                        or_(
+                            and_(
+                                Version_report.status == trans_status,
+                                func.substr(Organization.okpo, func.length(Organization.okpo) - 3, 1) == okpo_digit
+                            ),
+                            and_(
+                                Version_report.status == trans_status,
+                                Organization.okpo.in_(SPECIAL_OKPO_LISTS[int(okpo_digit)])
+                            )
+                        ),
+                        *filters
+                    ).order_by().all()
+                elif excluded_condition:
+                    return query.filter(
+                        Version_report.status == trans_status,
+                        *filters,
+                        func.substr(Organization.okpo, func.length(Organization.okpo) - 3, 1) == okpo_digit,
+                        ~Organization.okpo.in_(EXCLUDED_OKPO_LISTS[int(okpo_digit)])
+                    ).order_by().all()
+                else:
+                    return query.filter(
+                        Version_report.status == trans_status,
+                        *filters,
+                        func.substr(Organization.okpo, func.length(Organization.okpo) - 3, 1) == okpo_digit
+                    ).order_by().all()
+            else:
+                return []
+            
+from lxml import etree
+    
+def create_xml_for_version(version):
+    report = version.report
+    organization = report.organization
+
+    root = etree.Element("REPOPT_ROOT")
+    report_el = etree.SubElement(root, "REPORT")
+
+    etree.SubElement(report_el, "DESCRIPTION_REPORT", attrib={
+        "CODE": str(report.organization.okpo or ""),
+        "NO": organization.full_name or "",
+        "CODE_ENT": organization.full_name or "",
+        "OKPO": str(report.organization.okpo or ""),
+        "UNP": str(organization.ynp or ""),
+        "YEAR": str(report.year),
+        "QUARTER": str(report.quarter),
+        "PHASE": "1",
+        "ISYEAR": "false",
+        "TYPE": "2",
+        "ISREADONLY": "false",
+        "FIO": version.fio or "",
+        "PHONE": version.telephone or "",
+        "EMAIL": version.email or "",
+        "SV": "1.2.7.2"
+    })
+
+    row_data_el = etree.SubElement(report_el, "ROW_DATA")
+    sections_el = etree.SubElement(row_data_el, "SECTIONS")
+
+    sections_by_number = defaultdict(list)
+    for section in version.sections:
+        sections_by_number[section.section_number].append(section)
+
+    special_codes_order = ["9001", "9010", "9100"]
+
+    for section_number, group in sections_by_number.items():
+        for code in special_codes_order:
+            for section in group:
+                product = section.product
+                if (product.CodeProduct or "") == code:
+                    unit = product.unit
+                    etree.SubElement(sections_el, "row", attrib={
+                        "SectionNumber": str(section.section_number),
+                        "SortIndex": code,
+                        "CodeProduct": code,
+                        "NameProduct": product.NameProduct or "",
+                        "OKED": section.Oked or "",
+                        "CodeUnit": unit.CodeUnit if unit else "",
+                        "Produced": str(section.produced or 0),
+                        "ConsumedQ": str(section.Consumed_Quota or 0),
+                        "ConsumedF": str(section.Consumed_Fact or 0),
+                        "ConsumedQT": str(section.Consumed_Total_Quota or 0),
+                        "ConsumedFT": str(section.Consumed_Total_Fact or 0),
+                        "Comment": section.note or ""
+                    })
+
+        sort_index_counter = 1
+        for section in group:
+            product = section.product
+            code_product = product.CodeProduct or ""
+            if code_product not in special_codes_order:
+                unit = product.unit
+                etree.SubElement(sections_el, "row", attrib={
+                    "SectionNumber": str(section.section_number),
+                    "SortIndex": str(sort_index_counter),
+                    "CodeProduct": code_product,
+                    "NameProduct": product.NameProduct or "",
+                    "OKED": section.Oked or "",
+                    "CodeUnit": unit.CodeUnit if unit else "",
+                    "Produced": str(section.produced or 0),
+                    "ConsumedQ": str(section.Consumed_Quota or 0),
+                    "ConsumedF": str(section.Consumed_Fact or 0),
+                    "ConsumedQT": str(section.Consumed_Total_Quota or 0),
+                    "ConsumedFT": str(section.Consumed_Total_Fact or 0),
+                    "Comment": section.note or ""
+                })
+                sort_index_counter += 1
+
+    return etree.tostring(root, pretty_print=True, encoding='utf-8')

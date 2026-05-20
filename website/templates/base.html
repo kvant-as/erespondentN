@@ -33,7 +33,7 @@
                         <span class="menu-text">Главная</span>
                     </li>
                     {% if current_user.is_authenticated and (current_user.type == 'Респондент') %}
-                        <li onclick="window.location.href='/report-area'">
+                        <li onclick="window.location.href='/reports'">
                             <span class="menu-text">Отчеты</span>
                         </li>
                     {% endif %}
@@ -46,17 +46,17 @@
                         <li class="admin-dropdown">
                             <span class="menu-text">Прочее</span>
                             <ul class="admin-dropdown-menu">
-                                <li onclick="window.location.href='/admin'">
-                                    {{ icons.icon_admin() }}
-                                    Админ панель
-                                </li>
-                                <li onclick="window.location.href='/report-area'">
+                                <li onclick="window.location.href='/reports'">
                                     {{ icons.icon_reports() }}
                                     Отчеты
                                 </li>
                                 <li onclick="window.location.href='/audit-area/not_viewed?year={{previous_year}}&quarter={{previous_quarter}}'">
                                     {{ icons.icon_audit() }}
                                     Просмотр
+                                </li>
+                                <li onclick="window.location.href='/admin'">
+                                    {{ icons.icon_admin() }}
+                                    Админ панель
                                 </li>
                             </ul>
                         </li>
@@ -67,19 +67,19 @@
                     <li onclick="window.location.href='/contacts'">
                         <span class="menu-text">Контакты</span>
                     </li>
-                    <li onclick="window.location.href='/FAQ'" class="blinking-item">
+                    <li onclick="window.location.href='/FAQ'" {#class="blinking-item"#}>
                         <span class="menu-text">Помощь</span>
                     </li>
                 </ul>
             </nav>
         </div>
         <div class="header-right">   
-            {% if current_user.is_authenticated %}
+            {#{% if current_user.is_authenticated %}
                 <div class="online-cont">
                     <div class="online-indicator"></div>
                     <span class="online-count">{{ online_users_count }}</span>
                 </div>
-            {% endif %}
+            {% endif %}#}
             <div class="user-container">
                 <div class="avatar-wrapper">
                     <div class="avatar-circle">
@@ -122,7 +122,7 @@
                     </button>
                     
                     {% if current_user.type in ['Администратор', 'Респондент'] %}
-                        <button onclick="window.location.href='/report-area'">
+                        <button onclick="window.location.href='/reports'">
                             {{ icons.icon_reports() }}
                             <span>Отчеты</span>
                         </button>

@@ -6,13 +6,13 @@ window.initCookieBanner = function() {
     const MODAL_CONFIG = {
         'system-update-modal-reportArea': {
             cookieName: 'update-reportArea',
-            pages: ['/report-area'],
+            pages: ['/reports'],
             hasSlides: true,
             delay: 500
         },
         'system-update-modal-reportArea-report': { 
             cookieName: 'update-reportArea-report',
-            pages: ['/report-area/fuel/', '/report-area/heat/', '/report-area/electro/'],
+            pages: ['/reports/fuel/', '/reports/heat/', '/reports/electro/'],
             hasSlides: true,
             delay: 300
         },

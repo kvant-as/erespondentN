@@ -27,14 +27,14 @@
                         </section>           
                         <section>
                             <div class = "functions_menu">
-                                <li onclick="window.location.href='/report-area/fuel/{{current_version.id}}'" 
+                                <li onclick="window.location.href='/reports/fuel/{{current_version.id}}'" 
                                 {%if section_number == 1 %} 
                                     class = "active_functions_menu"
                                 {%endif%}>         
                                     <img src="{{ url_for('static', filename='img/Toplivo.png')}}" alt="">
                                     <a class = "li-title"><span>Топливо</span></a>   
                                 </li>
-                                <li onclick="window.location.href='/report-area/heat/{{current_version.id}}'"
+                                <li onclick="window.location.href='/reports/heat/{{current_version.id}}'"
                                 {%if section_number == 2 %} 
                                     class = "active_functions_menu"
                                 {%endif%}>                      
@@ -42,7 +42,7 @@
                                     <a class = "li-title"><span>Тепло</span></a>
                                 </li>
 
-                                <li onclick="window.location.href='/report-area/electro/{{current_version.id}}'" 
+                                <li onclick="window.location.href='/reports/electro/{{current_version.id}}'" 
                                 {%if section_number == 3 %} 
                                     class = "active_functions_menu"
                                 {%endif%} >           
@@ -54,7 +54,7 @@
                         </section>
                         <section>
                             <div class = "functions_menu">                       
-                                <li onclick="window.location.href='/report-area/tickets/{{current_version.id}}'">
+                                <li onclick="window.location.href='/reports/tickets/{{current_version.id}}'">
                                     <img src="/static/img/icon_print_file.png" alt="">
                                     <a class = "li-title"><span>Квитанции</span></a>
                                 </li>                                             
@@ -125,7 +125,7 @@
     <div class = "rotation-fromareas">
         <div class = "rotation-fromareas_info"  style = "margin: 10px;"> 
             <span>
-                <a class = "back_orbital" href="/report-area">Вернуться к отчетам</a>
+                <a class = "back_orbital" href="/reports">Вернуться к отчетам</a>
             </span>
             <span class = "svg-arr"> 
                 {{ icons.icon_arrow_right() }}
@@ -163,7 +163,7 @@
                         </span>
                         <div class="resizer"></div>
                     </th>
-                    <th class="resizable" data-sort-col="code" rowspan="2" style = "white-space: nowrap;">
+                    <th class="resizable" data-sort-col="code" rowspan="2">
                         <span class="sort-label">
                             Код строки
                             <span class="sort-icon-header">
@@ -174,7 +174,7 @@
                     </th>
                     <th class="resizable" data-sort-col="oked" rowspan="2" style = "white-space: nowrap;">
                         <span class="sort-label">
-                            Код по ОКЭД
+                            ОКЭД
                             <span class="sort-icon-header">
                                 {{ icons.icon_sort() }}
                             </span>
@@ -571,7 +571,7 @@
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="model_but_area right">
                 <button type="submit" class="blue_btn">
-                    <img src="/static/img/Add.svg" alt="" class="button-icon">
+                    {{ icons.icon_add() }}
                     <span>Добавить продукцию</span>
                 </button>
             </div>
@@ -722,7 +722,7 @@
             
             <div class="model_but_area right">
                 <button type="submit" class="blue_btn">
-                    <img src="/static/img/Add.svg" alt="" class="button-icon">
+                    {{ icons.icon_add() }}
                     <span>Применить изменения</span>
                 </button>
             </div>           
@@ -732,17 +732,13 @@
 
 <div id="contextMenu_report" class="white-panel">
     <button id="link_changefuel_modal" class="{% if current_version.status in ['Отправлен', 'Одобрен'] %}disabled{% endif %}">
-        <svg  viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
-        </svg>
+        {{ icons.icon_edit() }}
         <span>Редактировать</span>
     </button>
 
     <form id="remove_section_form" method="POST" action="/remove_section/">
         <button type="submit" id="remove_section" class="{% if current_version.status in ['Отправлен', 'Одобрен'] %}disabled{% endif %}">
-            <svg  viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
+            {{ icons.icon_delete() }}
             <span>Удалить</span>
         </button>
     </form>

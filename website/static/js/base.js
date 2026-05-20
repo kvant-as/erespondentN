@@ -1,19 +1,19 @@
-function updateOnlineCount() {
-    fetch('/api/online-count')
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                const countElement = document.getElementById('onlineCount');
-                if (countElement) {
-                    countElement.textContent = data.count;
-                }
-            }
-        })
-        .catch(error => console.error('Error updating online count:', error));
-}
+// function updateOnlineCount() {
+//     fetch('/api/online-count')
+//         .then(response => response.json())
+//         .then(data => {
+//             if (data.success) {
+//                 const countElement = document.getElementById('onlineCount');
+//                 if (countElement) {
+//                     countElement.textContent = data.count;
+//                 }
+//             }
+//         })
+//         .catch(error => console.error('Error updating online count:', error));
+// }
 
-setInterval(updateOnlineCount, 30000);
-document.addEventListener('DOMContentLoaded', updateOnlineCount);
+// setInterval(updateOnlineCount, 30000);
+// document.addEventListener('DOMContentLoaded', updateOnlineCount);
 
 function addCsrfTokenToForm(form) {
     var csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
@@ -35,6 +35,70 @@ function scrollToAdmin() {
         formElement.scrollIntoView({ behavior: 'smooth' });
     }
 }
+
+    function updateHeaderButtonStyle(agreedActive, controlActive, sentActive, exportActive, ticketsActive) {
+        const agreedVersionButton = document.getElementById('agreedVersionButton');
+        const controlVersionButton = document.getElementById('control_versionButton');
+        const sentVersionButton = document.getElementById('sentVersionButton');
+        const exportVersionButton = document.getElementById('export_versionButton');
+        const toTicketsBtn = document.getElementById('toTicketsBtn');
+        
+        if (agreedActive) {
+            agreedVersionButton.style.opacity = '1';
+            agreedVersionButton.style.cursor = 'pointer';
+            agreedVersionButton.querySelector('img').style.filter = 'none';
+            agreedVersionButton.querySelector('a').style.filter = 'none';
+        } else {
+            agreedVersionButton.style.opacity = '0.5';
+            agreedVersionButton.style.cursor = 'not-allowed';
+            agreedVersionButton.querySelector('img').style.filter = 'grayscale(100%)';
+            agreedVersionButton.querySelector('a').style.filter = 'grayscale(100%)';
+        }
+        if (controlActive) {
+            controlVersionButton.style.opacity = '1';
+            controlVersionButton.style.cursor = 'pointer';
+            controlVersionButton.querySelector('img').style.filter = 'none';
+            controlVersionButton.querySelector('a').style.filter = 'none';
+        } else {
+            controlVersionButton.style.opacity = '0.5';
+            controlVersionButton.style.cursor = 'not-allowed';
+            controlVersionButton.querySelector('img').style.filter = 'grayscale(100%)';
+            controlVersionButton.querySelector('a').style.filter = 'grayscale(100%)';
+        }
+        if (sentActive) {
+            sentVersionButton.style.opacity = '1';
+            sentVersionButton.style.cursor = 'pointer';
+            sentVersionButton.querySelector('img').style.filter = 'none';
+            sentVersionButton.querySelector('a').style.filter = 'none';
+        } else {
+            sentVersionButton.style.opacity = '0.5';
+            sentVersionButton.style.cursor = 'not-allowed';
+            sentVersionButton.querySelector('img').style.filter = 'grayscale(100%)';
+            sentVersionButton.querySelector('a').style.filter = 'grayscale(100%)';
+        }
+        if (exportActive) {
+            exportVersionButton.style.opacity = '1';
+            exportVersionButton.style.cursor = 'pointer';
+            exportVersionButton.querySelector('img').style.filter = 'none';
+            exportVersionButton.querySelector('a').style.filter = 'none';
+        } else {
+            exportVersionButton.style.opacity = '0.5';
+            exportVersionButton.style.cursor = 'not-allowed';
+            exportVersionButton.querySelector('img').style.filter = 'grayscale(100%)';
+            exportVersionButton.querySelector('a').style.filter = 'grayscale(100%)';
+        }
+        if (ticketsActive) {
+            toTicketsBtn.style.opacity = '1';
+            toTicketsBtn.style.cursor = 'pointer';
+            toTicketsBtn.querySelector('img').style.filter = 'none';
+            toTicketsBtn.querySelector('a').style.filter = 'none';
+        } else {
+            toTicketsBtn.style.opacity = '0.5';
+            toTicketsBtn.style.cursor = 'not-allowed';
+            toTicketsBtn.querySelector('img').style.filter = 'grayscale(100%)';
+            toTicketsBtn.querySelector('a').style.filter = 'grayscale(100%)';
+        }
+    }
 
 window.addEventListener('scroll', () => {
     const header = document.querySelector('.fixed-header');
@@ -1323,74 +1387,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
    }
 
-    function updateHeaderButtonStyle(agreedActive, controlActive, sentActive, exportActive, ticketsActive) {
-        const agreedVersionButton = document.getElementById('agreedVersionButton');
-        const controlVersionButton = document.getElementById('control_versionButton');
-        const sentVersionButton = document.getElementById('sentVersionButton');
-        const exportVersionButton = document.getElementById('export_versionButton');
-        const toTicketsBtn = document.getElementById('toTicketsBtn');
-        
-        if (agreedActive) {
-            agreedVersionButton.style.opacity = '1';
-            agreedVersionButton.style.cursor = 'pointer';
-            agreedVersionButton.querySelector('img').style.filter = 'none';
-            agreedVersionButton.querySelector('a').style.filter = 'none';
-        } else {
-            agreedVersionButton.style.opacity = '0.5';
-            agreedVersionButton.style.cursor = 'not-allowed';
-            agreedVersionButton.querySelector('img').style.filter = 'grayscale(100%)';
-            agreedVersionButton.querySelector('a').style.filter = 'grayscale(100%)';
-        }
-        if (controlActive) {
-            controlVersionButton.style.opacity = '1';
-            controlVersionButton.style.cursor = 'pointer';
-            controlVersionButton.querySelector('img').style.filter = 'none';
-            controlVersionButton.querySelector('a').style.filter = 'none';
-        } else {
-            controlVersionButton.style.opacity = '0.5';
-            controlVersionButton.style.cursor = 'not-allowed';
-            controlVersionButton.querySelector('img').style.filter = 'grayscale(100%)';
-            controlVersionButton.querySelector('a').style.filter = 'grayscale(100%)';
-        }
-        if (sentActive) {
-            sentVersionButton.style.opacity = '1';
-            sentVersionButton.style.cursor = 'pointer';
-            sentVersionButton.querySelector('img').style.filter = 'none';
-            sentVersionButton.querySelector('a').style.filter = 'none';
-        } else {
-            sentVersionButton.style.opacity = '0.5';
-            sentVersionButton.style.cursor = 'not-allowed';
-            sentVersionButton.querySelector('img').style.filter = 'grayscale(100%)';
-            sentVersionButton.querySelector('a').style.filter = 'grayscale(100%)';
-        }
-        if (exportActive) {
-            exportVersionButton.style.opacity = '1';
-            exportVersionButton.style.cursor = 'pointer';
-            exportVersionButton.querySelector('img').style.filter = 'none';
-            exportVersionButton.querySelector('a').style.filter = 'none';
-        } else {
-            exportVersionButton.style.opacity = '0.5';
-            exportVersionButton.style.cursor = 'not-allowed';
-            exportVersionButton.querySelector('img').style.filter = 'grayscale(100%)';
-            exportVersionButton.querySelector('a').style.filter = 'grayscale(100%)';
-        }
-        if (ticketsActive) {
-            toTicketsBtn.style.opacity = '1';
-            toTicketsBtn.style.cursor = 'pointer';
-            toTicketsBtn.querySelector('img').style.filter = 'none';
-            toTicketsBtn.querySelector('a').style.filter = 'none';
-        } else {
-            toTicketsBtn.style.opacity = '0.5';
-            toTicketsBtn.style.cursor = 'not-allowed';
-            toTicketsBtn.querySelector('img').style.filter = 'grayscale(100%)';
-            toTicketsBtn.querySelector('a').style.filter = 'grayscale(100%)';
-        }
-    }
-
-    if(document.querySelector('.report_row.active-report')){
-        const activeAgreedRow = document.querySelector('.report_row.active-report');
-        updateHeaderButtonStyle(activeAgreedRow !== null);
-    }
 
     if(document.getElementById('del_reportButton')){
         const controlVersionButton = document.getElementById('control_versionButton');
@@ -1453,7 +1449,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (activeRow !== null) {
                 var id = activeRow.dataset.versionId;
                 if (id) {
-                    window.location.href = '/report-area/tickets/' + id;
+                    window.location.href = '/reports/tickets/' + id;
                 }
             } else {
                 event.preventDefault();
@@ -1469,6 +1465,15 @@ document.addEventListener('DOMContentLoaded', function() {
     var send_button = document.getElementById('send_button');
     var sentForm = document.getElementById('sentForm');
 
+
+    if (document.getElementById('agreedVersionButton') || 
+        document.getElementById('control_versionButton') || 
+        document.getElementById('sentVersionButton') || 
+        document.getElementById('export_versionButton') || 
+        document.getElementById('toTicketsBtn')) {
+        updateHeaderButtonStyle(false, false, false, false, false);
+    }
+    
     if(dropArea){
         dropArea.addEventListener("click", function () {
             fileInput.click();
@@ -1534,8 +1539,8 @@ document.addEventListener('DOMContentLoaded', function() {
    
 });
 
+/* change pozition modal */
 document.addEventListener('DOMContentLoaded', (event) => {
-    /* change pozition modal */
     const headers = document.querySelectorAll(".change-position");
     headers.forEach(header => {
         const modal = header.closest('.modal-content');
@@ -1567,7 +1572,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
             document.body.style.userSelect = 'auto';
         });
     });
-    /* end change pozition modal */
 });
 
 function handleModal(modalId, linkId) {

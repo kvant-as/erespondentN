@@ -17,9 +17,7 @@
                                     </a>
                                 </li>
                             </div>
-                            <a class="functions_menu_name">
-                                Отчет
-                            </a>
+                            <a class="functions_menu_name">Отчет</a>
                         </section>
                         <section>
                             <div class="functions_menu"> 
@@ -31,9 +29,7 @@
                                         <span>Контроль</span>
                                     </a>
                                 </li>
-                                <form id="agreed-version-form" method="POST" style="display: none;">
-                                    
-                                </form>
+                                <form id="agreed-version-form" method="POST" style="display: none;"></form>
                                 <li id = "agreedVersionButton">
                                     <img src="{{ url_for('static', filename='img/icon_galochka.png') }}" alt="">
                                     <a class = "li-title">
@@ -47,10 +43,7 @@
                                     </a>
                                 </li>
                             </div>
-                            
-                            <a class="functions_menu_name">
-                                Cтатус
-                            </a>
+                            <a class="functions_menu_name">Cтатус</a>
                         </section>
                         <section>
                             <div class="functions_menu">
@@ -69,9 +62,7 @@
                                     </a>
                                 </li>
                             </div>
-                            <a class="functions_menu_name">
-                                Прочее
-                            </a>
+                            <a class="functions_menu_name">Прочее</a>
                         </section>
                     </ul>
                 </nav>
@@ -148,7 +139,7 @@
                 <tr class="report_row" data-id="{{ row.id }}" data-version-id="{{ row.versions[0].id }}">
                     <td></td>
                     <td style="padding: 4px;">
-                        <button class="open-report-btn" onclick="window.location.href='/report-area/fuel/{{row.versions[0].id}}'">  
+                        <button class="open-report-btn" onclick="window.location.href='/reports/fuel/{{row.versions[0].id}}'">  
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -185,14 +176,11 @@
                     <td></td>
                 </tr>
                 {% endfor %}
- 
             </tbody>
         </table>
         {%else%}
         <div class="empty-state">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m3.75 9v6m3-3H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-            </svg>
+            {{ icons.icon_no_file() }}
             <h3>Нет доступных отчетов</h3>
             <p>У вас пока что нет отчетов. Чтобы начать работу, создайте новый отчет.</p>
         </div>
@@ -213,7 +201,6 @@
         <form method="POST" action="/create-new-report">
             <input type="hidden" name="modal_add_year" id="selected-year-add" value="{{previous_year}}">
             <input type="hidden" name="modal_add_quarter" id="selected-quarter-add" value="{{previous_quarter}}">
-
             <div class="period-selector-advanced" id="add-period-selector">
                 <div class="selector-card">
                     <div class="selector-grid">
@@ -244,13 +231,11 @@
                     </div>
                 </div>
             </div>
-            
             <div id="selector-info-add" class="period-info"></div>
-            
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="model_but_area right">
                 <button type="submit" class="blue_btn">
-                    <img src="/static/img/Add.svg" alt="" class="button-icon">
+                    {{ icons.icon_add() }}
                     <span>Создать отчет</span>
                 </button>
             </div>
@@ -302,13 +287,11 @@
                     </div>
                 </div>
             </div>
-            
             <div id="selector-info-change" class="period-info"></div>
-
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="model_but_area right">
                 <button type="submit" class="blue_btn">
-                    <img src="/static/img/Edit.svg" alt="" class="button-icon">
+                    {{ icons.icon_add() }}
                     <span>Применить изменения</span>
                 </button>
             </div>
@@ -328,13 +311,11 @@
                 <strong>Неполное копирование</strong> — копирует все виды продукции без заполненных данных.
             </p>
         </div>
-        
         <form method="POST" id="copy-report-form">
             <input type="hidden" name="modal_copy_report_year" id="selected-year-copy">
             <input type="hidden" name="modal_copy_report_quarter" id="selected-quarter-copy">
             <input type="hidden" name="modal_copy_report_id" id="modal_copy_report_id" readonly>
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
             <div class="period-selector-advanced" id="copy-period-selector">
                 <div class="selector-card">
                     <div class="selector-grid">
@@ -365,12 +346,10 @@
                     </div>
                 </div>
             </div>
-            
             <div id="selector-info-copy" class="period-info"></div>
-
             <div class="model_but_area">
                 <button type="submit" formaction="/copy-structure-report" class="blue_btn">
-                    <img src="/static/img/Copy.svg" alt="" class="button-icon">
+                    {{ icons.icon_coppy() }}
                     <span>Неполное копирование</span>
                 </button>
             </div>
@@ -380,22 +359,16 @@
 
 <div id="contextMenu_report" class="white-panel">
     <button id = "link_change_report">
-        <svg  viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
-        </svg>
+        {{ icons.icon_edit() }}
         <span>Редактировать период</span>
     </button>
     <button id = "link_coppy_report">
-        <svg  viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-        </svg>
+        {{ icons.icon_coppy() }}
         <span>Скопировать</span>
     </button>
     <form id="deleteReport" method="POST" action="/delete-report/">
         <button type="submit" id="del_reportButton">
-            <svg  viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
+            {{ icons.icon_delete() }}
             <span>Удалить</span>
         </button>
     </form>

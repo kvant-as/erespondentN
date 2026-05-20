@@ -115,7 +115,7 @@
                                 placeholder="Наименование предприятия"  name = "full_name_common" value="{{ current_user.organization.full_name if current_user.organization else '' }}" readonly>
                                 {%if count_reports == 0 and (current_user.type != 'Аудитор' and current_user.type != 'Смотрящий')%}
                                     <a class="show_organiz" > 
-                                        <img class="" src="{{ url_for('static', filename='img/Search.svg')}}" alt="">
+                                        {{ icons.icon_search() }}
                                     </a>
                                 {%else%} {%endif%}
                                 <input type="hidden" name="id_org" value="{% if current_user.organization %}{{ current_user.organization.id }}{% else %}{% endif %}">
@@ -184,7 +184,7 @@
                     </div>
                 </div>
                 <button class = "blue_btn" type="submit">
-                    <img src="/static/img/Add.svg" alt="" class="button-icon">
+                    {{ icons.icon_add() }}
                     <span>Применить изменения</span>
                 </button>
             </form>
@@ -200,8 +200,7 @@
         </div>
         <div class="answer-highlight-second">
             <div class="highlight-icon">💡</div>
-            <p>Для поиска вашей организации введите <strong>наименование</strong> или <strong>ОКПО</strong>. <br> Организация может <strong>отсутствовать</strong>, в этом случае заполните
-                <a href="/FAQ#faq15" class="instruction-link">ФОРМУ</a> для её добавления.</p>
+            <p>Если организация <strong>отсутствует</strong> в перечне, вы можете инициировать её добавление через <a href="/FAQ#faq15" class="instruction-link">форму-заявку</a>.</p>
         </div>
 
         <div class="search-cont">

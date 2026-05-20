@@ -30,7 +30,7 @@
                 {{ icons.icon_arrow_right() }}
             </button>
             {%if current_user.type == 'Администратор' or current_user.type == 'Респондент'%}
-                <button class="acc-btn-otherbtn blue_btn" onclick="window.location.href='/report-area'">
+                <button class="acc-btn-otherbtn blue_btn" onclick="window.location.href='/reports'">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                         <path d="M12 4.5v15M4.5 12h15" />
                     </svg>
@@ -160,7 +160,6 @@
         <form action="/load_org_stat" method="POST">
             <input type="hidden" name="modal_add_year" id="selected-year-add" value="{{previous_year}}">
             <input type="hidden" name="modal_add_quarter" id="selected-quarter-add" value="{{previous_quarter}}">
-
             <div class="period-selector-advanced" id="add-period-selector">
                 <div class="selector-card">
                     <div class="selector-grid">
@@ -199,7 +198,7 @@
 
             <div class="model_but_area" >
                 <button type="submit" class="blue_btn">
-                    <img src="/static/img/Calendar.svg" alt="" class="button-icon">
+                    {{ icons.icon_calendar() }}
                     <span>Выбранный период</span>
                 </button>
             </div>
