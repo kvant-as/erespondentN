@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}
+   Отчет {{ current_report.year }}/{{ current_report.quarter }} - ErespondentN
+{% endblock %}
+
+{% block content %}
+
+<div class = "report-info-page">
+    {{ content.report_menu(current_version, section_number) }}
+    {{ content.tickets_area(
+        current_report=current_report,
+        current_version=current_version,
+        tickets=None,
+        auditor_info=auditor_info,
+        csrf_token=csrf_token,
+        content=content,
+        current_user=current_user
+    ) }}
+</div>
+ 
+<script src="{{ url_for('static', filename='js/report.js') }}"></script>
+{% endblock %}

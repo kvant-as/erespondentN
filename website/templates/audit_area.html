@@ -14,7 +14,7 @@
                             <section>
                                 <div class = "functions_menu">     
                                     <li id = "link_period">           
-                                        <img src="{{ url_for('static', filename='img/time.svg')}}" alt="">
+                                        <img src="{{ url_for('static', filename='img/svg/time.svg')}}" alt="">
                                         <a class = "li-title"> 
                                         {% if year_filter == '' and quarter_filter == '' %} 
                                             <span>Всё время</span>
@@ -257,22 +257,24 @@
     <form id="deleteReport" method="POST" action="/rollbackreport/">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit" id="rollbackButton">
-            <svg  viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            {{ icons.icon_cancel() }}
             <span>Отменить действие</span>
         </button>
     </form>
+    <button type="submit" class="disabled">
+        {{ icons.icon_export() }}
+        <span>Скачать</span>
+    </button>
+    <button type="submit" class="disabled">
+        {{ icons.icon_delete() }}
+        <span>Удалить</span>
+    </button>
 </div>
 <div id="period_modal" class="modal">
     <div class="modal-content">
         <div class = "modal-header">
             <h3 class = "change-position">Проверка отчетов</h3>
             {{ icons.icon_close() }}
-        </div>
-        <div class="answer-highlight-second" style = "max-width: 510px;">
-            <div class="highlight-icon">💡</div>
-            <p>Выберите необходимый <strong>год</strong> и <strong>квартал</strong>. Для просмотра отчетов за все время - выберите <strong>"Все периоды"</strong>.</p>
         </div>
         <input type="hidden" name="year" id="selected-year-audit" value="{{year_filter}}">
         <input type="hidden" name="quarter" id="selected-quarter-audit" value="{{quarter_filter}}">

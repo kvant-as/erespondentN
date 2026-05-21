@@ -60,7 +60,7 @@
                                 </li>   
                             </div>  
                             <a class="functions_menu_name">
-                                Таблица
+                                Прочее
                             </a>
                         </section>
                     </ul>
@@ -426,150 +426,16 @@
             </table>        
         </div>
     </div>
-    <div class="ticket-area" id = "report-info-area">
-        <div class="ticket-header">
-            <div class="messages-container">
-                <div class="messages-header">
-                    <div class="messages-header__left">
-                        <h2 class="messages-header__title">
-                            {{ icons.icon_reports() }}
-                            <span>Данные отчета</span>
-                        </h2>
-                    </div>
-                </div>
-                {{ content.report_dop_info(current_report, current_version) }}
-            </div>
-        </div>
- 
-        <div class="ticket-header" id = "ticket-area"  style="border-top: 1px solid #e0e5f0;">
-            <div class="messages-container">
-                <div class="messages-header">
-                    <div class="messages-header__left">
-                        <h2 class="messages-header__title">
-                            {{ icons.icon_tickets() }}
-                            <span>Квитанции отчета</span>
-                        </h2>
-                        {% if current_report.versions[0].tickets %}
-                        <div class="messages-header__info">
-                            <span class="messages-header__badge">{{ current_report.versions[0].tickets|length }}-квитанций</span>
-                        </div>
-                        {% endif %}
-                    </div>
-                    <form method="POST" action="/print-version-tickets" class="print-form">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">  
-                        <input type="hidden" name="version_id" value="{{current_version.id}}">
-                        <button type="submit" class="print-btn">
-                            <svg class="print-btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
-                            </svg>
-                            <span>Печать всех квитанций</span>
-                        </button>
-                    </form>
-                </div>
-                <div class="messages-timeline">
-                    {% if tickets %}
-                        {% for row in tickets %}
-                            <div class="message-item message-item--user">
-                                <div class="message-bubble">
-                                    <div class="message-bubble__content">
-                                        {{ row.note }}
-                                    </div>
-                                    <div class="message-bubble__footer">
-                                        <span class="message-bubble__time">{{ row.begin_time.strftime('%d.%m.%Y %H:%M') }}</span>
-                                {% if row.luck == True %}
-                                    <span class="message-bubble__status message-bubble__status--success">
-                                        <svg class="message-bubble__status-icon message-bubble__status-icon--success" width="16" height="16" viewBox="0 0 16 16">
-                                            <circle cx="8" cy="8" r="7" fill="#10b981"/>
-                                            <path d="M5 8L7 10L11 6" stroke="white" stroke-width="2" fill="none"/>
-                                        </svg>
-                                    </span>
-                                {% else %}
-                                    <span class="message-bubble__status message-bubble__status--error">
-                                        <svg class="message-bubble__status-icon message-bubble__status-icon--error" width="16" height="16" viewBox="0 0 16 16">
-                                            <circle cx="8" cy="8" r="7" fill="#ef4444"/>
-                                            <path d="M5 5L11 11M11 5L5 11" stroke="white" stroke-width="2" fill="none"/>
-                                        </svg>
-                                    </span>
-                                {% endif %}
-                                    </div>
-                                </div>
-                            </div>
-                        {% endfor %}
-                    {% else %}
-                        <div class="message-item message-item--system">
-                            <div class="message-bubble message-bubble--system">
-                                <div class="message-bubble__content">
-                                    Квитанций пока что нет
-                                </div>
-                            </div>
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
-        
-            <div class="form-container">
-                <form method="POST" action="/send-comment" class="comment-form">
-                    <div class="comment-form__grid">
-                        <div class="comment-form__section comment-form__section--info">
-                            <div class="section-header">
-                                <h3 class="section-title">Кому</h3>
-                            </div>
-                            <div class="recipient-info">
-                                <div class="detail-item">   
-                                    {{ icons.icon_email() }}
-                                    <div class="detail-content">
-                                        <div class="detail-label">Email</div>
-                                        <div class="detail-value">{{current_version.email}}</div>
-                                    </div>
-                                </div>
-                                <div class="detail-item">    
-                                    {{ icons.icon_profile() }}
-                                    <div class="detail-content">
-                                        <div class="detail-label">ФИО</div>
-                                        <div class="detail-value">{{current_version.fio}}</div>
-                                    </div>
-                                </div>
-                                <div class="detail-item">
-                                    {{ icons.icon_phone() }}
-                                    <div class="detail-content">
-                                        <div class="detail-label">Номер телефона</div>
-                                        <div class="detail-value">{{current_version.telephone}}</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="comment-form__section comment-form__section--message">
-                            <div class="message-field">
-                                <div class="section-header">
-                                    <h3 class="section-title">Текст сообщения</h3>
-                                </div>
-                                <div class="answer-highlight-second">
-                                    <div class="highlight-icon">💡</div>
-                                    <p><strong>Если</strong> присутствует ошибка в отчете, <strong>укажите её</strong>, в противном случае просто смените статус на <strong>"Одобренный"</strong>.</p>
-                                </div>
-                                <textarea name="text" maxlength="399" required class="message-field__textarea" placeholder="Введите ваше сообщение..." oninput="updateCounter(this)"></textarea>
-                                <div class="message-field__counter" id="messageCounter">0/399</div>
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <input type="hidden" name="version_id" value="{{current_version.id}}">
-                                <div class="model_but_area right">
-                                    <button type="submit" 
-                                        class="blue_btn {% if current_version.status in ['Одобрен', 'Готов к удалению', 'Есть замечания'] or current_user.type == 'Смотрящий' %}disabled{% endif %}"
-                                        {% if current_version.status in ['Одобрен', 'Готов к удалению', 'Есть замечания'] or current_user.type == 'Смотрящий' %}
-                                            disabled
-                                        {% endif %}>
-                                        {{ icons.icon_email() }}
-                                        <span>Отправить сообщение</span>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
+    {{ content.tickets_area(
+        current_report=current_report,
+        current_version=current_version,
+        tickets=None,
+        auditor_info=auditor_info,
+        csrf_token=csrf_token,
+        content=content,
+        current_user=current_user
+    ) }}
   </div>
-
 <script>
     function smartBack() {
         const ref = document.referrer;

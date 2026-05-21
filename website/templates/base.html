@@ -263,6 +263,8 @@
     {% endif %}
 
     <main> 
+
+        {#
       {% with messages = get_flashed_messages(with_categories=true) %} 
         {% if messages %}
           {% for category, message in messages %}
@@ -276,7 +278,7 @@
             </div>
           {% endfor %}
         {% endif %}
-      {% endwith %}
+      {% endwith %}#}
 
     {% block content %} 
     {% endblock %}
@@ -285,6 +287,19 @@
       <script src="{{ url_for('static', filename='js/base.js') }}"></script>
       <script src="{{ url_for('static', filename='js/period.js') }}"></script>
       <script src="{{ url_for('static', filename='js/cookie.js') }}"></script>
+      <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            messageFlash.init();
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        messageFlash.addMessage({{ message|tojson }}, "{{ category }}");
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        });
+        </script>
     {% endblock %}
 
     </main>
@@ -586,6 +601,7 @@
                       <li onclick="window.location.href='/news'"><a>Новости</a></li>
                       <li onclick="window.location.href='/contacts'"><a>Контакты</a></li>
                       <li onclick="window.location.href='/FAQ'"><a>Помощь</a></li>
+                      <li onclick="window.location.href='/FAQ#faq4'"><a>О приложении</a></li>
                   </ul>
               </div>
               <div class="footer-col">

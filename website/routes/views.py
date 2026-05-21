@@ -1,6 +1,6 @@
 from decimal import Decimal
 from io import BytesIO
-from tkinter import Canvas
+import os
 from tkinter.tix import Meter
 from flask import Blueprint, current_app, make_response, render_template, redirect, url_for, flash, request, jsonify, session
 from flask_login import current_user, login_required
@@ -22,7 +22,6 @@ from datetime import datetime, timedelta
 from ..time import current_utc_time, get_previous_quarter, get_report_year
 
 from reportlab.lib.pagesizes import letter
-from reportlab.pdfgen import canvas
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfbase import pdfmetrics
 
@@ -300,11 +299,10 @@ def reply_to_message(message_id):
         
         db.session.add(reply_message)
         db.session.commit()
-        
-        # try:
-        #     send_email(reply_text, recipient.email, 'just_notif')
-        # except Exception as e:
-        #     views.logger.error(f"Ошибка отправки email: {str(e)}")
+        try:
+            send_email(reply_text, recipient.email, 'notification')
+        except Exception as e:
+            views.logger.error(f"Ошибка отправки email: {str(e)}")
         
         return jsonify({
             'success': True,
@@ -480,7 +478,7 @@ def report_section(report_type, id):
         report_type=report_type
     )
 
-@views.route('/reports/tickets/<int:id>', methods=['GET'])
+@views.route('/reports/report-info/<int:id>', methods=['GET'])
 @profile_complete
 @login_required
 @session_required
@@ -492,13 +490,14 @@ def report_info(id):
     
     auditor_info = get_auditor_info_by_user(current_user)
     
-    return render_template('report_tickets.html', 
+    return render_template('report_review.html', 
         current_user=current_user, 
         current_report=current_report,
         current_version=current_version,
         SentModal = True,
         reportAreaReportInfoModal = True,
         auditor_info=auditor_info,
+        section_number = 4
     )
 
 
@@ -935,7 +934,7 @@ def add_section_param():
         ).first()
         
         if existing and not data['note']:
-            flash('"Примечание" обязательно для заполнения, так как такая продукция уже есть.', 'error')
+            flash('«Примечание» обязательно для заполнения, так как такая продукция уже есть.', 'error')
             return redirect(request.referrer)
         
         new_section = create_section(data, current_product.id, current_product.CodeProduct)
@@ -1129,12 +1128,13 @@ def change_category_report():
             db.session.commit()
             
             user_message = Message(
-                text=f"Статус вашего отчета за {report.year} год {report.quarter} квартал был изменен на {status_itog}. Дополнительные сведения можно просмотреть в квитанции.",
-                sender_id=current_user.id,
+                text=f"Статус вашего отчета за {report.year} год {report.quarter} квартал был изменен на «{status_itog}». Дополнительные сведения можно просмотреть в квитанции.",
                 recipient_id=recipient_user.id
             )
             db.session.add(user_message)
             db.session.commit()
+            
+            send_email(user_message.text, recipient_user.email, 'notification')
 
             flash(f'Статус отчета "{organization_name}" за {report.year} год {report.quarter} квартал был изменен на «{status_itog}».', 'success')
             return redirect(request.referrer)
@@ -1168,7 +1168,7 @@ def rollbackreport(id):
                  
                     user_message = Message(
                         text = f"Статус отчета был изменен аудитором на «Отправлен».",
-                        sender_id = recipient_user.id,    
+                        # sender_id = recipient_user.id,    
                         recipient_id = recipient_user.id      
                     )
                     db.session.add(user_message)
@@ -1250,6 +1250,15 @@ def export_table():
 def export_version(id):
     return generate_excel_report(id)
 
+
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from io import BytesIO
+from flask import make_response
+import os
+
 @views.route('/print-version-tickets', methods=['POST'])
 @login_required 
 @session_required
@@ -1267,7 +1276,7 @@ def print_version_tickets():
         report = version_report.report
 
         buffer = BytesIO()
-        c = Canvas.Canvas(buffer, pagesize=Meter)
+        c = canvas.Canvas(buffer, pagesize=letter)
         
         left_margin = 72
         right_margin = 72
@@ -1335,7 +1344,7 @@ def print_version_tickets():
             y_position -= 20
             
             c.setFont("MontserratBold", 12)
-            c.drawString(left_margin, y_position, "Результат:")
+            c.drawString(left_margin, y_position, "Результат: ")
             c.setFont("MontserratRegular", 12)
             result = "Отчет одобрен, ошибок нет" if ticket.luck else "Отчет не принят в обработку"
             c.drawString(left_margin + 70, y_position, result)
@@ -1483,7 +1492,7 @@ def send_for_admin():
                 flash('Администраторы не найдены.', 'error')
                 
             new_message = Message(
-                text=f"Ваше сообщение '{problem_description}' было отправлено.",
+                text=f"Ваше сообщение «{problem_description}» было отправлено.",
                 recipient_id=current_user.id,
                 create_time = current_utc_time()
             )

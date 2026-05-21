@@ -4,7 +4,7 @@ from io import BytesIO
 
 from flask import redirect, flash, request, url_for
 from flask_login import current_user
-# from .email import send_email
+from .email import send_email
 
 from collections import defaultdict
 from lxml import etree
@@ -293,7 +293,7 @@ def control_func(id):
     if current_version.status == 'Заполнение':
         for key, section in sections.items():
             if section is None or not section.note:
-                flash('"Примечание" с кодом строки "9010" обязательно для заполнения.', 'error')
+                flash('«Примечание» с кодом строки 9010 обязательно для заполнения.', 'error')
                 return redirect(url_for('views.report_section', report_type=key, id=id_version))
 
         current_version.status = 'Контроль пройден'

@@ -154,7 +154,7 @@ def code():
             
             response = create_login_response(new_user)
             login_user(new_user, remember=remember)
-
+            send_email('', new_user.email, 'registration')
             flash('Аккаунт успешно активирован! Теперь перейдите к заполнению профиля!', 'success')
             return response
         else:
@@ -250,17 +250,8 @@ def profile_password():
         user.password = generate_password_hash(new_password)
         db.session.commit()
 
-        # send_email('Вы успешно изменили свой пароль для входа в учетную запись ErespondentN', current_user.email, 'just_notif')
+        send_email('Вы успешно изменили свой пароль для входа в учетную запись ErespondentN', current_user.email, 'notification')
 
-        # UserSession.query.filter_by(user_id=current_user.id).delete()
-        # db.session.commit()
-
-        # logout_user()
-        # session.clear()
-
-        # response = make_response(redirect(url_for('auth.login')))
-        # response.delete_cookie('session_token')
-        
         response = make_response(redirect(url_for('views.login')))
         response = clear_session_cookie(response)
         logout_user()

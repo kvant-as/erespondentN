@@ -16,8 +16,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
 function updateCounter(textarea) {
     const counter = document.getElementById('messageCounter');
+    const submitBtn = document.querySelector('.blue_btn');
     const currentLength = textarea.value.length;
-    const maxLength = textarea.getAttribute('maxlength');
+    const maxLength = parseInt(textarea.getAttribute('maxlength'));
+    
     counter.textContent = currentLength + '/' + maxLength;
     
     if (currentLength > maxLength * 0.9) {
@@ -26,6 +28,19 @@ function updateCounter(textarea) {
         counter.style.color = '#f59e0b';
     } else {
         counter.style.color = '#a0aec0';
+    }
+
+    if (submitBtn && !submitBtn.hasAttribute('data-permanently-disabled')) {
+        const hasText = currentLength > 0;
+        const isStatusDisabled = submitBtn.hasAttribute('data-status-disabled');
+        
+        if (!isStatusDisabled) {
+            if (hasText) {
+                submitBtn.removeAttribute('disabled');
+            } else {
+                submitBtn.setAttribute('disabled', 'disabled');
+            }
+        }
     }
 }
 
