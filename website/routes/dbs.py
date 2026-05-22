@@ -59,35 +59,35 @@ dbs = Blueprint('dbs', __name__)
 #     db.session.commit()
 #     return f"Successfully added {len(units_to_add)} units"
 
-# @dbs.route('/products', methods=['POST', 'GET'])
-# def products():
-#     if request.method == 'GET':
-#         all_prod = DirProduct.query.all()
+@dbs.route('/products', methods=['POST', 'GET'])
+def products():
+    if request.method == 'GET':
+        all_prod = DirProduct.query.all()
 
-#         prod_list = []
-#         for prod in all_prod:
-#             prod_list.append({
-#                 'id': prod.id,
-#                 'code': prod.CodeProduct,
-#                 'name': prod.NameProduct,
-#                 'is_fuel': prod.IsFuel,
-#                 'is_heat': prod.IsHeat,
-#                 'is_electro': prod.IsElectro,
-#                 'unit_id': prod.IdUnit,
-#                 'unit_name': prod.unit.NameUnit if prod.unit else None,
-#                 'date_start': prod.DateStart.isoformat() if prod.DateStart else None,
-#                 'date_end': prod.DateEnd.isoformat() if prod.DateEnd else None
-#             })
+        prod_list = []
+        for prod in all_prod:
+            prod_list.append({
+                'id': prod.id,
+                'code': prod.CodeProduct,
+                'name': prod.NameProduct,
+                'is_fuel': prod.IsFuel,
+                'is_heat': prod.IsHeat,
+                'is_electro': prod.IsElectro,
+                'unit_id': prod.IdUnit,
+                'unit_name': prod.unit.NameUnit if prod.unit else None,
+                'date_start': prod.DateStart.isoformat() if prod.DateStart else None,
+                'date_end': prod.DateEnd.isoformat() if prod.DateEnd else None
+            })
         
-#         response = make_response(json.dumps(prod_list, ensure_ascii=False, indent=2))
-#         response.headers['Content-Type'] = 'application/json; charset=utf-8'
-#         return response
+        response = make_response(json.dumps(prod_list, ensure_ascii=False, indent=2))
+        response.headers['Content-Type'] = 'application/json; charset=utf-8'
+        return response
     
-#     elif request.method == 'POST':
-#         return jsonify({
-#             'success': False,
-#             'message': 'POST method not implemented yet'
-#         }), 405
+    elif request.method == 'POST':
+        return jsonify({
+            'success': False,
+            'message': 'POST method not implemented yet'
+        }), 405
         
 # @dbs.route('/products/set-dates-if-empty', methods=['POST'])
 # def set_products_dates_if_empty():

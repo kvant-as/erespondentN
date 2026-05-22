@@ -305,12 +305,6 @@
             <h3 class="change-position">Копирование отчета</h3>
             {{ icons.icon_close() }}
         </div>
-        <div class="answer-highlight-second" style="max-width: 550px;">
-            <div class="highlight-icon">💡</div>
-            <p>
-                <strong>Неполное копирование</strong> — копирует все виды продукции без заполненных данных.
-            </p>
-        </div>
         <form method="POST" id="copy-report-form">
             <input type="hidden" name="modal_copy_report_year" id="selected-year-copy">
             <input type="hidden" name="modal_copy_report_quarter" id="selected-quarter-copy">
@@ -350,7 +344,7 @@
             <div class="model_but_area">
                 <button type="submit" formaction="/copy-structure-report" class="blue_btn">
                     {{ icons.icon_coppy() }}
-                    <span>Неполное копирование</span>
+                    <span>Скопировать отчет</span>
                 </button>
             </div>
         </form> 
@@ -362,7 +356,7 @@
         {{ icons.icon_edit() }}
         <span>Редактировать период</span>
     </button>
-    <button id = "link_coppy_report">
+    <button id = "link_coppy_report" disabled>
         {{ icons.icon_coppy() }}
         <span>Скопировать</span>
     </button>

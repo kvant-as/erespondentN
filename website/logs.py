@@ -1,96 +1,97 @@
-import os
 import sys
 import json
 import logging
 from datetime import datetime
-from logging.handlers import RotatingFileHandler
 import traceback
 
-class logs(logging.Formatter):
+class WerkzeugFilter(logging.Filter):
+    def filter(self, record):
+        return not (record.name == 'werkzeug' and 'GET /static/' in record.getMessage())
+
+
+class JSONFormatter(logging.Formatter):
     def format(self, record):
         log_data = {
             "timestamp": datetime.fromtimestamp(record.created).isoformat(),
             "level": record.levelname,
             "logger": record.name,
+            "module": record.module,
+            "function": record.funcName,
             "file": record.filename,
             "line": record.lineno,
             "message": record.getMessage(),
-            "module": record.module,
-            "function": record.funcName,
         }
         
-
         if record.exc_info:
             log_data["exception"] = {
                 "type": record.exc_info[0].__name__,
                 "message": str(record.exc_info[1]),
-                "traceback": traceback.format_exception(*record.exc_info)
+                "traceback": "".join(traceback.format_exception(*record.exc_info))
             }
-
-        if hasattr(record, 'extra'):
-            log_data.update(record.extra)
-            
+        
+        if hasattr(record, 'extra_data'):
+            log_data.update(record.extra_data)
+        
         return json.dumps(log_data, ensure_ascii=False)
 
+class ColoredFormatter(logging.Formatter):
+    COLORS = {
+        'DEBUG': '\033[36m',
+        'INFO': '\033[32m',
+        'WARNING': '\033[33m',
+        'ERROR': '\033[31m',
+        'CRITICAL': '\033[35m',
+        'RESET': '\033[0m'
+    }
+    
+    def format(self, record):
+        timestamp = datetime.fromtimestamp(record.created).strftime('%Y-%m-%d %H:%M:%S')
+        color = self.COLORS.get(record.levelname, self.COLORS['RESET'])
+        reset = self.COLORS['RESET']
+        
+        log_line = f"{timestamp} | {color}{record.levelname:<8}{reset} | {record.name} | {record.filename}:{record.lineno} | {record.getMessage()}"
+        
+        if record.exc_info:
+            log_line += f"\n{''.join(traceback.format_exception(*record.exc_info))}"
+        
+        return log_line
 
 def setup_logging(app):
-    # log_dir = "logs"
-    # use_file_logging = False
-    
-    # if use_file_logging and not os.path.exists(log_dir):
-    #     os.makedirs(log_dir)
-
-    # log_file = os.path.join(log_dir, "py-app.log") if use_file_logging else None
-    
-    log_level = app.config.get('LOG_LEVEL', 'DEBUG').upper()
-    
-    # json_formatter = logs() if use_file_logging else None
-    
-    console_formatter = logging.Formatter(
-        '%(asctime)s | %(levelname)-8s | %(name)s | %(filename)s:%(lineno)d | %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S'
-    )
+    log_level = app.config.get('LOG_LEVEL', 'INFO').upper()
+    log_static = app.config.get('LOG_STATIC_REQUESTS', False)
     
     root_logger = logging.getLogger()
     root_logger.setLevel(getattr(logging, log_level))
     root_logger.handlers.clear()
     
-    console_handler = logging.StreamHandler(sys.stdout)
+    use_json = app.config.get('LOG_JSON', False)
+    
+    if use_json:
+        console_handler = logging.StreamHandler(sys.stdout)
+        console_handler.setFormatter(JSONFormatter())
+    else:
+        console_handler = logging.StreamHandler(sys.stdout)
+        console_handler.setFormatter(ColoredFormatter())
+    
+    if not log_static:
+        console_handler.addFilter(WerkzeugFilter())
+    
     console_handler.setLevel(getattr(logging, log_level))
-    console_handler.setFormatter(console_formatter)
-    console_handler.set_name('console_handler')
     root_logger.addHandler(console_handler)
     
-
-    # file_handler = RotatingFileHandler(
-    #     log_file,
-    #     maxBytes=10*1024*1024,
-    #     backupCount=5,
-    #     encoding='utf-8'
-    # )
-    # file_handler.setLevel(getattr(logging, log_level))
-    # file_handler.setFormatter(json_formatter)
-    # file_handler.set_name('json_file_handler')
-    # root_logger.addHandler(file_handler)
-
+    logging.getLogger('werkzeug').setLevel(logging.WARNING)
+    
     app.logger.handlers.clear()
     app.logger.propagate = True
-
+    
     app.logger.info("=" * 60)
     app.logger.info(f"Launch time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     app.logger.info(f"Logging level: {log_level}")
-    app.logger.info(f"Debug mode: {app.config.get('DEBUG', False)}")
-
-    # app.logger.info(f"Logs are recorded in: {log_file}")
-    
+    app.logger.info(f"JSON format: {use_json}")
+    app.logger.info(f"Log static requests: {log_static}")
     app.logger.info("=" * 60)
-    
+
 def log_with_extra(logger, level, message, **extra_fields):
-    if hasattr(logger, level.lower()):
-        log_method = getattr(logger, level.lower())
-        extra = {}
-        extra.update(extra_fields)
-        
-        log_method(message, extra={'extra': extra})
-    else:
-        logger.info(message, extra={'extra': extra_fields})
+    log_method = getattr(logger, level.lower(), logger.info)
+    extra = {'extra_data': extra_fields}
+    log_method(message, extra=extra)

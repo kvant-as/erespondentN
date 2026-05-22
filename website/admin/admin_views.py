@@ -1,17 +1,16 @@
 from flask_admin import AdminIndexView, expose
 from flask_login import current_user
-from ..models import User, Organization, Report, Version_report, Ticket, DirUnit, DirProduct, Sections, current_utc_time
+from ..models import User, Organization, Report, Version_report, Ticket, DirUnit, DirProduct, Sections
 from sqlalchemy.exc import SQLAlchemyError
 from flask_admin.contrib.sqla import ModelView
 from flask import flash, redirect, url_for
 from functools import wraps
-from datetime import timedelta
 
 def admin_only(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if current_user.type != 'Администратор':
-            flash('Недостаточно прав для входа в админ-панель', 'error')
+            flash('Недостаточно прав для доступа', 'error')
             return redirect(url_for('views.beginPage'))   
         return f(*args, **kwargs)
     return decorated_function
@@ -34,11 +33,9 @@ class MyMainView(AdminIndexView):
             dirProduct_data = DirProduct.query.count()
             sections_data = Sections.query.count()
             ticket_data = Ticket.query.count()
-            now = current_utc_time()
-            threshold = now - timedelta(minutes=3)
 
         except SQLAlchemyError:
-            user_data = dirUnit_data = organization_data = report_data = version_report_data = dirProduct_data = sections_data = ticket_data = 0 # Если ошибка БД, данные по нулям
+            user_data = dirUnit_data = organization_data = report_data = version_report_data = dirProduct_data = sections_data = ticket_data = 0
 
         return self.render('admin/stats.html', 
                         user_data=user_data,
