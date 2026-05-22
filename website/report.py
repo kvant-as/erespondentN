@@ -1,16 +1,34 @@
+from datetime import datetime
 from decimal import Decimal, InvalidOperation
+from io import BytesIO
 
 from flask import redirect, flash, request, url_for
 from flask_login import current_user
-# from .email import send_email
+from .email import send_email
+
+from collections import defaultdict
+from lxml import etree
 
 from sqlalchemy import and_, or_
 from sqlalchemy.sql import func, or_
 import math
 
+from website.export import get_reports_by_status
 from website.time import current_utc_time
 from .models import Organization, Report, Sections, Version_report
 from . import db
+
+from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+from openpyxl.utils import get_column_letter
+
+ZERO_DECIMAL = Decimal('0.00')
+
+def parse_int(value):
+    try:
+        return int(value)
+    except (ValueError, TypeError):
+        return None
 
 def to_decimal(value):
     if not value and value != 0:
@@ -158,16 +176,6 @@ def redirect_back(version, section_number=None):
             return redirect(url_for('views.report_section', report_type=report_type, id=version.id))
     return redirect(request.referrer)
 
-
-
-
-
-
-
-
-
-
-
 def cancel_sending(id):
     current_version = Version_report.query.filter_by(id=id).first()
     if current_version.status == 'Отправлен':
@@ -178,160 +186,121 @@ def cancel_sending(id):
         flash('Отменить можно только непросмотренный отчет!', 'error')
     return redirect(request.referrer)
 
-SPECIAL_OKPO_LISTS = { # убрать откуда номер региона : ['ОКПО']        
-    6: ['030662355000'],
-    6: ['020133895000'],
-    5: ['305144986000'],
-}
-
-EXCLUDED_OKPO_LISTS = { # добавить куда номер региона : ['ОКПО']
-    5: ['030662355000'],
-    5: ['020133895000'],
-    6: ['305144986000']
-}
-
-def get_reports_by_status(status, year=None, quarter=None):
-    def translate_status(status):
-        status_map = {
-            'not_viewed': 'Отправлен',
-            'remarks': 'Есть замечания',
-            'to_download': 'Одобрен',
-            'to_delete': 'Готов к удалению'
-        }
-        return status_map.get(status)
-
-    filters = []
-    statuses = [
-        'Отправлен',
-        'Есть замечания',
-        'Одобрен',
-        'Готов к удалению'
-    ]
+def get_organizations_with_reports_excel_xlsx(year: int, quarter: int, statuses: list) -> bytes:
+    status_filter = 'all_reports' if not statuses else statuses[0] if len(statuses) == 1 else 'all_reports'
     
-    if year:
-        filters.append(Report.year == year)
-    if quarter:
-        filters.append(Report.quarter == quarter)
+    reports = get_reports_by_status(status_filter, year, quarter)
     
-    user_type = current_user.type
-    okpo_digit = str(current_user.organization.okpo)[0]
-    # current_app.logger.info(f"Первая цифра OKPO: {okpo_digit}")
+    if not reports:
+        return None
 
-    special_condition = False
-    if okpo_digit.isdigit() and int(okpo_digit) in SPECIAL_OKPO_LISTS:
-        special_condition = True
-    
-    excluded_condition = False
-    if okpo_digit.isdigit() and int(okpo_digit) in EXCLUDED_OKPO_LISTS:
-        excluded_condition = True
+    organizations_data = set()
+    for report in reports:
+        valid_versions = [v for v in report.versions if not statuses or v.status in statuses]
+        if valid_versions:
+            latest_version = max(valid_versions, key=lambda x: x.sent_time or datetime.min)
+            organizations_data.add((
+                report.organization.okpo,
+                report.organization.full_name,
+                latest_version.sent_time
+            ))
 
-    if user_type == "Администратор" or user_type == "Смотрящий":
-        if status == 'all_reports':
-            return Report.query.join(Version_report).filter(
-                or_(*[Version_report.status == s for s in statuses]),
-                *filters
-            ).order_by().all() 
-        else:
-            trans_status = translate_status(status)
-            if trans_status:
-                return Report.query.join(Version_report).filter(
-                    Version_report.status == trans_status,
-                    *filters
-                ).order_by().all()
-            else:
-                return []
+    if not organizations_data:
+        return None
+
+    records = sorted(organizations_data, key=lambda x: x[0] or "")
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Организации"
+
+    header_font = Font(bold=True, color="000000")
+    header_fill = PatternFill("solid", fgColor="C6EFCE")
+    title_font = Font(bold=True, size=12)
+    title_fill = PatternFill("solid", fgColor="D9E1F2")
+    align_center = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    thin_border = Border(
+        left=Side(style='thin'),
+        right=Side(style='thin'),
+        top=Side(style='thin'),
+        bottom=Side(style='thin')
+    )
+
+    start_row = 3
+    start_col = 2
+
+    title_text = f"Список предприятий, представивших отчеты по форме Сведения о нормах в электронном виде на {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}"
+    ws.merge_cells(start_row=start_row - 1, start_column=start_col, end_row=start_row - 1, end_column=start_col + 3)
+    title_cell = ws.cell(row=start_row - 1, column=start_col, value=title_text)
+    title_cell.font = title_font
+    title_cell.fill = title_fill
+    title_cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    ws.row_dimensions[start_row - 1].height = 45
+
+    for col in range(start_col, start_col + 4):
+        cell = ws.cell(row=start_row - 1, column=col)
+        cell.border = thin_border
+
+    headers = ['Код предприятия (ОКПО)', 'Наименование предприятия', 'Дата поступления', 'Примечание']
+    for i, header in enumerate(headers):
+        cell = ws.cell(row=start_row, column=start_col + i, value=header)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = align_center
+        cell.border = thin_border
+
+    for row_offset, (okpo, full_name, sent_time) in enumerate(records, start=1):
+        row_data = [okpo or '', full_name or '', sent_time or '', '']
+        for col_offset, value in enumerate(row_data):
+            cell = ws.cell(
+                row=start_row + row_offset,
+                column=start_col + col_offset,
+                value=value
+            )
+            cell.alignment = Alignment(horizontal='left', vertical='center')
+            cell.border = thin_border
+            if col_offset == 2 and sent_time:
+                cell.number_format = 'YYYY-MM-DD'
+
+    for i in range(len(headers)):
+        col_letter = get_column_letter(start_col + i)
+        max_length = len(headers[i])
+        for j in range(1, len(records) + 1):
+            val = ws.cell(row=start_row + j, column=start_col + i).value
+            if val:
+                max_length = max(max_length, len(str(val)))
+        ws.column_dimensions[col_letter].width = max_length + 2
+
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+    return output.read()
+
+
+def control_func(id):
+    current_version = Version_report.query.filter_by(id=id).first()
+    if not current_version:
+        flash('Версия отчета не найдена.', 'error')
+        return redirect(url_for('views.report_area'))
+
+    id_version = current_version.id
+    sections = {
+        'fuel': Sections.query.filter_by(id_version=id, section_number=1, code_product='9010').first(),
+        'heat': Sections.query.filter_by(id_version=id, section_number=2, code_product='9010').first(),
+        'electro': Sections.query.filter_by(id_version=id, section_number=3, code_product='9010').first(),
+    }
+
+    if current_version.status == 'Заполнение':
+        for key, section in sections.items():
+            if section is None or not section.note:
+                flash('«Примечание» с кодом строки 9010 обязательно для заполнения.', 'error')
+                return redirect(url_for('views.report_section', report_type=key, id=id_version))
+
+        current_version.status = 'Контроль пройден'
+        db.session.commit()
+        flash('Контроль пройден.', 'successful')
     else:
-        if status == 'all_reports':
-            query = Report.query.join(Version_report).join(Organization)
-            
-            if special_condition and excluded_condition:
-                return query.filter(
-                    or_(
-                        and_(
-                            or_(*[Version_report.status == s for s in statuses]),
-                            func.substr(Organization.okpo, func.length(Organization.okpo) - 3, 1) == okpo_digit
-                        ),
-                        and_(
-                            or_(*[Version_report.status == s for s in statuses]),
-                            Organization.okpo.in_(SPECIAL_OKPO_LISTS[int(okpo_digit)])
-                        )
-                    ),
-                    ~Organization.okpo.in_(EXCLUDED_OKPO_LISTS[int(okpo_digit)]),
-                    *filters
-                ).order_by().all()
-            elif special_condition:
-                return query.filter(
-                    or_(
-                        and_(
-                            or_(*[Version_report.status == s for s in statuses]),
-                            func.substr(Organization.okpo, func.length(Organization.okpo) - 3, 1) == okpo_digit
-                        ),
-                        and_(
-                            or_(*[Version_report.status == s for s in statuses]),
-                            Organization.okpo.in_(SPECIAL_OKPO_LISTS[int(okpo_digit)])
-                        )
-                    ),
-                    *filters
-                ).order_by().all()
-            elif excluded_condition:
-                return query.filter(
-                    or_(*[Version_report.status == s for s in statuses]),
-                    *filters,
-                    func.substr(Organization.okpo, func.length(Organization.okpo) - 3, 1) == okpo_digit,
-                    ~Organization.okpo.in_(EXCLUDED_OKPO_LISTS[int(okpo_digit)])
-                ).order_by().all()
-            else:
-                return query.filter(
-                    or_(*[Version_report.status == s for s in statuses]),
-                    *filters,
-                    func.substr(Organization.okpo, func.length(Organization.okpo) - 3, 1) == okpo_digit
-                ).order_by().all()
-        else:
-            trans_status = translate_status(status)
-            if trans_status:
-                query = Report.query.join(Version_report).join(Organization)
-                
-                if special_condition and excluded_condition:
-                    return query.filter(
-                        or_(
-                            and_(
-                                Version_report.status == trans_status,
-                                func.substr(Organization.okpo, func.length(Organization.okpo) - 3, 1) == okpo_digit
-                            ),
-                            and_(
-                                Version_report.status == trans_status,
-                                Organization.okpo.in_(SPECIAL_OKPO_LISTS[int(okpo_digit)])
-                            )
-                        ),
-                        ~Organization.okpo.in_(EXCLUDED_OKPO_LISTS[int(okpo_digit)]),
-                        *filters
-                    ).order_by().all()
-                elif special_condition:
-                    return query.filter(
-                        or_(
-                            and_(
-                                Version_report.status == trans_status,
-                                func.substr(Organization.okpo, func.length(Organization.okpo) - 3, 1) == okpo_digit
-                            ),
-                            and_(
-                                Version_report.status == trans_status,
-                                Organization.okpo.in_(SPECIAL_OKPO_LISTS[int(okpo_digit)])
-                            )
-                        ),
-                        *filters
-                    ).order_by().all()
-                elif excluded_condition:
-                    return query.filter(
-                        Version_report.status == trans_status,
-                        *filters,
-                        func.substr(Organization.okpo, func.length(Organization.okpo) - 3, 1) == okpo_digit,
-                        ~Organization.okpo.in_(EXCLUDED_OKPO_LISTS[int(okpo_digit)])
-                    ).order_by().all()
-                else:
-                    return query.filter(
-                        Version_report.status == trans_status,
-                        *filters,
-                        func.substr(Organization.okpo, func.length(Organization.okpo) - 3, 1) == okpo_digit
-                    ).order_by().all()
-            else:
-                return []
+        flash('Контроль уже был пройден.', 'error')
+
+    return redirect(request.referrer) 
+

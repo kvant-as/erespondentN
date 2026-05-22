@@ -359,9 +359,12 @@ function submitReply(messageId) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    startMessageAutoUpdate();
+    // startMessageAutoUpdate();
     
-    window.addEventListener('beforeunload', function() {
-        stopMessageAutoUpdate();
-    });
+    loadMessages();
+
+
+    // window.addEventListener('beforeunload', function() {
+    //     stopMessageAutoUpdate();
+    // });
 });

@@ -13,20 +13,20 @@
             <div class = "hellow_buttonarea"> 
                 {% if current_user.is_authenticated%}
                     {% if user.type == 'Респондент' or user.type == 'Администратор'%}
-                        <button onclick="window.location.href='/report-area'" class="blue_btn">
+                        <button onclick="window.location.href='/reports'" class="blue_btn">
                             {{ icons.icon_add() }}
                             <span>Подать отчет</span>
                         </button> 
                     {% elif user.type == 'Аудитор' or user.type == 'Смотрящий'  %}
                         <button onclick="window.location.href='/audit-area/not_viewed?year={{previous_year}}&quarter={{previous_quarter}}';" class = "blue_btn">
-                            <img src="/static/img/Search.svg" alt="" class="button-icon">
+                            {{ icons.icon_search() }}
                             <span>Просмотр отчетов</span>
                         </button> 
                     {% endif %}
 
                 {% else %}
                     <button onclick="window.location.href='/login'" class = "blue_btn">
-                        <img src="/static/img/Login-n.svg" alt="" class="button-icon">
+                        {{ icons.icon_login() }}
                         <span>Войти</span>
                     </button>
                     <button onclick="window.location.href='/sign'" class = "invisible-btn">Зарегистрироваться</button>

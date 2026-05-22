@@ -24,12 +24,8 @@ class AuditModule {
         await this.loadData();
         this.attachEventListeners();
         this.attachGlobalEventListeners();
-    }
-
-    async init() {
-        await this.loadData();
-        this.attachEventListeners();
-        this.attachGlobalEventListeners();
+        this.initCustomDropdown();
+        this.setDefaultRegionForAuthor();
     }
 
     attachGlobalEventListeners() {
@@ -466,17 +462,143 @@ class AuditModule {
     }
 
     setupDownloadLinks() {
-        const dbfLink = document.getElementById('douwnload_DBF_link');
-        if (dbfLink) {
-            dbfLink.addEventListener('click', () => {
-                document.getElementById('douwnload_DBF_form')?.submit();
-            });
+        const exportForm = document.getElementById('export_form');
+        const exportLoading = document.getElementById('export-loading');
+        const exportBtn = document.getElementById('export_submit_btn');
+        const loadingText = document.querySelector('#export-loading .loading-text');
+        const formatRadios = document.querySelectorAll('input[name="format"]');
+        const formatOptions = document.querySelectorAll('.format-option');
+        
+        const progressText = document.createElement('div');
+        progressText.className = 'progress-text';
+        progressText.style.marginTop = '10px';
+        progressText.style.fontSize = '12px';
+        progressText.style.color = '#707579';
+        
+        if (exportLoading && loadingText) {
+            exportLoading.appendChild(progressText);
         }
         
-        const xmlLink = document.getElementById('douwnload_XML_link');
-        if (xmlLink) {
-            xmlLink.addEventListener('click', () => {
-                document.getElementById('douwnload_XML_form')?.submit();
+        // Изначально кнопка неактивна
+        if (exportBtn) {
+            exportBtn.disabled = true;
+            exportBtn.style.opacity = '0.5';
+            exportBtn.style.cursor = 'not-allowed';
+        }
+        
+        // Обработчик выбора формата
+        formatRadios.forEach(radio => {
+            radio.addEventListener('change', () => {
+                if (radio.checked && exportBtn) {
+                    exportBtn.disabled = false;
+                    exportBtn.style.opacity = '1';
+                    exportBtn.style.cursor = 'pointer';
+                }
+            });
+        });
+        
+        if (exportForm) {
+            exportForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const selectedFormat = document.querySelector('input[name="format"]:checked')?.value;
+                
+                if (!selectedFormat) {
+                    alert('Пожалуйста, выберите формат экспорта');
+                    return;
+                }
+                
+                const exportRegion = document.getElementById('export_region')?.value || '';
+                const formData = new FormData(exportForm);
+                
+                if (exportRegion) {
+                    formData.append('export_region', exportRegion);
+                }
+                
+                if (exportLoading) {
+                    exportLoading.style.display = 'flex';
+                    if (loadingText) loadingText.textContent = 'Запуск экспорта...';
+                    if (progressText) progressText.textContent = '0%';
+                }
+                
+                if (exportBtn) {
+                    exportBtn.disabled = true;
+                    exportBtn.style.opacity = '0.5';
+                    exportBtn.style.cursor = 'not-allowed';
+                }
+                
+                try {
+                    const startResponse = await fetch('/api/export/start', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    const startData = await startResponse.json();
+                    
+                    if (!startData.success) {
+                        throw new Error(startData.error || 'Failed to start export');
+                    }
+                    
+                    const taskId = startData.task_id;
+                    
+                    let status = 'processing';
+                    let errorMessage = '';
+                    
+                    while (status === 'processing') {
+                        await new Promise(resolve => setTimeout(resolve, 2000));
+                        
+                        const statusResponse = await fetch(`/api/export/status/${taskId}`);
+                        const statusData = await statusResponse.json();
+                        
+                        if (statusData.success) {
+                            status = statusData.status;
+                            const progress = statusData.progress || 0;
+                            errorMessage = statusData.message || '';
+                            
+                            if (loadingText) loadingText.textContent = 'Формирование архива...';
+                            if (progressText) progressText.textContent = `${progress}%`;
+                            
+                            if (status === 'error') {
+                                throw new Error(errorMessage || 'Ошибка при создании архива');
+                            }
+                        } else {
+                            throw new Error(statusData.error || 'Status check failed');
+                        }
+                    }
+                    
+                    if (status === 'completed') {
+                        if (loadingText) loadingText.textContent = 'Архив готов! Скачивание...';
+                        window.location.href = `/api/export/download/${taskId}`;
+                        
+                        setTimeout(() => {
+                            if (exportLoading) exportLoading.style.display = 'none';
+                            if (exportBtn) {
+                                exportBtn.disabled = true;
+                                exportBtn.style.opacity = '0.5';
+                                exportBtn.style.cursor = 'not-allowed';
+                            }
+                            if (progressText) progressText.textContent = '';
+                            
+                            // Сбрасываем выбор формата
+                            formatRadios.forEach(radio => {
+                                radio.checked = false;
+                            });
+                        }, 3000);
+                    }
+                    
+                } catch (error) {
+                    console.error('Export error:', error);
+                    if (loadingText) loadingText.textContent = 'Ошибка при экспорте';
+                    if (progressText) progressText.textContent = error.message;
+                    setTimeout(() => {
+                        if (exportLoading) exportLoading.style.display = 'none';
+                        if (exportBtn) {
+                            exportBtn.disabled = true;
+                            exportBtn.style.opacity = '0.5';
+                            exportBtn.style.cursor = 'not-allowed';
+                        }
+                    }, 3000);
+                }
             });
         }
     }
@@ -486,7 +608,7 @@ class AuditModule {
         return urlParams.get(param) || '';
     }
 
-        async fetchAuditData(page = 1, append = false) {
+    async fetchAuditData(page = 1, append = false) {
         const params = new URLSearchParams({
             status: this.currentStatus,
             year: this.yearFilter,
@@ -497,8 +619,11 @@ class AuditModule {
         
         const searchName = document.getElementById('organization-filter')?.value;
         const searchOkpo = document.getElementById('okpo-filter')?.value;
+        const regionFilter = document.getElementById('region-filter')?.value;
+        
         if (searchName) params.append('search_name', searchName);
         if (searchOkpo) params.append('search_okpo', searchOkpo);
+        if (regionFilter) params.append('region', regionFilter);
         
         const response = await fetch(`/api/audit-data?${params}`);
         const data = await response.json();
@@ -750,9 +875,69 @@ class AuditModule {
         return `<span class="status-badge status-default"><span>${status}</span></span>`;
     }
 
+    initCustomDropdown() {
+        const dropdown = document.getElementById('region-dropdown');
+        const trigger = document.getElementById('region-trigger');
+        const menu = document.getElementById('region-menu');
+        const dropdownText = trigger.querySelector('.dropdown-text');
+        
+        if (!dropdown || !trigger || !menu) return;
+        
+        trigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dropdown.classList.toggle('open');
+        });
+        
+        menu.querySelectorAll('.dropdown-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const value = item.dataset.value;
+                const text = item.textContent;
+                
+
+                dropdownText.textContent = text;
+                menu.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('selected'));
+                item.classList.add('selected');
+                
+                dropdown.classList.remove('open');
+                this.filterReports();
+            });
+        });
+        
+        document.addEventListener('click', () => {
+            dropdown.classList.remove('open');
+        });
+    }
+
+    setDefaultRegionForAuthor() {
+        const regionMenu = document.getElementById('region-menu');
+        if (!regionMenu) return;
+        
+        const userType = regionMenu.dataset.userType;
+        
+        if (userType !== 'Аудитор') return;
+        
+        const userOkpoDigit = regionMenu.dataset.userOkpoDigit;
+        
+        if (userOkpoDigit && userOkpoDigit >= '1' && userOkpoDigit <= '7') {
+            const targetItem = document.querySelector(`.dropdown-item[data-value="${userOkpoDigit}"]`);
+            const dropdownText = document.querySelector('#region-dropdown .dropdown-text');
+            
+            if (targetItem && dropdownText) {
+                document.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('selected'));
+                targetItem.classList.add('selected');
+                dropdownText.textContent = targetItem.textContent;
+                this.filterReports();
+            }
+        }
+    }
+
     async filterReports() {
         const searchName = document.getElementById('organization-filter')?.value || '';
         const searchOkpo = document.getElementById('okpo-filter')?.value || '';
+
+        const selectedItem = document.querySelector('#region-menu .dropdown-item.selected');
+        const regionFilter = selectedItem?.dataset.value || '';
         
         const loadingSpinner = document.getElementById('loading-spinner');
         const reportsContent = document.getElementById('reports-content');
@@ -762,7 +947,6 @@ class AuditModule {
         if (reportsContent) reportsContent.style.display = 'none';
         if (emptyState) emptyState.style.display = 'none';
 
-        // Сброс пагинации при фильтрации
         this.currentPage = 1;
         this.hasMore = true;
         this.allReports = [];
@@ -774,6 +958,7 @@ class AuditModule {
                 quarter: this.quarterFilter,
                 search_name: searchName,
                 search_okpo: searchOkpo,
+                region: regionFilter,
                 page: 1,
                 per_page: this.pageSize
             });
@@ -822,6 +1007,7 @@ class AuditModule {
     attachEventListeners() {
         const organizationFilter = document.getElementById('organization-filter');
         const okpoFilter = document.getElementById('okpo-filter');
+        const regionFilter = document.getElementById('region-filter');
         
         let searchTimeout;
         const handleSearch = () => {
@@ -838,6 +1024,10 @@ class AuditModule {
         if (okpoFilter) {
             okpoFilter.removeEventListener('input', handleSearch);
             okpoFilter.addEventListener('input', handleSearch);
+        }
+        if (regionFilter) {
+            regionFilter.removeEventListener('change', handleSearch);
+            regionFilter.addEventListener('change', handleSearch);
         }
     }
 

@@ -351,30 +351,61 @@
                     </div>
                     <div class="infos">
                         <p>Веб-приложение автоматизирует процессы формирования респондентами отчетов по форме ведомственной отчетности квартальной периодичности — <strong>«Сведения о нормах расхода и (или) предельных уровнях потребления топливно-энергетических ресурсов»</strong>.</p>
-                        <div class="answer-highlight-second">
-                            <div class="highlight-icon">📊</div>
-                            <div>
-                                <p><strong>Основные функции системы «ErespondentN»:</strong></p>
-                                <ol>
-                                    <li><strong>Регистрация</strong> и <strong>авторизация</strong> пользователей.</li>
-                                    <li><strong>Создание</strong>, <strong>редактирование</strong> и <strong>удаление</strong> отчетов.</li>
-                                    <li>Формирование <strong>протокола контроля</strong> на основе данных, содержащихся в форме <strong>4-ТЭК</strong>.</li>
-                                    <li><strong>Отправка</strong> отчетов с последующей проверкой в <strong>принимающем центре</strong>.</li>
-                                    <li>Получение информации о <strong>результатах проверки</strong>.</li>
-                                </ol>
+                        <div class="grid-FAQ">
+                            <div class="card-FAQ">
+                                <div class="icon-FAQ">
+                                    {{ icons.icon_profile() }}
+                                </div>
+                                <div class="title-FAQ">Регистрация и авторизация</div>
+                                <div class="desc-FAQ">Безопасный доступ к системе для всех пользователей</div>
+                            </div>
+
+                            <div class="card-FAQ">
+                                <div class="icon-FAQ">
+                                    {{ icons.icon_reports() }}
+                                </div>
+                                <div class="title-FAQ">Управление отчетами</div>
+                                <div class="desc-FAQ">Создание, редактирование и удаление отчетов</div>
+                            </div>
+
+                            <div class="card-FAQ">
+                                <div class="icon-FAQ">
+                                    {{ icons.icon_audit() }}
+                                </div>
+                                <div class="title-FAQ">Протокол контроля</div>
+                                <div class="desc-FAQ">Формирование на основе данных формы 4-ТЭК</div>
+                            </div>
+
+                            <div class="card-FAQ">
+                                <div class="icon-FAQ">
+                                    {{ icons.icon_send() }}
+                                </div>
+                                <div class="title-FAQ">Отправка отчетов</div>
+                                <div class="desc-FAQ">Проверка в принимающем центре</div>
+                            </div>
+
+                            <div class="card-FAQ">
+                                <div class="icon-FAQ">
+                                    {{ icons.icon_time() }}
+                                </div>
+                                <div class="title-FAQ">Результаты проверки</div>
+                                <div class="desc-FAQ">Получение информации о результатах проверки</div>
                             </div>
                         </div>
+
+
                         <p>Приложение работает в онлайн-режиме, предусматривая создание личного кабинета для последующего взаимодействия с веб-порталом.</p>
 
                         <p>Программное обеспечение <strong>«ErespondentN»</strong> предназначено для заполнения формы отчетности первичными данными и передачи отчетов в установленной форме.</p>
                         <p><strong>Разработчик:</strong> Научно-производственное республиканское унитарное предприятие<a class = "instruction-link" href="https://kvant-as.by/" style = "font-weight: 600;"> «Квант-АС»</a>.</p>
+                        {#
                         <p><strong>Исполнители / Администраторы (тел. 8 017 365-04-33):</strong> </p>
                         <div class = "opred-text fit">
                             <strong>Санников Вячеслав Степанович</strong> — начальник отдела разработки информационных систем
                         </div>
                         <div class = "opred-text fit">
                             <strong title="https://github.com/shlneo">Сидоров Максим Андреевич</strong> — разработчик-программист
-                        </div>
+                        </div>#}
                     </div>
                 </div>
             </div>  
@@ -1073,13 +1104,13 @@
             <div class="info_page info_faq" data-question-id="14" style="display: none;">
                 <div class="faq_question_info">
                     <div class="info_page_name">
-                        <h1>Как скачать все одобренные отчеты одним архивом?</h1>
+                        <h1>Как скачать все одобренные отчеты?</h1>
                     </div>
                     <div class="infos">
                         <div class="answer-highlight-second">
                             <div class="highlight-icon">📊</div>
                             <div>
-                                <p>Когда отчет успешно проходит проверку, он получает статус <strong>«Одобренный»</strong>. Такие отчеты можно скачать себе на компьютер одним архивом.</p>
+                                <p>Когда отчет успешно проходит проверку, он получает статус <strong>«Одобренный»</strong>.</p>
                             </div>
                         </div>
                         <p><strong>Как это сделать:</strong></p>
@@ -1109,12 +1140,16 @@
                                 </div>
                             </li>
                             <li>
-                                <strong>В появившемся окне нажмите на кнопку с типом отчетов, которые хотите скачать</strong> — например, вы хотите скачать отчеты в формате .dbf, вам следует нажата на <strong>«Формат .dbf»</strong>.
+                                <strong>В появившемся окне нажмите на кнопку с типом отчетов, которые хотите скачать</strong> — например, вы хотите скачать отчеты в формате .dbf, вам следует нажать на «Формат .dbf» и после кликнуть на «Экспортировать».
                             </li>
                         </ol>
                         <div class="p_img">
                             <img src="{{ url_for('static', filename='img/post/export_odobr.png') }}" alt="Окно выбора отчетов для скачивания">
                             <span>Рисунок 4 - Здесь выбираете необходимый формат отчетов для скачивания</span>
+                        </div>
+                        <div class="p_img">
+                            <img src="{{ url_for('static', filename='img/post/export_odobr_loader.png') }}">
+                            <span>Рисунок 5 - Формирование архива</span>
                         </div>
                         
                         <div class="answer-highlight-second">
@@ -1135,23 +1170,37 @@
                         <p><strong>Что делать со скачанным архивом:</strong></p>
                         
                         <ol class="steps-list" start="6">
-                            <li><strong>Распакуйте архив</strong> — нажмите правой кнопкой мыши → «Извлечь все ..» и укажите путь для распаковки архива (желательно создать пустую папку и сохранить все в неё)</li>
-                            <li><strong>Откройте программу, в которую нужно загрузить отчеты</strong></li>
-                            <li><strong>Нажмите в программе кнопку «Загрузить отчеты» или «Импорт»</strong> и укажите путь к распакованной папке</li>
-                            <li><strong>Дождитесь, пока программа обработает все файлы</strong> — отчеты появятся в системе</li>
-                            <li><strong>Проверьте, что все загрузилось правильно</strong></li>
-                            <li><strong>Удалите архив и распакованную папку</strong> — они выполнили свою задачу и больше не нужны</li>
-                        </ol>
-                        
-                    
-                        <div class="answer-highlight-second" style = "margin-top: 40px;">
-                            <div class="highlight-icon">💡</div>
-                            <div>
-                                <p><strong>Важно:</strong> Не удаляйте файлы, пока не убедитесь, что отчеты успешно загрузились в другую программу!</p>
+                            <li><strong>Распакуйте архив</strong> — нажмите правой кнопкой мыши → «Извлечь все ..» и укажите путь для распаковки архива.</li>
+                            <li><strong>Откройте программу, в которую нужно загрузить отчеты</strong> — в данном случае «ПТО», приложение которое принимает для загрузки только отчеты формата .dbf</li>
+                            <div class="p_img">
+                                <img src="{{ url_for('static', filename='img/post/pto-app.png') }}">
+                                <span>Рисунок 6 - ПТО</span>
                             </div>
-                        </div>
-                        
-
+                            <li><strong>Перейдите в «Нормирование», а затем «Ввод электронных отчетов по нормам».</strong></li>
+                            <div class="p_img">
+                                <img src="{{ url_for('static', filename='img/post/normir-menu.png') }}">
+                                <span>Рисунок 7 - «Ввод электронных отчетов по нормам»</span>
+                            </div>
+                            <li><strong>Нажмите в программе кнопку «Загрузить все отчеты»</strong> и укажите путь к распакованной папке.</li>
+                            <div class="p_img">
+                                <img src="{{ url_for('static', filename='img/post/import-succes-reports.png') }}">
+                                <span>Рисунок 8 - «Загрузить все отчеты»</span>
+                            </div>
+                            <div class="p_img">
+                                <img src="{{ url_for('static', filename='img/post/choose-rout.png') }}">
+                                <span>Рисунок 9 - Выбор папки с отчетами</span>
+                            </div>
+                            <li><strong>Дождитесь, пока программа обработает все файлы</strong> — отчеты появятся в системе.</li>
+                            <div class="p_img">
+                                <img src="{{ url_for('static', filename='img/post/import-loader.png') }}">
+                                <span>Рисунок 10 - Загрузка отчетов</span>
+                            </div>
+                            <div class="p_img">
+                                <img src="{{ url_for('static', filename='img/post/import-loader-succes.png') }}">
+                                <span>Рисунок 11 - Конец загрузки</span>
+                            </div>
+                            <li><strong>Проверьте, что все загрузилось правильно.</strong></li>
+                        </ol>
                     </div>
                 </div> 
             </div>
@@ -1262,7 +1311,7 @@
                     </div>
                     <div class="infos">
                         <div class="p_img">
-                            <img src="{{ url_for('static', filename='img/post/4.png') }}" alt="">
+                            <img src="{{ url_for('static', filename='img/post/message-code.png') }}" alt="">
                             <span>Рисунок 4 - Код подтверждения</span>
                         </div>
                         <p><strong>Возможные действия</strong> для решения проблемы:</p>
@@ -1272,12 +1321,6 @@
                             <li>Попробуйте через отложенное время кликнуть на <strong>Отправить ещё раз</strong> - вам должен будет прийти <strong>новый</strong> код активации.</li>
                             <li>Ваша почта может с задрежкой принимать сообщения от отправителей, из-за чего вы можете не успевать вводить код активации. В этом случае попробуйте зарегистрироваться ещё раз но, указать другой электронный адрес к примеру почту gmail.</li>
                         </ol>
-                    </div>
-                    <div class="answer-highlight-second" style = "margin-top: 60px;">
-                        <div class="highlight-icon">💡</div>
-                        <div>
-                            <p>Все уведомления, отправляемые порталом <a class = "instruction-link">erespondentn.energoeffect.gov.by</a>, генерируются с адреса электронной почты <strong>admin@kvant-as.by</strong></p>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -1304,7 +1347,6 @@
                                         <div class="status-cards">
                                             <div class="status-card draft">
                                                 <div class="status-header">
-                                                    <div class="status-icon">✏️</div>
                                                     <div class="status-title">В редакции</div>
                                                     <div class="status-badge">Начальный</div>
                                                 </div>
@@ -1336,7 +1378,6 @@
                                             </div>
                                             <div class="status-card control">
                                                 <div class="status-header">
-                                                    <div class="status-icon">🔍</div>
                                                     <div class="status-title">Контроль</div>
                                                     <div class="status-badge">Автопроверка</div>
                                                 </div>
@@ -1374,7 +1415,6 @@
                                             </div>
                                             <div class="status-card approval">
                                                 <div class="status-header">
-                                                    <div class="status-icon">🤝</div>
                                                     <div class="status-title">Согласование</div>
                                                     <div class="status-badge">Внутреннее</div>
                                                 </div>
@@ -1440,7 +1480,6 @@
                                                 </div>
                                             </div>
                                             <div class="audit-decision-center">
-                                                <div class="center-icon">👨‍⚖️</div>
                                                 <div class="center-title">Решение аудитора</div>
                                                 <div class="center-subtitle">Выбор одного из трёх вариантов</div>
                                             </div>

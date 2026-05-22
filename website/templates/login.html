@@ -45,7 +45,7 @@
                 </div>
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class = "submit_button blue_btn">
-                    <img src="/static/img/Login-n.svg" alt="" class="button-icon">
+                    {{ icons.icon_login() }}
                     <span>Войти</span>
                 </button>
             </form>

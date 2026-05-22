@@ -1,19 +1,121 @@
-function updateOnlineCount() {
-    fetch('/api/online-count')
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                const countElement = document.getElementById('onlineCount');
-                if (countElement) {
-                    countElement.textContent = data.count;
-                }
-            }
-        })
-        .catch(error => console.error('Error updating online count:', error));
-}
+// function updateOnlineCount() {
+//     fetch('/api/online-count')
+//         .then(response => response.json())
+//         .then(data => {
+//             if (data.success) {
+//                 const countElement = document.getElementById('onlineCount');
+//                 if (countElement) {
+//                     countElement.textContent = data.count;
+//                 }
+//             }
+//         })
+//         .catch(error => console.error('Error updating online count:', error));
+// }
 
-setInterval(updateOnlineCount, 30000);
-document.addEventListener('DOMContentLoaded', updateOnlineCount);
+// setInterval(updateOnlineCount, 30000);
+// document.addEventListener('DOMContentLoaded', updateOnlineCount);
+
+const messageFlash = (function() {
+    const containerId = 'flash-container';
+    let container;
+    let messages = []; 
+    const DISPLAY_TIME = 30000; 
+
+    function init() {
+        container = document.getElementById(containerId);
+        if (!container) {
+            container = document.createElement('div');
+            container.id = containerId;
+            document.body.appendChild(container);
+        }
+
+        const storedMessages = JSON.parse(localStorage.getItem('flashMessages') || '[]');
+        const now = Date.now();
+        messages = storedMessages.filter(msg => now - msg.createdAt < DISPLAY_TIME);
+
+        localStorage.setItem('flashMessages', JSON.stringify(messages));
+        renderMessages();
+    }
+
+    function _showMessage(msgObj) {
+        const alertBox = document.createElement('div');
+        alertBox.className = `custom-alert ${msgObj.type === 'error' ? 'alert-danger' : 'alert-success'} collapsed`;
+
+        const imgSrc = msgObj.type === 'error'
+            ? '/static/img/svg/Error.svg'
+            : '/static/img/svg/Checkmark.svg';
+
+        alertBox.innerHTML = `
+            <img src="${imgSrc}" class="alert-icon" alt="">
+            <div class="p_message_cont">
+                <p>${msgObj.msg}</p>
+            </div>
+            <button class="alert-close">&times;</button>
+        `;
+
+        alertBox.querySelector('.alert-close').addEventListener('click', e => {
+            e.stopPropagation();
+            removeMessage(alertBox, msgObj);
+        });
+
+        alertBox.addEventListener('click', () => {
+            container.querySelectorAll('.custom-alert').forEach((el, index) => {
+                if (index === container.children.length - 1) {
+                    el.classList.toggle('expanded');
+                    el.classList.toggle('collapsed');
+                } else {
+                    el.classList.remove('expanded');
+                    el.classList.add('collapsed');
+                }
+            });
+        });
+
+        container.appendChild(alertBox);
+
+        const now = Date.now();
+        const elapsed = now - msgObj.createdAt;
+        const remaining = Math.max(DISPLAY_TIME - elapsed, 0);
+
+        if (remaining > 0) {
+            setTimeout(() => {
+                if (container.contains(alertBox)) {
+                    removeMessage(alertBox, msgObj);
+                }
+            }, remaining);
+        } else {
+            removeMessage(alertBox, msgObj);
+        }
+    }
+
+    function removeMessage(alertBox, msgObj) {
+        alertBox.classList.add('removing');
+        setTimeout(() => {
+            if (container.contains(alertBox)) container.removeChild(alertBox);
+            messages = messages.filter(m => m.msg !== msgObj.msg);
+            localStorage.setItem('flashMessages', JSON.stringify(messages));
+            renderMessages();
+        }, 300);
+    }
+
+    function addMessage(msg, type='success') {
+        const msgObj = { msg, type, createdAt: Date.now() };
+        messages.push(msgObj);
+        localStorage.setItem('flashMessages', JSON.stringify(messages));
+        renderMessages();
+    }
+
+    function renderMessages() {
+        container.innerHTML = '';
+        messages.forEach(_showMessage);
+        container.querySelectorAll('.custom-alert').forEach((el, index) => {
+            if (index !== container.children.length - 1) {
+                el.classList.add('collapsed');
+            }
+        });
+    }
+
+    return { init, addMessage };
+})();
 
 function addCsrfTokenToForm(form) {
     var csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
@@ -33,6 +135,70 @@ function scrollToAdmin() {
     const formElement = document.getElementById('toadmin');
     if (formElement) {
         formElement.scrollIntoView({ behavior: 'smooth' });
+    }
+}
+
+function updateHeaderButtonStyle(agreedActive, controlActive, sentActive, exportActive, ticketsActive) {
+    const agreedVersionButton = document.getElementById('agreedVersionButton');
+    const controlVersionButton = document.getElementById('control_versionButton');
+    const sentVersionButton = document.getElementById('sentVersionButton');
+    const exportVersionButton = document.getElementById('export_versionButton');
+    const toTicketsBtn = document.getElementById('toTicketsBtn');
+    
+    if (agreedActive) {
+        agreedVersionButton.style.opacity = '1';
+        agreedVersionButton.style.cursor = 'pointer';
+        agreedVersionButton.querySelector('img').style.filter = 'none';
+        agreedVersionButton.querySelector('a').style.filter = 'none';
+    } else {
+        agreedVersionButton.style.opacity = '0.5';
+        agreedVersionButton.style.cursor = 'not-allowed';
+        agreedVersionButton.querySelector('img').style.filter = 'grayscale(100%)';
+        agreedVersionButton.querySelector('a').style.filter = 'grayscale(100%)';
+    }
+    if (controlActive) {
+        controlVersionButton.style.opacity = '1';
+        controlVersionButton.style.cursor = 'pointer';
+        controlVersionButton.querySelector('img').style.filter = 'none';
+        controlVersionButton.querySelector('a').style.filter = 'none';
+    } else {
+        controlVersionButton.style.opacity = '0.5';
+        controlVersionButton.style.cursor = 'not-allowed';
+        controlVersionButton.querySelector('img').style.filter = 'grayscale(100%)';
+        controlVersionButton.querySelector('a').style.filter = 'grayscale(100%)';
+    }
+    if (sentActive) {
+        sentVersionButton.style.opacity = '1';
+        sentVersionButton.style.cursor = 'pointer';
+        sentVersionButton.querySelector('img').style.filter = 'none';
+        sentVersionButton.querySelector('a').style.filter = 'none';
+    } else {
+        sentVersionButton.style.opacity = '0.5';
+        sentVersionButton.style.cursor = 'not-allowed';
+        sentVersionButton.querySelector('img').style.filter = 'grayscale(100%)';
+        sentVersionButton.querySelector('a').style.filter = 'grayscale(100%)';
+    }
+    if (exportActive) {
+        exportVersionButton.style.opacity = '1';
+        exportVersionButton.style.cursor = 'pointer';
+        exportVersionButton.querySelector('img').style.filter = 'none';
+        exportVersionButton.querySelector('a').style.filter = 'none';
+    } else {
+        exportVersionButton.style.opacity = '0.5';
+        exportVersionButton.style.cursor = 'not-allowed';
+        exportVersionButton.querySelector('img').style.filter = 'grayscale(100%)';
+        exportVersionButton.querySelector('a').style.filter = 'grayscale(100%)';
+    }
+    if (ticketsActive) {
+        toTicketsBtn.style.opacity = '1';
+        toTicketsBtn.style.cursor = 'pointer';
+        toTicketsBtn.querySelector('img').style.filter = 'none';
+        toTicketsBtn.querySelector('a').style.filter = 'none';
+    } else {
+        toTicketsBtn.style.opacity = '0.5';
+        toTicketsBtn.style.cursor = 'not-allowed';
+        toTicketsBtn.querySelector('img').style.filter = 'grayscale(100%)';
+        toTicketsBtn.querySelector('a').style.filter = 'grayscale(100%)';
     }
 }
 
@@ -172,23 +338,23 @@ function filterSentedReports() {
 }
 
 /* message-animation */
-(function() {
-    var alertBox = document.querySelector('.custom-alert');
-    if (alertBox) {
-        var progressBar = alertBox.querySelector('.notif-progress');
-        if (progressBar) {
-            progressBar.style.animation = 'runProgress-mes 7.7s linear forwards';
-        }
-        setTimeout(function() {
-            alertBox.classList.add('show');
-        }, 100); 
+// (function() {
+//     var alertBox = document.querySelector('.custom-alert');
+//     if (alertBox) {
+//         var progressBar = alertBox.querySelector('.notif-progress');
+//         if (progressBar) {
+//             progressBar.style.animation = 'runProgress-mes 7.7s linear forwards';
+//         }
+//         setTimeout(function() {
+//             alertBox.classList.add('show');
+//         }, 100); 
 
-        setTimeout(function() {
-            alertBox.classList.remove('show');
-            alertBox.classList.add('hidden');
-        }, 7700); 
-    }
-})();
+//         setTimeout(function() {
+//             alertBox.classList.remove('show');
+//             alertBox.classList.add('hidden');
+//         }, 7700); 
+//     }
+// })();
 /* end message-animation */
 
 /* only numbers */
@@ -1323,74 +1489,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
    }
 
-    function updateHeaderButtonStyle(agreedActive, controlActive, sentActive, exportActive, ticketsActive) {
-        const agreedVersionButton = document.getElementById('agreedVersionButton');
-        const controlVersionButton = document.getElementById('control_versionButton');
-        const sentVersionButton = document.getElementById('sentVersionButton');
-        const exportVersionButton = document.getElementById('export_versionButton');
-        const toTicketsBtn = document.getElementById('toTicketsBtn');
-        
-        if (agreedActive) {
-            agreedVersionButton.style.opacity = '1';
-            agreedVersionButton.style.cursor = 'pointer';
-            agreedVersionButton.querySelector('img').style.filter = 'none';
-            agreedVersionButton.querySelector('a').style.filter = 'none';
-        } else {
-            agreedVersionButton.style.opacity = '0.5';
-            agreedVersionButton.style.cursor = 'not-allowed';
-            agreedVersionButton.querySelector('img').style.filter = 'grayscale(100%)';
-            agreedVersionButton.querySelector('a').style.filter = 'grayscale(100%)';
-        }
-        if (controlActive) {
-            controlVersionButton.style.opacity = '1';
-            controlVersionButton.style.cursor = 'pointer';
-            controlVersionButton.querySelector('img').style.filter = 'none';
-            controlVersionButton.querySelector('a').style.filter = 'none';
-        } else {
-            controlVersionButton.style.opacity = '0.5';
-            controlVersionButton.style.cursor = 'not-allowed';
-            controlVersionButton.querySelector('img').style.filter = 'grayscale(100%)';
-            controlVersionButton.querySelector('a').style.filter = 'grayscale(100%)';
-        }
-        if (sentActive) {
-            sentVersionButton.style.opacity = '1';
-            sentVersionButton.style.cursor = 'pointer';
-            sentVersionButton.querySelector('img').style.filter = 'none';
-            sentVersionButton.querySelector('a').style.filter = 'none';
-        } else {
-            sentVersionButton.style.opacity = '0.5';
-            sentVersionButton.style.cursor = 'not-allowed';
-            sentVersionButton.querySelector('img').style.filter = 'grayscale(100%)';
-            sentVersionButton.querySelector('a').style.filter = 'grayscale(100%)';
-        }
-        if (exportActive) {
-            exportVersionButton.style.opacity = '1';
-            exportVersionButton.style.cursor = 'pointer';
-            exportVersionButton.querySelector('img').style.filter = 'none';
-            exportVersionButton.querySelector('a').style.filter = 'none';
-        } else {
-            exportVersionButton.style.opacity = '0.5';
-            exportVersionButton.style.cursor = 'not-allowed';
-            exportVersionButton.querySelector('img').style.filter = 'grayscale(100%)';
-            exportVersionButton.querySelector('a').style.filter = 'grayscale(100%)';
-        }
-        if (ticketsActive) {
-            toTicketsBtn.style.opacity = '1';
-            toTicketsBtn.style.cursor = 'pointer';
-            toTicketsBtn.querySelector('img').style.filter = 'none';
-            toTicketsBtn.querySelector('a').style.filter = 'none';
-        } else {
-            toTicketsBtn.style.opacity = '0.5';
-            toTicketsBtn.style.cursor = 'not-allowed';
-            toTicketsBtn.querySelector('img').style.filter = 'grayscale(100%)';
-            toTicketsBtn.querySelector('a').style.filter = 'grayscale(100%)';
-        }
-    }
-
-    if(document.querySelector('.report_row.active-report')){
-        const activeAgreedRow = document.querySelector('.report_row.active-report');
-        updateHeaderButtonStyle(activeAgreedRow !== null);
-    }
 
     if(document.getElementById('del_reportButton')){
         const controlVersionButton = document.getElementById('control_versionButton');
@@ -1453,7 +1551,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (activeRow !== null) {
                 var id = activeRow.dataset.versionId;
                 if (id) {
-                    window.location.href = '/report-area/tickets/' + id;
+                    window.location.href = '/reports/report-info/' + id;
                 }
             } else {
                 event.preventDefault();
@@ -1469,6 +1567,15 @@ document.addEventListener('DOMContentLoaded', function() {
     var send_button = document.getElementById('send_button');
     var sentForm = document.getElementById('sentForm');
 
+
+    if (document.getElementById('agreedVersionButton') || 
+        document.getElementById('control_versionButton') || 
+        document.getElementById('sentVersionButton') || 
+        document.getElementById('export_versionButton') || 
+        document.getElementById('toTicketsBtn')) {
+        updateHeaderButtonStyle(false, false, false, false, false);
+    }
+    
     if(dropArea){
         dropArea.addEventListener("click", function () {
             fileInput.click();
@@ -1534,8 +1641,8 @@ document.addEventListener('DOMContentLoaded', function() {
    
 });
 
+/* change pozition modal */
 document.addEventListener('DOMContentLoaded', (event) => {
-    /* change pozition modal */
     const headers = document.querySelectorAll(".change-position");
     headers.forEach(header => {
         const modal = header.closest('.modal-content');
@@ -1567,7 +1674,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
             document.body.style.userSelect = 'auto';
         });
     });
-    /* end change pozition modal */
 });
 
 function handleModal(modalId, linkId) {

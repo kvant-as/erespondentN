@@ -25,7 +25,6 @@ class UserView(ModelView):
         'email': dict(label='email', validators=[Email()]),
     }
     
-    # Поле пароля показываем только при создании
     form_create_rules = ('type', 'email', 'fio', 'telephone', 'password', 'organization')
     form_edit_rules = ('type', 'email', 'fio', 'telephone', 'organization')
     

@@ -63,7 +63,7 @@
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="log_buttons_area">
                     <button type="submit" class = "submit_button blue_btn">
-                        <img src="/static/img/Sign.svg" alt="" class="button-icon">
+                        {{ icons.icon_sign() }}
                         <span>Зарегистрироваться</span>
                     </button>
                     <div class="under-link">

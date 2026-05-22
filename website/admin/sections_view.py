@@ -7,7 +7,10 @@ class SectionsView(ModelView):
     column_list = ['id', 'id_version', 'id_product', 'code_product', 'section_number', 'Oked', 'produced', 'Consumed_Quota', 'Consumed_Fact', 'Consumed_Total_Quota', 'Consumed_Total_Fact', 'note']
     column_default_sort = ('id', True)
     column_sortable_list = ('id', 'id_version', 'id_product', 'code_product', 'section_number', 'Oked', 'produced', 'Consumed_Quota', 'Consumed_Fact', 'Consumed_Total_Quota', 'Consumed_Total_Fact', 'note')
-       
+
+    column_searchable_list = ['id', 'id_product']
+    
+    
     def is_accessible(self):
         return current_user.is_authenticated and current_user.type == "Администратор"
 
