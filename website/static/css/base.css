@@ -5403,10 +5403,18 @@ th.resizable .resizer {
     border: 1px solid rgba(34, 197, 94, 0.2)!important;
 }
 
+.status-control svg{
+    color: rgb(59, 179, 159) !important;
+}
+
 .status-success {
     background: rgba(34, 197, 94, 0.1)!important;
     color: #16a34a!important;
     border: 1px solid rgba(34, 197, 94, 0.2)!important;
+}
+
+.status-success svg{
+    color: #16a34a!important;
 }
 
 .status-approved {
@@ -5415,10 +5423,18 @@ th.resizable .resizer {
     border: 1px solid rgba(34, 197, 94, 0.2)!important;
 }
 
+.status-approved svg{
+    color: #16a34a!important;
+}
+
 .status-agreed {
     background: rgba(43, 116, 70, 0.1)!important;
     color: #405e39!important;
     border: 1px solid rgba(34, 197, 94, 0.2)!important;
+}
+
+.status-agreed svg{
+    color: #405e39!important;
 }
 
 .status-pending {
@@ -5427,10 +5443,18 @@ th.resizable .resizer {
     border: 1px solid rgba(59, 130, 246, 0.2) !important;
 }
 
+.status-pending svg{
+    color: #2563eb !important;
+}
+
 .status-warning {
     background: rgba(245, 158, 11, 0.1)!important;
     color: #d97706!important;
     border: 1px solid rgba(245, 158, 11, 0.2)!important;
+}
+
+.status-warning svg{
+    color: #d97706!important;
 }
 
 .status-delete {
@@ -5439,11 +5463,20 @@ th.resizable .resizer {
     border: 1px solid rgba(239, 68, 68, 0.2)!important;
 }
 
+.status-delete svg{
+    color: #dc2626!important;
+}
+
 .status-draft {
     background: rgba(156, 163, 175, 0.1)!important;
     color: #6b7280!important;
     border: 1px solid rgba(156, 163, 175, 0.2)!important;
 }
+
+.status-draft svg{
+    color: #6b7280!important;
+}
+
 
 .empty-state {
     display: flex;

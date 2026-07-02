@@ -198,7 +198,7 @@
             <div class="highlight-icon">💡</div>
             <p>Выберите необходимый <strong>отчетный период</strong>.</p>
         </div>
-        <form method="POST" action="/create-new-report">
+        <form method="POST" action="/create-report">
             <input type="hidden" name="modal_add_year" id="selected-year-add" value="{{previous_year}}">
             <input type="hidden" name="modal_add_quarter" id="selected-quarter-add" value="{{previous_quarter}}">
             <div class="period-selector-advanced" id="add-period-selector">
@@ -342,7 +342,7 @@
             </div>
             <div id="selector-info-copy" class="period-info"></div>
             <div class="model_but_area">
-                <button type="submit" formaction="/copy-structure-report" class="blue_btn">
+                <button type="submit" formaction="/copy-report" class="blue_btn">
                     {{ icons.icon_coppy() }}
                     <span>Скопировать отчет</span>
                 </button>
@@ -356,7 +356,7 @@
         {{ icons.icon_edit() }}
         <span>Редактировать период</span>
     </button>
-    <button id = "link_coppy_report" disabled>
+    <button id = "link_coppy_report">
         {{ icons.icon_coppy() }}
         <span>Скопировать</span>
     </button>
