@@ -11,7 +11,7 @@ from decimal import Decimal
 from datetime import datetime, timedelta
 
 from flask import (
-    Blueprint, current_app, jsonify, request, flash, redirect, session,
+    Blueprint, current_app, jsonify, render_template, request, flash, redirect, session,
     url_for, send_file, make_response
 )
 
@@ -282,3 +282,64 @@ def relod_password():
     else:
         flash('Пользователя с таким email не существует.', 'error')
         return redirect(url_for('views.login'))
+    
+@auth.route('/profile/danger-zone', methods=['POST', 'GET'])
+@login_required
+def profile_account():
+    if request.method == 'POST':
+        pass
+    return render_template('profile_account.html', 
+                    user=current_user, 
+                    active_tab  = 'danger')
+    
+@auth.route('/delete-account', methods=['POST'])
+@login_required
+def delete_account():
+    try:
+        confirm_email = request.form.get('confirm_email', '').strip()
+        
+        if not confirm_email:
+            flash('Email не указан.', 'error')
+            return redirect(url_for('auth.profile_account'))
+        
+        if confirm_email != current_user.email:
+            flash('Email не совпадает. Введите правильный адрес для подтверждения удаления.', 'error')
+            return redirect(url_for('auth.profile_account'))
+        
+        user = User.query.get(current_user.id)
+        
+        if not user:
+            flash('Пользователь не найден.', 'error')
+            return redirect(url_for('auth.profile_account'))
+        
+        has_approved = db.session.query(
+            db.session.query(Version_report)
+            .join(Report)
+            .filter(
+                Report.user_id == current_user.id,
+                Version_report.status == 'Одобрен'
+            )
+            .exists()
+        ).scalar()
+        
+        if has_approved:
+            flash('Невозможно удалить аккаунт, так как есть отчеты со статусом "Одобрен".', 'error')
+            return redirect(url_for('auth.profile_account'))     
+           
+        if current_user.type == 'Администратор':
+            flash('Невозможно удалить аккаунт, будучи администратором', 'error')
+            return redirect(url_for('auth.profile_account'))
+        
+        db.session.delete(user)
+        db.session.commit()
+        
+        logout_user()
+        
+        flash(f'Аккаунт {user.email} успешно удален.', 'success')
+        return redirect(url_for('auth.sign'))
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f'Ошибка при удалении аккаунта: {str(e)}')
+        flash('Произошла ошибка при удалении аккаунта. Попробуйте позже.', 'error')
+        return redirect(url_for('auth.profile_account'))

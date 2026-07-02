@@ -194,10 +194,6 @@
             <h3 class="change-position">Создание отчета</h3>
             {{ icons.icon_close() }}
         </div>
-        <div class="answer-highlight-second">
-            <div class="highlight-icon">💡</div>
-            <p>Выберите необходимый <strong>отчетный период</strong>.</p>
-        </div>
         <form method="POST" action="/create-report">
             <input type="hidden" name="modal_add_year" id="selected-year-add" value="{{previous_year}}">
             <input type="hidden" name="modal_add_quarter" id="selected-quarter-add" value="{{previous_quarter}}">
@@ -248,10 +244,6 @@
         <div class="modal-header">
             <h3 class="change-position">Редактирование периода отчета</h3>
             {{ icons.icon_close() }}
-        </div>
-        <div class="answer-highlight-second">
-            <div class="highlight-icon">💡</div>    
-            <p>Выберите необходимый <strong>отчетный период</strong>.</p>
         </div>
         <form method="POST" action="/change-period-report">
             <input type="hidden" name="modal_change_report_year" id="selected-year-change" value="">
