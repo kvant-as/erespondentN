@@ -17,9 +17,7 @@
         </div>
     </div>
     <div class="contener_row">
-        {% block left_menu %}
-            {{ super() }}
-        {% endblock %}
+        {{ content.left_menu(active_tab) }}
         <div class="personal-info_area">
                 <div class="answer-highlight-second" >
                     <div class="highlight-icon">💡</div>
@@ -80,10 +78,21 @@
                     </tr>
                     <tr>
                         <td>E-mail <span class="required-mark">&#42;</span></td>
-                        <td>                        
-                            <input type="text" value="{{current_user.email}}" readonly>
+                        <td style = "display: flex; flex-direction: row;">                        
+                            <input class = "pred_name" type="text" value="{{current_user.email}}" 
+                            style = "
+                                border-top-right-radius: 0;
+                                border-bottom-right-radius: 0; 
+                                background: white; 
+                                width: calc(100% - 70px);"  
+                                readonly
+                                >
+                            <a class="left-input-btn" href="/change-email"> 
+                                {{ icons.icon_edit() }}
+                            </a>
                         </td>
                     </tr>
+
                     <tr>
                         <td>Номер телефона <span class="required-mark">&#42;</span></td>
                         <td>
@@ -114,7 +123,7 @@
                                 {%else%} {%endif%}" 
                                 placeholder="Наименование предприятия"  name = "full_name_common" value="{{ current_user.organization.full_name if current_user.organization else '' }}" readonly>
                                 {%if count_reports == 0 and (current_user.type != 'Аудитор' and current_user.type != 'Смотрящий')%}
-                                    <a class="show_organiz" > 
+                                    <a class="left-input-btn" > 
                                         {{ icons.icon_search() }}
                                     </a>
                                 {%else%} {%endif%}
@@ -159,7 +168,7 @@
                     {%endif%}
                 </table>
                 <div class = "how-to-change-org-data">
-                    <span> Для того чтобы изменить данные организации прочитайте</span>&nbsp; 
+                    <span>Для того чтобы изменить данные организации прочитайте</span>&nbsp; 
                     <a href="/FAQ#faq20" class="instruction-link" target = "blank"> инструкцию</a>.
                 </div>
                 <div class="dop-info-cont">
@@ -183,7 +192,7 @@
                         </span>
                     </div>
                 </div>
-                <button class = "blue_btn" type="submit">
+                <button class = "blue_btn" type="submit" style="margin-bottom: 100px;">
                     {{ icons.icon_add() }}
                     <span>Применить изменения</span>
                 </button>

@@ -650,10 +650,10 @@ def contacts():
         current_user=current_user
     )
     
-@views.route('/create-new-report', methods=['POST'])
+@views.route('/create-report', methods=['POST'])
 @login_required 
 @session_required
-def create_new_report():
+def create_report():
     if request.method == 'POST': 
         year =  parse_int(request.form.get('modal_add_year'))
         quarter =  parse_int(request.form.get('modal_add_quarter'))
@@ -771,11 +771,10 @@ def change_period_report():
 
         return redirect(url_for('views.report_area'))
   
-
-@views.route('/copy-structure-report', methods=['POST'])
+@views.route('/copy-report', methods=['POST'])
 @login_required 
 @session_required
-def copy_structure_report():
+def copy_report():
     if request.method == 'POST':
         try:
             copy_report_id = parse_int(request.form.get('modal_copy_report_id'))
@@ -810,10 +809,6 @@ def copy_structure_report():
                 flash('Версия исходного отчета не найдена', 'error')
                 return redirect(url_for('views.report_area'))
             
-            original_sections = Sections.query.filter_by(
-                id_version=original_version.id
-            ).all()
-            
             new_report = Report(
                 org_id=current_user.organization.id,
                 year=new_year,
@@ -826,45 +821,112 @@ def copy_structure_report():
             new_version = Version_report(
                 begin_time=current_utc_time(),
                 status="Заполнение",
-                fio = current_user.fio,
-                telephone = current_user.telephone,
-                email = current_user.email,
+                fio=current_user.fio,
+                telephone=current_user.telephone,
+                email=current_user.email,
                 report_id=new_report.id
             )
             db.session.add(new_version)
             db.session.flush()
             
+            specific_codes = ['9001', '9010', '9100']
+            
+            original_sections = Sections.query.filter_by(
+                id_version=original_version.id
+            ).filter(
+                ~Sections.code_product.in_(specific_codes)
+            ).order_by(Sections.id.asc()).all()
+            
+            copied_count = 0
+            skipped_count = 0
+            
             for section in original_sections:
-                if section.product.CodeProduct == '9100':
+                if not section.product:
+                    skipped_count += 1
                     continue
                 
-                current_product = DirProduct.query.filter_by(CodeProduct=section.code_product, DateEnd = None).first()
+                current_product = DirProduct.query.filter_by(
+                    CodeProduct=section.product.CodeProduct
+                ).first()
+                
                 if not current_product:
+                    skipped_count += 1
                     continue
+                
+                if current_product.DateEnd is not None:
+                    current_product = DirProduct.query.filter_by(
+                        CodeProduct=section.product.CodeProduct,
+                        DateEnd=None
+                    ).first()
+                    
+                    if not current_product:
+                        skipped_count += 1
+                        continue
                 
                 new_section = Sections(
                     id_version=new_version.id,
-                    
                     id_product=current_product.id,
                     code_product=current_product.CodeProduct,
-                    
                     section_number=section.section_number,
                     Oked=section.Oked,
-                    produced=ZERO_DECIMAL,
-                    Consumed_Quota=ZERO_DECIMAL,
-                    Consumed_Fact=ZERO_DECIMAL,
-                    Consumed_Total_Quota=ZERO_DECIMAL,
-                    Consumed_Total_Fact=ZERO_DECIMAL,
-                    total_differents=ZERO_DECIMAL,
+                    produced=section.produced,
+                    Consumed_Quota=section.Consumed_Quota,
+                    Consumed_Fact=section.Consumed_Fact,
+                    Consumed_Total_Quota=section.Consumed_Total_Quota,
+                    Consumed_Total_Fact=section.Consumed_Total_Fact,
+                    total_differents=section.total_differents,
                     note=section.note
                 )
                 db.session.add(new_section)
+                copied_count += 1
+            
+            is9010productFuel = DirProduct.query.filter_by(CodeProduct='9010', IsFuel=True, DateEnd=None).first()
+            is9010productHeat = DirProduct.query.filter_by(CodeProduct='9010', IsHeat=True, DateEnd=None).first()
+            is9010productElectro = DirProduct.query.filter_by(CodeProduct='9010', IsElectro=True, DateEnd=None).first()
+            is9001productFuel = DirProduct.query.filter_by(CodeProduct='9001', IsFuel=True, DateEnd=None).first()
+            is9001productHeat = DirProduct.query.filter_by(CodeProduct='9001', IsHeat=True, DateEnd=None).first()
+            is9001productElectro = DirProduct.query.filter_by(CodeProduct='9001', IsElectro=True, DateEnd=None).first()
+            
+            sections_data = [
+                (is9010productFuel.id, is9010productFuel.CodeProduct, 1),
+                (is9001productFuel.id, is9001productFuel.CodeProduct, 1),
+                (is9010productElectro.id, is9010productElectro.CodeProduct, 2),
+                (is9001productElectro.id, is9001productElectro.CodeProduct, 2),
+                (is9010productHeat.id, is9010productHeat.CodeProduct, 3),
+                (is9001productHeat.id, is9001productHeat.CodeProduct, 3),
+            ]
+            
+            for data in sections_data:
+                section = Sections(
+                    id_version=new_version.id,
+                    id_product=data[0],
+                    code_product=data[1],
+                    section_number=data[2],
+                    produced=Decimal('0.00'),
+                    Consumed_Quota=Decimal('0.00'),
+                    Consumed_Fact=Decimal('0.00'),
+                    Consumed_Total_Quota=Decimal('0.00'),
+                    Consumed_Total_Fact=Decimal('0.00'),
+                    total_differents=Decimal('0.00'),
+                    Oked='',
+                    note=''
+                )
+                db.session.add(section)
             
             db.session.commit()
-            flash('Отчет успешно скопирован.', 'success')
+            
+            for section_number in [1, 2, 3]:
+                update_aggregated_sections(new_version.id, section_number)
+            
+            message = f'Отчет успешно скопирован'
+            if skipped_count > 0:
+                message += f', пропущено продуктов: {skipped_count}'
+            
+            flash(message, 'success')
             
         except Exception as e:
             db.session.rollback()
+            current_app.logger.error(f'Ошибка при копировании отчета: {str(e)}')
             flash(f'Ошибка при копировании: {str(e)}', 'error')
             
         return redirect(url_for('views.report_area'))
@@ -874,138 +936,189 @@ def copy_structure_report():
 @session_required
 def delete_report(report_id):
     if request.method == 'POST':
-        current_report = Report.query.filter_by(id = report_id).first()
-        versions = Version_report.query.filter_by(report_id = report_id).all()
-        tickets = Ticket.query.filter_by(version_report_id = report_id).all()  
-        if current_report:   
+        try:
+            current_report = Report.query.filter_by(id=report_id).first()
+            if not current_report:
+                flash('Отчет не найден.', 'error')
+                return redirect(url_for('views.report_area'))
+            
+            versions = Version_report.query.filter_by(report_id=report_id).all()
+            tickets = Ticket.query.filter_by(version_report_id=report_id).all()
+            
             sent_version_exists = any(version.status == 'Отправлен' for version in versions)
             if sent_version_exists:
                 flash('Отправленный отчет не подлежит удалению.', 'error')
-                return redirect(url_for('views.report_area'))  
+                return redirect(url_for('views.report_area'))
+            
             confirmed_version_exists = any(version.status == 'Одобрен' for version in versions)
             if confirmed_version_exists:
                 flash('Данный отчет не подлежит удалению.', 'error')
                 return redirect(url_for('views.report_area'))
+            
             for ticket in tickets:
-                db.session.delete(ticket)        
+                db.session.delete(ticket)
+            
             for version in versions:
-                sections = Sections.query.filter_by(id_version = version.id).all()
+                sections = Sections.query.filter_by(id_version=version.id).all()
                 for section in sections:
                     db.session.delete(section)
                 db.session.delete(version)
+            
             db.session.delete(current_report)
             db.session.commit()
             flash('Отчет удален.', 'success')
+            
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f'Ошибка при удалении отчета {report_id}: {str(e)}', exc_info=True)
+            flash('Произошла ошибка при удалении отчета.', 'error')
+        
         return redirect(url_for('views.report_area'))
 
-@views.route('/add-section-param', methods=['POST'])
+
+@views.route('/add-section', methods=['POST'])
 @login_required 
 @session_required
-def add_section_param():
+def add_section():
     if request.method == 'POST':
-        data = {
-            'current_version_id': request.form.get('current_version'),
-            'add_id_product': request.form.get('add_id_product'),
-            'oked': request.form.get('oked_add'),
-            'produced': to_decimal(request.form.get('produced_add')),
-            'Consumed_Quota': to_decimal(request.form.get('Consumed_Quota_add')),
-            'Consumed_Fact': to_decimal(request.form.get('Consumed_Fact_add')),
-            'Consumed_Total_Quota': to_decimal(request.form.get('Consumed_Total_Quota_add')),
-            'Consumed_Total_Fact': to_decimal(request.form.get('Consumed_Total_Fact_add')),
-            'note': request.form.get('note_add'),
-            'section_number': request.form.get('section_number')
-        }
+        try:
+            data = {
+                'current_version_id': request.form.get('current_version'),
+                'add_id_product': request.form.get('add_id_product'),
+                'oked': request.form.get('oked_add'),
+                'produced': to_decimal(request.form.get('produced_add')),
+                'Consumed_Quota': to_decimal(request.form.get('Consumed_Quota_add')),
+                'Consumed_Fact': to_decimal(request.form.get('Consumed_Fact_add')),
+                'Consumed_Total_Quota': to_decimal(request.form.get('Consumed_Total_Quota_add')),
+                'Consumed_Total_Fact': to_decimal(request.form.get('Consumed_Total_Fact_add')),
+                'note': request.form.get('note_add'),
+                'section_number': request.form.get('section_number')
+            }
+            
+            current_product = DirProduct.query.filter_by(id=data['add_id_product']).first()
+            if not current_product:
+                flash('Продукт не найден в справочнике.', 'error')
+                return redirect(request.referrer)
+            
+            current_version = Version_report.query.filter_by(id=data['current_version_id']).first()
+            if not check_version_editable(current_version):
+                return redirect(request.referrer)
+            
+            product_unit = DirUnit.query.filter_by(IdUnit=current_product.IdUnit).first()
+            
+            existing = Sections.query.filter_by(
+                id_version=data['current_version_id'],
+                section_number=data['section_number'],
+                id_product=current_product.id
+            ).first()
+            
+            if existing and not data['note']:
+                flash('«Примечание» обязательно для заполнения, так как такая продукция уже есть.', 'error')
+                return redirect(request.referrer)
+            
+            new_section = create_section(data, current_product.id, current_product.CodeProduct)
+            db.session.add(new_section)
+            db.session.commit()
+            
+            if current_product.CodeProduct == "7000":
+                new_section.total_differents = new_section.Consumed_Total_Fact - new_section.Consumed_Total_Quota
+            else:
+                process_section_calculations(new_section, product_unit)
+            
+            db.session.commit()
+            
+            update_aggregated_sections(data['current_version_id'], data['section_number'])
+            update_version_status(current_version)
+            
+            flash('Продукция была добавлена.', 'success')
+            
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(
+                f'Ошибка при добавлении секции. Version: {data.get("current_version_id")}, '
+                f'Product: {data.get("add_id_product")}, Error: {str(e)}',
+                exc_info=True
+            )
+            flash('Произошла ошибка при добавлении продукции.', 'error')
         
-        current_product = DirProduct.query.filter_by(id=data['add_id_product']).first()
-        if not current_product:
-            flash('Продукт не найден в справочнике.', 'error')
-            return redirect(request.referrer)
-        
-        current_version = Version_report.query.filter_by(id=data['current_version_id']).first()
-        if not check_version_editable(current_version):
-            return redirect(request.referrer)
-        
-        product_unit = DirUnit.query.filter_by(IdUnit=current_product.IdUnit).first()
-        
-        existing = Sections.query.filter_by(
-            id_version=data['current_version_id'],
-            section_number=data['section_number'],
-            id_product=current_product.id
-        ).first()
-        
-        if existing and not data['note']:
-            flash('«Примечание» обязательно для заполнения, так как такая продукция уже есть.', 'error')
-            return redirect(request.referrer)
-        
-        new_section = create_section(data, current_product.id, current_product.CodeProduct)
-        db.session.add(new_section)
-        db.session.commit()
-        
-        if current_product.CodeProduct == "7000":
-            new_section.total_differents = new_section.Consumed_Total_Fact - new_section.Consumed_Total_Quota
-        else:
-            process_section_calculations(new_section, product_unit)
-        
-        db.session.commit()
-        
-        update_aggregated_sections(data['current_version_id'], data['section_number'])
-        update_version_status(current_version)
-        
-        flash('Продукция была добавлена.', 'success')
         return redirect(request.referrer)
+
 
 @views.route('/change-section', methods=['POST'])
 @login_required 
 @session_required
 def change_section():
     if request.method == 'POST':
-        id_version = request.form.get('current_version')
-        id_section = request.form.get('id')
+        try:
+            id_version = request.form.get('current_version')
+            id_section = request.form.get('id')
+            
+            current_version = Version_report.query.filter_by(id=id_version).first()
+            if not check_version_editable(current_version):
+                return redirect_back(current_version)
+            
+            current_section = Sections.query.filter_by(id=id_section).first()
+            if not current_section:
+                flash('Ошибка при обновлении.', 'error')
+                return redirect_back(current_version)
+            
+            current_product = DirProduct.query.filter_by(id=current_section.id_product).first()
+            product_unit = DirUnit.query.filter_by(IdUnit=current_product.IdUnit).first() if current_product else None
+            
+            update_section_fields(current_section, request.form, product_unit)
+            
+            update_aggregated_sections(id_version, current_section.section_number)
+            update_version_status(current_version)
+            
+            db.session.commit()
+            flash('Параметры обновлены.', 'success')
+            
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(
+                f'Ошибка при обновлении секции. Section: {id_section}, '
+                f'Version: {id_version}, Error: {str(e)}',
+                exc_info=True
+            )
+            flash('Произошла ошибка при обновлении параметров.', 'error')
         
-        current_version = Version_report.query.filter_by(id=id_version).first()
-        if not check_version_editable(current_version):
-            return redirect_back(current_version)
-        
-        current_section = Sections.query.filter_by(id=id_section).first()
-        if not current_section:
-            flash('Ошибка при обновлении.', 'error')
-            return redirect_back(current_version)
-        
-        current_product = DirProduct.query.filter_by(id=current_section.id_product).first()
-        product_unit = DirUnit.query.filter_by(IdUnit=current_product.IdUnit).first() if current_product else None
-        
-        update_section_fields(current_section, request.form, product_unit)
-        
-        update_aggregated_sections(id_version, current_section.section_number)
-        update_version_status(current_version)
-        
-        flash('Параметры обновлены.', 'success')
-        return redirect_back(current_version, current_section.section_number)
+        return redirect_back(current_version, current_section.section_number if current_section else None)
+
 
 @views.route('/remove_section/<id>', methods=['POST'])
 @login_required 
 @session_required
 def remove_section(id):
     if request.method == 'POST':
-        delete_section = Sections.query.filter_by(id=id).first()
-        if not delete_section:
-            flash('Ошибка при удалении', 'error')
-            return redirect(request.referrer)
+        try:
+            delete_section = Sections.query.filter_by(id=id).first()
+            if not delete_section:
+                flash('Ошибка при удалении', 'error')
+                return redirect(request.referrer)
+            
+            current_version = Version_report.query.filter_by(id=delete_section.id_version).first()
+            if not check_version_editable(current_version):
+                return redirect(request.referrer)
+            
+            subtract_from_aggregated_sections(delete_section)
+            
+            db.session.delete(delete_section)
+            db.session.commit()
+            
+            update_version_status(current_version)
+            flash('Продукция была удалена.', 'success')
+            
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(
+                f'Ошибка при удалении секции. Section: {id}, '
+                f'Version: {delete_section.id_version if delete_section else "Unknown"}, '
+                f'Error: {str(e)}',
+                exc_info=True
+            )
+            flash('Произошла ошибка при удалении продукции.', 'error')
         
-        current_version = Version_report.query.filter_by(id=delete_section.id_version).first()
-        if not check_version_editable(current_version):
-            return redirect(request.referrer)
-        
-        subtract_from_aggregated_sections(delete_section)
-        
-        db.session.delete(delete_section)
-        db.session.commit()
-        
-        update_version_status(current_version)
-        flash('Продукция была удалена.', 'success')
-        
-        return redirect_back(current_version, delete_section.section_number)
-
+        return redirect_back(current_version, delete_section.section_number if delete_section else None)
 
 @views.route('/control-version/<id>', methods=['POST'])
 @login_required 

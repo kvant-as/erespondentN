@@ -1,5 +1,5 @@
 from datetime import datetime
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from io import BytesIO
 
 from flask import redirect, flash, request, url_for
@@ -76,17 +76,23 @@ def create_section(data, product_id, code_product):
 
 def calculate_consumed_fact(section, product_unit):
     if section.produced == 0:
-        return 0
+        return Decimal('0.00')
     if product_unit and product_unit.NameUnit in ('%', '% (включая покупную)'):
-        return round((section.Consumed_Total_Fact / section.produced) * 100, 2)
-    return round((section.Consumed_Total_Fact / section.produced) * 1000, 2)
+        value = (section.Consumed_Total_Fact / section.produced) * 100
+    else:
+        value = (section.Consumed_Total_Fact / section.produced) * 1000
+    
+    return Decimal(str(value)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
 def calculate_total_quota(section, product_unit):
     if section.Consumed_Quota == 0:
-        return 0
+        return Decimal('0.00')
     if product_unit and product_unit.NameUnit in ('%', '% (включая покупную)'):
-        return round((section.produced * section.Consumed_Quota) / 100, 2)
-    return round((section.produced * section.Consumed_Quota) / 1000, 2)
+        value = (section.produced * section.Consumed_Quota) / 100
+    else:
+        value = (section.produced * section.Consumed_Quota) / 1000
+    
+    return Decimal(str(value)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
 def process_section_calculations(section, product_unit):
     try:

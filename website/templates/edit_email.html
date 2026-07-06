@@ -1,0 +1,370 @@
+{% extends "base.html" %}
+{% block title %}Изменение email - ErespondentN{% endblock %}
+{% block content %}
+{{ content.blurback() }}
+<div class="page_log_reg">
+    <div class="log_reg_contener">
+        <div class="log_reg_img"></div>
+        <div class="log-reg-form">
+            <div class="link_cont">
+                <a class="active" onclick="window.location.href='/change-email'">Изменение email</a>
+            </div>
+            
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <div id="step1" {% if session.get('new_email') %}style="display: none;"{% endif %}>
+                <div class="glass-info-block" style="max-width: 450px;">
+                    <p>
+                        <span class="label">Введите новый email и текущий пароль. Код подтверждения придет на новый адрес. Текущий email:</span>
+                        <span class="email">{{ current_user.email }}</span>
+                    </p>
+                </div>
+                
+                <div class="aftorization_data" style="margin-top: 15px;">
+                    <div class="float-label-container">
+                        <input type="email" id="newEmail" class="float-input" placeholder=" " required>
+                        <span class="clear-btn">&times;</span>
+                        <label for="newEmail" class="float-label">Новый email</label>
+                    </div>
+                    <div id="emailError" class="error-text"></div>
+                </div>
+                
+                <div class="aftorization_data" style="margin-top: 15px;">
+                    <div class="float-label-container">
+                        <input type="password" id="passwordField" class="float-input" placeholder=" " required>
+                        <label for="passwordField" class="float-label">Текущий пароль</label>
+                    </div>
+                    <div id="passwordError" class="error-text"></div>
+                </div>
+                
+                <div id="infoMessage" style="margin-top: 10px; font-size: 14px; display: none;"></div>
+            
+                <div class="log_buttons_area" style="margin-top: 20px;">
+                    <button type="button" id="sendCodeBtn" class="submit_button blue_btn">
+                        {{ icons.icon_send() }}
+                        <span>Отправить код</span>
+                    </button>
+                </div>
+            </div>
+            
+            <div id="step2" {% if not session.get('new_email') %}style="display: none;"{% endif %}>
+                <div class="ce-success-card">
+                    <div class="ce-success-content">
+                        <p class="ce-success-text">
+                            <strong>Код отправлен на:</strong>
+                            <span class="ce-email-display" id="emailDisplay">{{ session.get('new_email') }}</span>
+                        </p>
+                        <p class="ce-timer-text">Код действителен 10 минут</p>
+                    </div>
+                </div>
+                
+                <div class="ce-input-group">
+
+                    <div class = "aftorization_data">
+                        <div class="float-label-container">
+                            <input type="text" id="codeInput" class="float-input" placeholder=" " maxlength="6" required>
+                            <span class="clear-btn">&times;</span>
+                            <label for="email" class="float-label">Код подтверждения</label>
+                        </div>
+                    </div> 
+
+                    <div id="codeError" class="ce-error-message"></div>
+                </div>
+                
+                <div id="infoMessage2" class="ce-status-message"></div>
+                
+                <div class="ce-button-group">
+                    <button type="button" id="confirmBtn" class="ce-btn ce-btn-primary">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                        <span>Подтвердить</span>
+                    </button>
+                    <button type="button" id="resendBtn" class="ce-btn ce-btn-secondary">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="23 4 23 10 17 10"></polyline>
+                            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                        </svg>
+                        <span>Отправить повторно</span>
+                    </button>
+                    <button type="button" id="backBtn" class="ce-btn ce-btn-outline">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="19" y1="12" x2="5" y2="12"></line>
+                            <polyline points="12 19 5 12 12 5"></polyline>
+                        </svg>
+                        <span>Назад</span>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="forgot_cont" id="profileLink">
+                <button class="under-link" onclick="window.location.href='/profile/common'">Вернуться в профиль</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var csrfToken = document.querySelector('input[name="csrf_token"]');
+    if (csrfToken) csrfToken = csrfToken.value;
+    
+    var sendBtn = document.getElementById('sendCodeBtn');
+    var confirmBtn = document.getElementById('confirmBtn');
+    var resendBtn = document.getElementById('resendBtn');
+    var backBtn = document.getElementById('backBtn');
+    var codeInput = document.getElementById('codeInput');
+    var profileLink = document.getElementById('profileLink');
+    
+    function showStep1() {
+        document.getElementById('step1').style.display = 'block';
+        document.getElementById('step2').style.display = 'none';
+        profileLink.style.display = 'block';
+        document.getElementById('codeInput').value = '';
+        document.getElementById('codeError').style.display = 'none';
+        document.getElementById('infoMessage2').style.display = 'none';
+        if (intervalId) {
+            clearInterval(intervalId);
+            intervalId = null;
+        }
+    }
+    
+    function showStep2() {
+        document.getElementById('step1').style.display = 'none';
+        document.getElementById('step2').style.display = 'block';
+        profileLink.style.display = 'none';
+    }
+    
+    if (sendBtn) {
+        sendBtn.onclick = function() {
+            var email = document.getElementById('newEmail').value.trim();
+            var pass = document.getElementById('passwordField').value.trim();
+            
+            document.getElementById('passwordError').style.display = 'none';
+            document.getElementById('emailError').style.display = 'none';
+            document.getElementById('infoMessage').style.display = 'none';
+            
+            if (!pass) { 
+                document.getElementById('passwordError').textContent = 'Введите пароль'; 
+                document.getElementById('passwordError').style.display = 'block'; 
+                return; 
+            }
+            if (!email) { 
+                document.getElementById('emailError').textContent = 'Введите email'; 
+                document.getElementById('emailError').style.display = 'block'; 
+                return; 
+            }
+            
+            this.disabled = true;
+            this.innerHTML = '<span>Отправка...</span>';
+            
+            var formData = new URLSearchParams();
+            formData.append('new_email', email);
+            formData.append('password', pass);
+            formData.append('csrf_token', csrfToken);
+            
+            fetch('/change-email', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': csrfToken
+                },
+                body: formData.toString()
+            })
+            .then(function(response) {
+                return response.json();
+            })
+            .then(function(data) {
+                if (data.success) {
+                    document.getElementById('emailDisplay').textContent = email;
+                    showStep2();
+                    startTimer();
+                } else {
+                    if (data.message && data.message.includes('пароль')) {
+                        document.getElementById('passwordError').textContent = data.message;
+                        document.getElementById('passwordError').style.display = 'block';
+                    } else {
+                        document.getElementById('emailError').textContent = data.message;
+                        document.getElementById('emailError').style.display = 'block';
+                    }
+                }
+                this.disabled = false;
+                this.innerHTML = '<span>Отправить код</span>';
+            }.bind(this))
+            .catch(function(error) {
+                this.disabled = false;
+                this.innerHTML = '<span>Отправить код</span>';
+                document.getElementById('infoMessage').textContent = 'Ошибка соединения';
+                document.getElementById('infoMessage').style.display = 'block';
+                document.getElementById('infoMessage').style.color = '#d32f2f';
+            }.bind(this));
+        };
+    }
+    
+    if (confirmBtn) {
+        confirmBtn.onclick = function() {
+            var code = document.getElementById('codeInput').value.trim();
+            document.getElementById('codeError').style.display = 'none';
+            document.getElementById('infoMessage2').style.display = 'none';
+            
+            if (!code) { 
+                document.getElementById('codeError').textContent = 'Введите код'; 
+                document.getElementById('codeError').style.display = 'block'; 
+                return; 
+            }
+            
+            this.disabled = true;
+            this.innerHTML = '<span>Проверка...</span>';
+            
+            var formData = new URLSearchParams();
+            formData.append('code', code);
+            formData.append('csrf_token', csrfToken);
+            
+            fetch('/change-email', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': csrfToken
+                },
+                body: formData.toString()
+            })
+            .then(function(response) {
+                return response.json();
+            })
+            .then(function(data) {
+                if (data.success) {
+                    document.getElementById('infoMessage2').textContent = 'Email успешно изменен!';
+                    document.getElementById('infoMessage2').style.display = 'block';
+                    document.getElementById('infoMessage2').style.color = '#2e7d32';
+                    setTimeout(function() {
+                        window.location.href = '/profile/common';
+                    }, 2000);
+                } else {
+                    document.getElementById('codeError').textContent = data.message;
+                    document.getElementById('codeError').style.display = 'block';
+                }
+                this.disabled = false;
+                this.innerHTML = '<span>Подтвердить</span>';
+            }.bind(this))
+            .catch(function(error) {
+                this.disabled = false;
+                this.innerHTML = '<span>Подтвердить</span>';
+                document.getElementById('codeError').textContent = 'Ошибка соединения';
+                document.getElementById('codeError').style.display = 'block';
+            }.bind(this));
+        };
+    }
+    
+    var timer = 60;
+    var intervalId = null;
+    
+    function startTimer() {
+        var btn = document.getElementById('resendBtn');
+        if (!btn) return;
+        
+        btn.disabled = true;
+        btn.innerHTML = '<span>Отправить повторно (' + timer + 'с)</span>';
+        if (intervalId) clearInterval(intervalId);
+        
+        intervalId = setInterval(function() {
+            timer--;
+            if (timer > 0) {
+                btn.innerHTML = '<span>Отправить повторно (' + timer + 'с)</span>';
+            } else {
+                clearInterval(intervalId);
+                btn.disabled = false;
+                btn.innerHTML = '<span>Отправить повторно</span>';
+                timer = 60;
+            }
+        }, 1000);
+    }
+    
+    if (resendBtn) {
+        resendBtn.onclick = function() {
+            if (this.disabled) return;
+            
+            this.disabled = true;
+            this.innerHTML = '<span>Отправка...</span>';
+            document.getElementById('infoMessage2').style.display = 'none';
+            
+            fetch('/resend-email-code', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify({csrf_token: csrfToken})
+            })
+            .then(function(response) {
+                return response.json();
+            })
+            .then(function(data) {
+                if (data.success) {
+                    document.getElementById('infoMessage2').textContent = data.message;
+                    document.getElementById('infoMessage2').style.display = 'block';
+                    document.getElementById('infoMessage2').style.color = '#2e7d32';
+                    startTimer();
+                } else {
+                    document.getElementById('infoMessage2').textContent = data.message;
+                    document.getElementById('infoMessage2').style.display = 'block';
+                    document.getElementById('infoMessage2').style.color = '#d32f2f';
+                    this.disabled = false;
+                    this.innerHTML = '<span>Отправить повторно</span>';
+                }
+            }.bind(this))
+            .catch(function(error) {
+                this.disabled = false;
+                this.innerHTML = '<span>Отправить повторно</span>';
+                document.getElementById('infoMessage2').textContent = 'Ошибка соединения';
+                document.getElementById('infoMessage2').style.display = 'block';
+                document.getElementById('infoMessage2').style.color = '#d32f2f';
+            }.bind(this));
+        };
+    }
+    
+    if (backBtn) {
+        backBtn.onclick = function() {
+            fetch('/clear-email-session', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify({csrf_token: csrfToken})
+            })
+            .then(function(response) {
+                return response.json();
+            })
+            .then(function(data) {
+                if (data.success) {
+                    showStep1();
+                } else {
+                    window.location.href = '/change-email';
+                }
+            })
+            .catch(function() {
+                window.location.href = '/change-email';
+            });
+        };
+    }
+    
+    if (codeInput) {
+        codeInput.oninput = function() {
+            if (this.value.length === 6 && confirmBtn) {
+                confirmBtn.click();
+            }
+        };
+    }
+    
+    var step2 = document.getElementById('step2');
+    if (step2 && step2.style.display !== 'none') {
+        profileLink.style.display = 'none';
+        startTimer();
+    }
+});
+</script>
+{% endblock %}

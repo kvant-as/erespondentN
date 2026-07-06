@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% block title %}Опасная зона - ErespondentN{% endblock %}
+{% block content %}
+
+<div class="profile_page">
+    <div class="rotation-fromareas">
+        <div class="rotation-fromareas_info">
+            <span>
+                <a class="back_orbital" href="/profile">Профиль</a>
+            </span>
+            <span class="svg-arr">
+                {{ icons.icon_arrow_right() }}
+            </span>
+            <span>
+                <a>Опасная зона</a>
+            </span>
+        </div>
+    </div>
+    <div class="contener_row">
+        {{ content.left_menu(active_tab) }}
+        <div class="personal-info_area">
+            <div class="account-security-wrap">
+                <div class="account-security-head">
+                    <a>Изменение электронного адреса</a>
+                </div>
+
+                <div class="account-danger-card">
+                    <div class="account-danger-body">
+                        <div class="account-delete-action">
+                            <p class="account-delete-warning">
+                                Здесь вы можете изменить адрес электронной почты, привязанный к вашему аккаунту. 
+                                После смены email все уведомления будут приходить на новый адрес.
+                            </p>
+                            
+                            <div class="account-form-actions" style="padding: 15px;">
+                     
+                            <button 
+                                type="submit" 
+                                class="delete-scale-btn non" 
+                                onclick="window.location.href='/change-email'"
+                    
+                            >   
+                                <img src="{{ url_for('static', filename='img/non-stop.png')}}" alt="">
+                                <span>Перейти к изменению email</span>
+                            </button>
+                                
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="account-security-wrap">
+                <div class="account-security-head">
+                    <a>Удаление личного кабинета</a>
+                </div>
+
+                <div class="account-danger-card">
+                    <div class="account-danger-body">
+                        <div class="account-delete-action">
+                            <p class="account-delete-warning">
+                                Удаление личного кабинета приведет к безвозвратному удалению всех ваших данных, 
+                                включая отчеты, профиль и историю действий. Это действие невозможно отменить.
+                            </p>
+                            <p class="account-delete-rule">
+                                Доступно только при отсутствии одобренных отчетов.
+                            </p>
+                            
+                            <form id="accountDeleteForm" method="POST" action="{{ url_for('auth.delete_account') }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
+                                
+                                <div class="account-form-group">
+                                    <label for="accountConfirmEmail">
+                                        Введите <strong>{{ current_user.email }}</strong> для подтверждения
+                                    </label>
+                                    <input 
+                                        type="email" 
+                                        id="accountConfirmEmail" 
+                                        name="confirm_email" 
+                                        class="account-form-control" 
+                                        placeholder="Введите адрес электронной почты"
+                                        autocomplete="off"
+                                        required
+                                    >
+                                </div>
+                                
+                                <div class="account-form-actions">
+                                    <button 
+                                        type="submit" 
+                                        id="accountDeleteBtn" 
+                                        class="delete-scale-btn" 
+                                        disabled
+                                    >   
+                                        <img src="{{ url_for('static', filename='img/stop.png')}}" alt="">
+                                        <span>Удалить личный кабинет</span>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+
+            </div>
+            
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const emailInput = document.getElementById('accountConfirmEmail');
+    const deleteBtn = document.getElementById('accountDeleteBtn');
+    const btnStatus = document.getElementById('accountBtnStatus');
+    const userEmail = '{{ current_user.email }}';
+    
+    function checkEmailMatch() {
+        const inputValue = emailInput.value.trim();
+        const isMatch = inputValue === userEmail;
+        
+        deleteBtn.disabled = !isMatch;
+        
+        if (isMatch) {
+            btnStatus.className = 'account-btn-status account-btn-status-active';
+            emailInput.style.borderColor = '#28a745';
+        } else if (inputValue.length > 0) {
+            btnStatus.className = 'account-btn-status';
+            emailInput.style.borderColor = '#dc3545';
+        } else {
+            btnStatus.textContent = 'Введите email для активации';
+            btnStatus.className = 'account-btn-status';
+            emailInput.style.borderColor = '#e9ecef';
+        }
+    }
+    
+    emailInput.addEventListener('input', checkEmailMatch);
+    
+    const form = document.getElementById('accountDeleteForm');
+    form.addEventListener('submit', function(e) {
+        if (emailInput.value.trim() !== userEmail) {
+            e.preventDefault();
+            alert('Email не совпадает. Введите правильный адрес для подтверждения удаления.');
+            return false;
+        }
+    
+    });
+});
+</script>
+
+{% endblock %}
