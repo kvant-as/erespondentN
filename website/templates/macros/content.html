@@ -659,3 +659,30 @@
     {% endif %}
 </div>
 {% endmacro %}
+
+{% macro left_menu(active_tab) %}
+    <nav class = "left_menu">
+        <ul class="sticky_status">
+        <li class="{% if active_tab == 'common' %}active_li{% endif %}" onclick="window.location.href='/profile/common'">
+            {{ icons.user_icon() }}
+            <a class="left_menu_text">Общее</a>
+        </li>
+        <li class="{% if active_tab == 'pass' %}active_li{% endif %}" onclick="window.location.href='/profile/password'">
+            {{ icons.lock_icon() }}
+            <a>Безопасность</a>
+        </li>
+        <li class="{% if active_tab == 'session' %}active_li{% endif %}" onclick="window.location.href='/profile/session'">
+            {{ icons.session_icon() }}
+            <a>Сессии</a>
+        </li>
+        <li class="{% if active_tab == 'danger' %}active_li{% endif %}" onclick="window.location.href='/profile/danger-zone'">
+            {{ icons.danger_icon() }}
+            <a>Опасная зона</a>
+        </li>
+        <li onclick="window.location.href='/logout'">
+            {{ icons.logout_icon() }}
+            <a>Выйти</a>
+        </li>
+        </ul>
+    </nav>
+{% endmacro %}

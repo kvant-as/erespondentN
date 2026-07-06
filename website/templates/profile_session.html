@@ -17,57 +17,8 @@
         </div>
     </div>
     <div class="contener_row">
-        {% block left_menu %}
-            {{ super() }}
-        {% endblock %}
+        {{ content.left_menu(active_tab) }}
         <div class="personal-info_area">
-            {#
-            <a class="session-name-card">Это устройство</a>
-            <div class="session-this-device">
-                <div class="first-floor">
-                    <img src="{{ url_for('static', filename='img/this_pc.png')}}" alt="">
-                    <div class="session-text-area">
-                        <a class="session-this-device-name">{{current_session.device_name}}</a>
-                        <a class="session-this-device_app">{{current_session.device_app}}</a>
-                        <a class="session-this-device_last_active">Последняя активность: {{ current_session.last_active.strftime('%d.%m.%Y %H:%M') }}</a> 
-                        <a class="session-this-device_ip">IP: {{current_session.ip_address}}</a> 
-                        <hr class="border: none; border-bottom: 1px solid rgb(56, 56, 56); border-top: none">
-                    </div>
-                </div>
-                <form action="/sessions/clear-others" method="POST" style="display: inline; padding-bottom: 0;">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button type="submit" class="second_floor" style="width: 100%;">
-                        <img src="{{ url_for('static', filename='img/stop.png')}}" alt="">
-                        <div class="end_all_sessions">Завершить другие сеансы</div>
-                    </button>
-                </form>
-            </div>
-            <a class="session-name-card" style="margin-top: 50px;">Активные сеансы</a>
-            {% if other_sessions %}
-                {% for s in other_sessions %}
-                <div class="session-this-device">
-                    <div class="first-floor">
-                        <img src="{{ url_for('static', filename='img/this_pc.png')}}" alt="">
-                        <div class="session-text-area">
-                            <a class="session-this-device-name">{{ s.device_name }}</a>
-                            <a class="session-this-device_app">{{ s.device_app }}</a>
-                            <a class="session-this-device_last_active">Последняя активность: {{ s.last_active.strftime('%d.%m.%Y %H:%M') }}</a>
-                            <a class="session-this-device_ip">IP: {{ s.ip_address }}</a>
-                        </div>
-                    </div>
-                </div>
-                {% endfor %}
-            {%else%}
-            <div class="session-this-device">
-                <div class="first-floor">
-                    <div class="session-text-area">
-                        <a class="session-this-device-name">В данный момент</a>
-                        <a class="session-this-device_app">Нет других активных сессий</a>
-                    </div>
-                </div>
-            </div>
-            {% endif %}#}
-
             <a class="session-name-card">Это устройство</a>
             <div class="session-this-device">
                 <div class="first-floor">
@@ -83,7 +34,7 @@
                 </div>
                 <form action="/sessions/clear-others" method="POST" style="display: inline; padding-bottom: 0;">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button type="submit" class="second_floor" style="width: 100%;" desalble>
+                    <button type="submit" class="delete-scale-btn" disabled>
                         <img src="{{ url_for('static', filename='img/stop.png')}}" alt="">
                         <div class="end_all_sessions">Завершить другие сеансы</div>
                     </button>
