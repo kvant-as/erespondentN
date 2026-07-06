@@ -285,10 +285,10 @@ def relod_password():
     
 @auth.route('/profile/danger-zone', methods=['POST', 'GET'])
 @login_required
-def profile_account():
+def profile_danger():
     if request.method == 'POST':
         pass
-    return render_template('profile_account.html', 
+    return render_template('profile_danger.html', 
                     user=current_user, 
                     active_tab  = 'danger')
     
@@ -300,17 +300,17 @@ def delete_account():
         
         if not confirm_email:
             flash('Email не указан.', 'error')
-            return redirect(url_for('auth.profile_account'))
+            return redirect(url_for('auth.profile_danger'))
         
         if confirm_email != current_user.email:
             flash('Email не совпадает. Введите правильный адрес для подтверждения удаления.', 'error')
-            return redirect(url_for('auth.profile_account'))
+            return redirect(url_for('auth.profile_danger'))
         
         user = User.query.get(current_user.id)
         
         if not user:
             flash('Пользователь не найден.', 'error')
-            return redirect(url_for('auth.profile_account'))
+            return redirect(url_for('auth.profile_danger'))
         
         has_approved = db.session.query(
             db.session.query(Version_report)
@@ -324,11 +324,11 @@ def delete_account():
         
         if has_approved:
             flash('Невозможно удалить аккаунт, так как есть отчеты со статусом "Одобрен".', 'error')
-            return redirect(url_for('auth.profile_account'))     
+            return redirect(url_for('auth.profile_danger'))     
            
         if current_user.type == 'Администратор':
-            flash('Невозможно удалить аккаунт, будучи администратором', 'error')
-            return redirect(url_for('auth.profile_account'))
+            flash('Невозможно удалить аккаунт  администратора', 'error')
+            return redirect(url_for('auth.profile_danger'))
         
         db.session.delete(user)
         db.session.commit()
@@ -342,4 +342,137 @@ def delete_account():
         db.session.rollback()
         current_app.logger.error(f'Ошибка при удалении аккаунта: {str(e)}')
         flash('Произошла ошибка при удалении аккаунта. Попробуйте позже.', 'error')
-        return redirect(url_for('auth.profile_account'))
+        return redirect(url_for('auth.profile_danger'))
+    
+@auth.route('/change-email', methods=['GET', 'POST'])
+@login_required
+def change_email():
+    if request.method == 'GET':
+        return render_template('edit_email.html', user=current_user, active_tab='common')
+    
+    elif request.method == 'POST':
+        code = request.form.get('code')
+        
+        if code:
+            new_email = session.get('new_email')
+            stored_code = session.get('email_confirmation_code')
+            expires = session.get('email_confirmation_expires')
+            
+            if not new_email or not stored_code:
+                return jsonify({'success': False, 'message': 'Сессия истекла. Попробуйте снова'}), 400
+            
+            if expires:
+                expires_dt = datetime.fromisoformat(expires)
+                if datetime.utcnow() > expires_dt:
+                    session.pop('new_email', None)
+                    session.pop('email_confirmation_code', None)
+                    session.pop('email_confirmation_expires', None)
+                    return jsonify({'success': False, 'message': 'Код подтверждения истек. Запросите новый'}), 400
+            
+            if code != stored_code:
+                return jsonify({'success': False, 'message': 'Неверный код подтверждения'}), 400
+            
+            try:
+                old_email = current_user.email
+                current_user.email = new_email
+                
+                session.pop('new_email', None)
+                session.pop('email_confirmation_code', None)
+                session.pop('email_confirmation_expires', None)
+                
+                db.session.commit()
+                
+                try:
+                    send_email(
+                        recipient_email=new_email,
+                        message=f'Ваш email был изменен с {old_email} на {new_email}',
+                        email_type="notification"
+                    )
+                except Exception as e:
+                    current_app.logger.warning(f"Could not send notification: {str(e)}")
+                
+                return jsonify({'success': True, 'message': 'Email успешно изменен', 'new_email': new_email})
+                
+            except Exception as e:
+                db.session.rollback()
+                current_app.logger.error(f"Error changing email: {str(e)}")
+                return jsonify({'success': False, 'message': 'Произошла ошибка при изменении email'}), 500
+        
+        else:
+            new_email = request.form.get('new_email')
+            password = request.form.get('password')
+            
+            if not new_email or not password:
+                return jsonify({'success': False, 'message': 'Заполните все поля'}), 400
+            
+            if not check_password_hash(current_user.password, password):
+                return jsonify({'success': False, 'message': 'Неверный пароль'}), 400
+            
+            existing_user = User.query.filter(func.lower(User.email) == func.lower(new_email)).first()
+            if existing_user and existing_user.id != current_user.id:
+                return jsonify({'success': False, 'message': 'Пользователь с таким email уже существует'}), 400
+            
+            if new_email.lower() == current_user.email.lower():
+                return jsonify({'success': False, 'message': 'Новый email совпадает с текущим'}), 400
+            
+            try:
+                import secrets
+                import string
+                confirmation_code = ''.join(secrets.choice(string.digits) for _ in range(6))
+                
+                session['new_email'] = new_email
+                session['email_confirmation_code'] = confirmation_code
+                session['email_confirmation_expires'] = (datetime.utcnow() + timedelta(minutes=10)).isoformat()
+                
+                send_email(
+                    recipient_email=new_email,
+                    message=f'{confirmation_code}',
+                    email_type="code"
+                )
+                
+                return jsonify({'success': True, 'message': 'Код подтверждения отправлен на новый email', 'new_email': new_email})
+                
+            except Exception as e:
+                current_app.logger.error(f"Error sending confirmation email: {str(e)}")
+                return jsonify({'success': False, 'message': 'Ошибка при отправке кода подтверждения'}), 500
+
+
+@auth.route('/resend-email-code', methods=['POST'])
+@login_required
+def resend_email_code():
+    try:
+        data = request.get_json()
+        new_email = session.get('new_email')
+        
+        if not new_email:
+            return jsonify({'success': False, 'message': 'Сессия истекла. Попробуйте снова'}), 400
+        
+        import secrets
+        import string
+        confirmation_code = ''.join(secrets.choice(string.digits) for _ in range(6))
+        session['email_confirmation_code'] = confirmation_code
+        session['email_confirmation_expires'] = (datetime.utcnow() + timedelta(minutes=10)).isoformat()
+        
+        send_email(
+            recipient_email=new_email,
+            message=f'{confirmation_code}',
+            email_type="code"
+        )
+        
+        return jsonify({'success': True, 'message': 'Новый код отправлен на почту'})
+        
+    except Exception as e:
+        current_app.logger.error(f"Error resending confirmation code: {str(e)}")
+        return jsonify({'success': False, 'message': 'Ошибка при отправке кода'}), 500
+
+
+@auth.route('/clear-email-session', methods=['POST'])
+@login_required
+def clear_email_session():
+    try:
+        session.pop('new_email', None)
+        session.pop('email_confirmation_code', None)
+        session.pop('email_confirmation_expires', None)
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500

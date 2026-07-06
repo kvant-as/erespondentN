@@ -17,10 +17,38 @@
         </div>
     </div>
     <div class="contener_row">
-        {% block left_menu %}
-            {{ super() }}
-        {% endblock %}
+        {{ content.left_menu(active_tab) }}
         <div class="personal-info_area">
+            <div class="account-security-wrap">
+                <div class="account-security-head">
+                    <a>Изменение электронного адреса</a>
+                </div>
+
+                <div class="account-danger-card">
+                    <div class="account-danger-body">
+                        <div class="account-delete-action">
+                            <p class="account-delete-warning">
+                                Здесь вы можете изменить адрес электронной почты, привязанный к вашему аккаунту. 
+                                После смены email все уведомления будут приходить на новый адрес.
+                            </p>
+                            
+                            <div class="account-form-actions" style="padding: 15px;">
+                     
+                            <button 
+                                type="submit" 
+                                class="delete-scale-btn non" 
+                                onclick="window.location.href='/change-email'"
+                    
+                            >   
+                                <img src="{{ url_for('static', filename='img/non-stop.png')}}" alt="">
+                                <span>Перейти к изменению email</span>
+                            </button>
+                                
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <div class="account-security-wrap">
                 <div class="account-security-head">
                     <a>Удаление личного кабинета</a>
@@ -32,6 +60,9 @@
                             <p class="account-delete-warning">
                                 Удаление личного кабинета приведет к безвозвратному удалению всех ваших данных, 
                                 включая отчеты, профиль и историю действий. Это действие невозможно отменить.
+                            </p>
+                            <p class="account-delete-rule">
+                                Доступно только при отсутствии одобренных отчетов.
                             </p>
                             
                             <form id="accountDeleteForm" method="POST" action="{{ url_for('auth.delete_account') }}">
@@ -67,7 +98,10 @@
                         </div>
                     </div>
                 </div>
+
+
             </div>
+            
         </div>
     </div>
 </div>
@@ -86,11 +120,9 @@ document.addEventListener('DOMContentLoaded', function() {
         deleteBtn.disabled = !isMatch;
         
         if (isMatch) {
-            btnStatus.textContent = '✅ Email подтвержден. Кнопка активирована.';
             btnStatus.className = 'account-btn-status account-btn-status-active';
             emailInput.style.borderColor = '#28a745';
         } else if (inputValue.length > 0) {
-            btnStatus.textContent = '❌ Email не совпадает';
             btnStatus.className = 'account-btn-status';
             emailInput.style.borderColor = '#dc3545';
         } else {

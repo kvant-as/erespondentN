@@ -17,9 +17,7 @@
         </div>
     </div>
     <div class="contener_row">
-        {% block left_menu %}
-            {{ super() }}
-        {% endblock %}
+        {{ content.left_menu(active_tab) }}
         <div class="personal-info_area">
             <a class="session-name-card">Это устройство</a>
             <div class="session-this-device">

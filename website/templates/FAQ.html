@@ -87,6 +87,9 @@
                     <li data-question="3">
                         <a href="javascript:void(0)">- Как изменить пароль?</a>
                     </li>
+                    <li data-question="22">
+                        <a href="javascript:void(0)">- Как изменить электронный адрес?</a>
+                    </li>
                 </ul>
                 
                 <li data-content="reports_faq">
@@ -1933,6 +1936,77 @@
                                     <li><strong>Истекшие продукты</strong> — продукты с истекшим сроком действия не копируются</li>
                                     <li><strong>Служебные строки</strong> — строки с кодами 9001, 9010, 9100 пересчитываются автоматически</li>
                                     <li><strong>Агрегированные данные</strong> — суммарные данные пересчитываются после копирования</li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="info_page info_faq" data-question-id="22" style="display: none;">
+                <div class="faq_question_info">
+                    <div class="info_page_name">
+                        <h1>Как изменить электронный адрес?</h1>
+                    </div>
+                    <div class="infos">
+                        <div class="answer-highlight-second">
+                            <div class="highlight-icon">📧</div>
+                            <div>
+                                <p><strong>Важное правило:</strong> Изменение email доступно только <strong>авторизованным</strong> пользователям. Новый email не должен совпадать с текущим и быть свободным.</p>
+                            </div>
+                        </div>
+
+                        <p>Для изменения электронного адреса выполните следующие шаги:</p>
+
+                        <ol class="steps-list">
+                            <li>
+                                <strong>Перейдите в свой профиль</strong> — нажмите на иконку пользователя в правом верхнем углу и выберите «Мой профиль».
+                                <div class="p_img">
+                                    <img src="{{ url_for('static', filename='img/post/8.png') }}" alt="Переход в профиль">
+                                    <span>Рисунок 1 - Переход на страницу профиля</span>
+                                </div>
+                            </li>
+                            <li>
+                                <strong>Откройте параметры профиля</strong> — нажмите кнопку «Параметры профиля».
+                                <div class="p_img">
+                                    <img src="{{ url_for('static', filename='img/post/9.png') }}" alt="Настройки профиля">
+                                    <span>Рисунок 2 - Переход в настройки профиля</span>
+                                </div>
+                            </li>
+                            <li>
+                                <strong>Перейдите на страницу изменения email</strong> — нажмите на иконку измененения профиля.
+                                <div class="p_img">
+                                    <img src="{{ url_for('static', filename='img/post/edit-email-btn.jpg') }}" alt="Кнопка изменения email">
+                                    <span>Рисунок 3 - Кнопка «Перейти к изменению email»</span>
+                                </div>
+                            </li>
+                            <li>
+                                <strong>Введите новый email и текущий пароль</strong> — заполните оба поля и нажмите «Отправить код».
+                                <div class="p_img">
+                                    <img src="{{ url_for('static', filename='img/post/change-email-form.png') }}" alt="Форма изменения email">
+                                    <span>Рисунок 4 - Форма изменения email</span>
+                                </div>
+                            </li>
+                            <li>
+                                <strong>Введите проверочный код</strong> — код будет отправлен на новый email. Введите его в поле подтверждения.
+                                <div class="p_img">
+                                    <img src="{{ url_for('static', filename='img/post/change-email-code.png') }}" alt="Ввод кода подтверждения">
+                                    <span>Рисунок 5 - Ввод кода подтверждения</span>
+                                </div>
+                            </li>
+                            <li>
+                                <strong>Подтвердите изменение</strong> — нажмите кнопку «Подтвердить». Если код введен верно, email будет изменен.
+                            </li>
+                        </ol>
+
+                        <div class="answer-highlight-second" style="margin-top: 60px;">
+                            <div class="highlight-icon">📌</div>
+                            <div>
+                                <p><strong>Важно знать:</strong></p>
+                                <ol>
+                                    <li>Код подтверждения действителен <strong>10 минут</strong></li>
+                                    <li>Можно запросить новый код, нажав «Отправить повторно»</li>
+                                    <li>Если вы передумали менять email, нажмите «Назад» — сессия очистится</li>
                                 </ol>
                             </div>
                         </div>
