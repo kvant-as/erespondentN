@@ -430,7 +430,7 @@ def get_auditor_info_by_user(current_user):
 @owner_only
 @respondent_only
 def report_section(report_type, id):
-    current_version = Version_report.query.filter_by(report_id=id).first()
+    current_version = Version_report.query.filter_by(id=id).first()
     current_report = Report.query.filter_by(id=current_version.report_id).first()
     
     auditor_info = get_auditor_info_by_user(current_user)
@@ -600,7 +600,7 @@ def api_audit_data():
 def audit_report(id):
     dirUnit = DirUnit.query.filter_by().all()
     dirProduct = DirProduct.query.filter_by().all()
-    current_version = Version_report.query.filter_by(report_id=id).first()
+    current_version = Version_report.query.filter_by(id=id).first()
     current_report = Report.query.filter_by(id=current_version.report_id).first()
     tickets = Ticket.query.filter_by(version_report_id = current_version.id).all()
     sections_fuel = Sections.query.filter_by(id_version=current_version.id, section_number=1).order_by(asc(Sections.code_product)).all()
