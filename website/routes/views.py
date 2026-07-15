@@ -485,7 +485,7 @@ def report_section(report_type, id):
 @owner_only
 @respondent_only
 def report_info(id):
-    current_version = Version_report.query.filter_by(report_id=id).first()
+    current_version = Version_report.query.filter_by(id=id).first()
     current_report = Report.query.filter_by(id=current_version.report_id).first()
     
     auditor_info = get_auditor_info_by_user(current_user)
