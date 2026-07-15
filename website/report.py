@@ -99,7 +99,7 @@ def process_section_calculations(section, product_unit):
         if section.produced != 0:
             section.Consumed_Fact = calculate_consumed_fact(section, product_unit)
         else:
-            section.Consumed_Fact = 0
+            section.Consumed_Fact = Decimal('0.00')
         
         section.Consumed_Total_Quota = calculate_total_quota(section, product_unit)
         section.total_differents = section.Consumed_Total_Fact - section.Consumed_Total_Quota

@@ -38,7 +38,7 @@
 {% macro report_time_info(report, version) %}
 <section class="report-dop-info">
     <div class="report-details">
-        <div class="detail-item main-element">
+        <div class="detail-item">
             {{ icons.icon_time() }}
             <div class="detail-content">
                 <div class="detail-label">Начало заполнения</div>
@@ -66,7 +66,7 @@
                 </div>
             </div>
         </div>
-        <div class="detail-item">
+        <div class="detail-item main-element">
             {{ icons.icon_send() }}
             <div class="detail-content">
                 <div class="detail-label">Дата отправки</div>
@@ -605,7 +605,7 @@
                             </div>
                             <div class="answer-highlight-second">
                                 <div class="highlight-icon">💡</div>
-                                <p><strong>Если</strong> присутствует ошибка в отчете, <strong>укажите её</strong>, в противном случае просто смените статус на <strong>"Одобренный"</strong>.</p>
+                                <p>При наличии ошибок в отчете укажите их в соответствующем поле. Если ошибки отсутствуют, измените статус на <strong>"Одобренный"</strong>.</p>
                             </div>
                             <textarea name="text" maxlength="399" required class="message-field__textarea" placeholder="Введите ваше сообщение..." oninput="updateCounter(this)"></textarea>
                             <div class="message-field__counter" id="messageCounter">0/399</div>
