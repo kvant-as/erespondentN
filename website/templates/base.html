@@ -52,7 +52,7 @@
                                 </li>
                                 <li onclick="window.location.href='/audit-area/not_viewed?year={{previous_year}}&quarter={{previous_quarter}}'">
                                     {{ icons.icon_audit() }}
-                                    Просмотр
+                                    Проверка
                                 </li>
                                 <li onclick="window.location.href='/admin'">
                                     {{ icons.icon_admin() }}
@@ -132,7 +132,7 @@
                         {% set audit_url = '/audit-area/not_viewed?year=' ~ previous_year ~ '&quarter=' ~ previous_quarter %}
                         <button onclick="window.location.href='{{ audit_url }}'">
                             {{ icons.icon_audit() }}
-                            <span>Аудит</span>
+                            <span>Проверка</span>
                         </button>
                     {% endif %}
                     
@@ -590,7 +590,7 @@
                     </li>
                     <li>
                         {{ icons.icon_clock() }}
-                        <a>Пн-Пт: 9:00 - 16:00</a>
+                        <a>Пн-Пт: 9:00 - 18:00</a>
                     </li>
                     
                 </ul>

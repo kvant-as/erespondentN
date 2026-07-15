@@ -236,7 +236,7 @@ def delete_all_message():
         
         db.session.commit()
         flash('Все сообщения успешно удалены.', 'success')
-        current_app.logger.error("Все сообщения удалены")
+        current_app.logger.debug("Все сообщения удалены")
             
     except Exception as e:
         db.session.rollback()
@@ -430,7 +430,7 @@ def get_auditor_info_by_user(current_user):
 @owner_only
 @respondent_only
 def report_section(report_type, id):
-    current_version = Version_report.query.filter_by(id=id).first()
+    current_version = Version_report.query.filter_by(report_id=id).first()
     current_report = Report.query.filter_by(id=current_version.report_id).first()
     
     auditor_info = get_auditor_info_by_user(current_user)
@@ -485,7 +485,7 @@ def report_section(report_type, id):
 @owner_only
 @respondent_only
 def report_info(id):
-    current_version = Version_report.query.filter_by(id=id).first()
+    current_version = Version_report.query.filter_by(report_id=id).first()
     current_report = Report.query.filter_by(id=current_version.report_id).first()
     
     auditor_info = get_auditor_info_by_user(current_user)
@@ -600,7 +600,7 @@ def api_audit_data():
 def audit_report(id):
     dirUnit = DirUnit.query.filter_by().all()
     dirProduct = DirProduct.query.filter_by().all()
-    current_version = Version_report.query.filter_by(id=id).first()
+    current_version = Version_report.query.filter_by(report_id=id).first()
     current_report = Report.query.filter_by(id=current_version.report_id).first()
     tickets = Ticket.query.filter_by(version_report_id = current_version.id).all()
     sections_fuel = Sections.query.filter_by(id_version=current_version.id, section_number=1).order_by(asc(Sections.code_product)).all()
@@ -1194,66 +1194,114 @@ def cancle_sent_version(id):
 @login_required 
 @session_required
 def change_category_report():
-    if current_user.type == "Смотрящий":
-        flash('У вас нет доступа к этому действию.', 'error')
-        return redirect(request.referrer)
-    
-    action = request.form.get('action')
-    report_id = request.form.get('reportId')
-    status_itog = None
-    
-    if request.method == 'POST':
-        current_version = Version_report.query.filter_by(id=report_id).first()
+    try:
+        if current_user.type == "Смотрящий":
+            flash('У вас нет доступа к этому действию.', 'error')
+            return redirect(request.referrer or url_for('views.index'))
         
-        if current_version is not None:
+        action = request.form.get('action')
+        report_id = request.form.get('reportId')
+        
+        if not action or not report_id:
+            flash('Недостаточно данных для выполнения операции.', 'error')
+            return redirect(request.referrer or url_for('views.index'))
+        
+        try:
+            current_version = Version_report.query.filter_by(report_id=report_id).first()
+            if current_version is None:
+                flash(f'Версия отчета с ID {report_id} не найдена.', 'error')
+                return redirect(request.referrer or url_for('views.index'))
+        except Exception as e:
+            flash(f'Ошибка при поиске версии отчета: {str(e)}', 'error')
+            return redirect(request.referrer or url_for('views.index'))
+        
+        try:
             recipient_user = User.query.filter_by(email=current_version.email).first()
-            
+            if recipient_user is None:
+                flash(f'Пользователь с email {current_version.email} не найден.', 'error')
+                return redirect(request.referrer or url_for('views.index'))
+        except Exception as e:
+            flash(f'Ошибка при поиске пользователя: {str(e)}', 'error')
+            return redirect(request.referrer or url_for('views.index'))
+        
+        try:
             report = Report.query.filter_by(id=current_version.report_id).first()
-            organization_name = report.organization.full_name if report and report.organization else "Неизвестная организация"
-            
-            # user = User.query.filter_by(email=current_version.email).first()
-            
-            if not current_version.hasNot and action != 'to_download':
-                flash('Необходимо уточнить о каких ошибках идет речь.', 'error')
-                return redirect(url_for('views.audit_report', id=current_version.id, tickets_cont='true'))
-            
-            if action == 'not_viewed':
-                status_itog = 'Отправлен'
-            elif action == 'remarks':
-                status_itog = 'Есть замечания'
-            elif action == 'to_download':
-                status_itog = 'Одобрен'
+            if report is None:
+                flash(f'Отчет с ID {current_version.report_id} не найден.', 'error')
+                return redirect(request.referrer or url_for('views.index'))
+        except Exception as e:
+            flash(f'Ошибка при поиске отчета: {str(e)}', 'error')
+            return redirect(request.referrer or url_for('views.index'))
+        
+        organization_name = report.organization.full_name if report and report.organization else "Неизвестная организация"
+        
+        if not current_version.hasNot and action != 'to_download':
+            flash('Необходимо уточнить о каких ошибках идет речь.', 'error')
+            return redirect(url_for('views.audit_report', id=current_version.id, tickets_cont='true'))
+        
+        status_itog = None
+        
+        if action == 'not_viewed':
+            status_itog = 'Отправлен'
+        elif action == 'remarks':
+            status_itog = 'Есть замечания'
+        elif action == 'to_download':
+            status_itog = 'Одобрен'
+            try:
                 ticket_message = Ticket(
                     note="Ошибок нет, отчет одобрен.",
                     luck=True,
                     version_report_id=current_version.id
                 )
                 db.session.add(ticket_message)
-            elif action == 'to_delete':
-                status_itog = 'Готов к удалению'
-            else:
-                flash('Неизвестное действие.', 'error')
-                return redirect(request.referrer) 
-            
+                db.session.flush()
+            except Exception as e:
+                db.session.rollback()
+                flash(f'Ошибка при создании квитанции: {str(e)}', 'error')
+                return redirect(request.referrer or url_for('views.index'))
+        elif action == 'to_delete':
+            status_itog = 'Готов к удалению'
+        else:
+            flash('Неизвестное действие.', 'error')
+            return redirect(request.referrer or url_for('views.index'))
+        
+        try:
             current_version.hasNot = False
             current_version.status = status_itog
             current_version.audit_time = current_utc_time()
             db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Ошибка при обновлении статуса версии отчета: {str(e)}', 'error')
+            return redirect(request.referrer or url_for('views.index'))
+        
+        try:
+            user_message_text = f"Статус вашего отчета за {report.year} год {report.quarter} квартал был изменен на «{status_itog}». Дополнительные сведения можно просмотреть в квитанции."
             
             user_message = Message(
-                text=f"Статус вашего отчета за {report.year} год {report.quarter} квартал был изменен на «{status_itog}». Дополнительные сведения можно просмотреть в квитанции.",
+                text=user_message_text,
                 recipient_id=recipient_user.id
             )
             db.session.add(user_message)
             db.session.commit()
-            
-            send_email(user_message.text, recipient_user.email, 'notification')
-
-            flash(f'Статус отчета "{organization_name}" за {report.year} год {report.quarter} квартал был изменен на «{status_itog}».', 'success')
-            return redirect(request.referrer)
-        else:
-            flash('Отчет не найден.', 'error')
-            return "Version not found", 404
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Ошибка при создании уведомления: {str(e)}', 'error')
+            return redirect(request.referrer or url_for('views.index'))
+        
+        try:
+            send_email(user_message_text, recipient_user.email, 'notification')
+        except Exception as e:
+            print(f'Ошибка отправки email: {str(e)}')
+            flash('Статус изменен, но возникла ошибка при отправке уведомления на email.', 'warning')
+        
+        flash(f'Статус отчета "{organization_name}" за {report.year} год {report.quarter} квартал был изменен на «{status_itog}».', 'success')
+        return redirect(request.referrer or url_for('views.index'))
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Произошла ошибка: {str(e)}', 'error')
+        return redirect(request.referrer or url_for('views.index'))
         
 @views.route('/rollbackreport/<id>', methods=['POST'])
 @login_required 
@@ -1264,7 +1312,7 @@ def rollbackreport(id):
             flash('У вас нет доступа к этому действию.', 'error')
             return redirect(request.referrer)
         
-        current_version = Version_report.query.filter_by(id=id).first()
+        current_version = Version_report.query.filter_by(report_id=id).first()
         recipient_user = User.query.filter_by(email=current_version.email).first()    
         if current_version:
             if current_version.status != 'Отправлен':
@@ -1273,8 +1321,8 @@ def rollbackreport(id):
                 else:
                     audit_time = datetime.combine(current_version.audit_time, datetime.min.time())
 
-                if audit_time + timedelta(days=30) <= current_utc_time():
-                    flash('Прошло больше 30-ти дней, статус отчета изменить нельзя.', 'error')
+                if audit_time + timedelta(days=92) <= current_utc_time():
+                    flash('Прошло больше 3-ех месяцев, статус отчета изменить нельзя.', 'error')
                 else: 
                     current_version.status = "Отправлен"
                     current_version.hasNot = False
