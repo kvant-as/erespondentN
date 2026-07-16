@@ -11,17 +11,9 @@
                 <div class="link_cont" style = "margin-bottom: 25px;">
                     <a onclick="window.location.href='/login'" class = "active" style="margin-right: 19px;">Введите код для активации</a>
                 </div>
-                <div class="answer-highlight-second" style = "max-width: 450px;">
-                    <div class="highlight-icon">💡</div>
-                    <p>Код подтверждения будет отправлен на указанную электронную почту. Время доставки может составлять от нескольких секунд до нескольких минут. Если он так и не пришел прочитайте пожалуйста <a href="/FAQ#faq16" target="_blank" class = "instruction-link">как решить проблему</a>.</p>
+                <div class="glass-info-block" style = "max-width: 450px;">
+                    <p>Код подтверждения будет отправлен на указанную электронную почту. Время доставки может составлять от нескольких секунд до нескольких минут. Если он так и не пришел прочитайте пожалуйста <a href="/FAQ#faq16" target="_blank" class = "instruction-link">как решить проблему</a></p>
                 </div>
-                <!-- <div class="answer-highlight-second" style="max-width: 450px;">
-                    <div class="highlight-icon">⚠️</div>
-                    <p><strong>Ведутся технические работы</strong></p>
-                    <p>В данный момент возможны задержки с доставкой кода подтверждения отправленного на вашу почту.</p>
-                    <br>
-                    <p>Если код не пришёл, попробуйте пожалуйста позже.</p>
-                </div> -->
                 <div class="authorization_data">
                     <div class="activation_code_container">
                         {% for i in range(5) %}
@@ -39,7 +31,7 @@
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="log_buttons_area">
                     <button type="submit" class="submit_button blue_btn">         
-                        {{ icons.icon_email() }}
+                        {{ icons.icon_send() }}
                         <span>Отправить</span>         
                     </button>
                 </div>

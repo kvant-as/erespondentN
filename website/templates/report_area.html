@@ -11,7 +11,7 @@
                         <section>
                             <div class="functions_menu">
                                 <li id="link_add_report" class="{% if not report %}need-to-touch{% endif %}">
-                                    <img src="{{ url_for('static', filename='img/icon_new_file.png') }}" alt="Создать отчет">
+                                    <img src="{{ url_for('static', filename='img/icon_new_file.svg') }}" alt="Создать отчет">
                                     <a class = "li-title">
                                         <span>Добавить</span>
                                     </a>
@@ -24,20 +24,20 @@
                                 <form id="control-version-form" method="POST" style="display: none;">
                                 </form>
                                 <li id="control_versionButton">
-                                    <img src="{{ url_for('static', filename='img/icon_control.png') }}" alt="">
+                                    <img src="{{ url_for('static', filename='img/icon_control.svg') }}" alt="">
                                     <a class = "li-title">
                                         <span>Контроль</span>
                                     </a>
                                 </li>
                                 <form id="agreed-version-form" method="POST" style="display: none;"></form>
                                 <li id = "agreedVersionButton">
-                                    <img src="{{ url_for('static', filename='img/icon_galochka.png') }}" alt="">
+                                    <img src="{{ url_for('static', filename='img/icon_galochka.svg') }}" alt="">
                                     <a class = "li-title">
                                         <span>Согласовать</span>
                                     </a>
                                 </li>
                                 <li id = "sentVersionButton">
-                                    <img src="{{ url_for('static', filename='img/icon_send.png') }}" alt="">
+                                    <img src="{{ url_for('static', filename='img/icon_send.svg') }}" alt="">
                                     <a class = "li-title">
                                         <span>Отправить</span>
                                     </a>
@@ -48,7 +48,7 @@
                         <section>
                             <div class="functions_menu">
                                 <li id = "toTicketsBtn">
-                                    <img src="{{ url_for('static', filename='img/icon_print_file.png') }}" alt="">
+                                    <img src="{{ url_for('static', filename='img/icon_print_file.svg') }}" alt="">
                                     <a class = "li-title">
                                         <span>Квитанции</span>
                                     </a>
@@ -56,7 +56,7 @@
                                 <form id="export-version-form" action="/export-version/{{current_version}}" method="POST" style="display: none;">
                                 </form>    
                                 <li id="export_versionButton">
-                                    <img src="{{ url_for('static', filename='img/icon_excel.png') }}" alt="">
+                                    <img src="{{ url_for('static', filename='img/icon_excel.svg') }}" alt="">
                                     <a class = "li-title">
                                         <span>Экспорт</span>
                                     </a>

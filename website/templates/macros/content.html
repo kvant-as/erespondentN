@@ -24,11 +24,20 @@
             </div>
             
             <div class="form-col">
-                <label class="form-label">Отчетный период</label>
+                <label class="form-label">УНП</label>
                 <div class="input-wrapper">
-                    {{ icons.icon_calendar() }}
-                    <input class="form-input" value="{{ report.year }} г. {{ report.quarter|string + ' квартал' }}" readonly disabled>
+                    {{ icons.icon_okpo() }}
+                    <input class="form-input" value="{{ report.organization.ynp if report.organization.ynp else '---' }}" readonly disabled>
                 </div>
+            </div>
+        </div>
+
+        
+        <div class="form-row">
+            <label class="form-label">Отчетный период</label>
+            <div class="input-wrapper">
+                {{ icons.icon_calendar() }}
+                <input class="form-input active" value="{{ report.year }} г. {{ report.quarter|string + ' квартал' }}" readonly disabled>
             </div>
         </div>
     </div>
@@ -325,7 +334,7 @@
                         <section>    
                             <div class="functions_menu {% if current_version.status in ['Отправлен', 'Одобрен'] or section_number == 4 %}disabled{% endif %}">
                                 <li data-action="link_addSection_modal">
-                                    <img src="{{ url_for('static', filename='img/icon_new_file.png')}}" alt="">
+                                    <img src="{{ url_for('static', filename='img/icon_new_file.svg')}}" alt="">
                                     <a class="li-title"><span>Добавить</span></a>
                                 </li>
                             </div>
@@ -365,7 +374,7 @@
                                     {% if section_number == 4 %} 
                                         class="active_functions_menu"
                                     {% endif %}>
-                                    <img src="/static/img/icon_print_file.png" alt="">
+                                    <img src="/static/img/icon_print_file.svg" alt="">
                                     <a class="li-title"><span>Квитанции</span></a>
                                 </li>    
                                 <form style="display: none;" id="export-table-form" action="/export-table" method="post">
@@ -374,7 +383,7 @@
                                     <input type="hidden" name="numb_section" value="1" readonly>
                                 </form>
                                 <li id="export-table-btn" {% if section_number == 4 %}style="opacity: 0.5; pointer-events: none;"{% endif %}>           
-                                    <img src="{{ url_for('static', filename='img/icon_excel.png')}}" alt="">
+                                    <img src="{{ url_for('static', filename='img/icon_excel.svg')}}" alt="">
                                     <a class="li-title"><span>Экспорт</span></a>   
                                 </li>
                             </div>  
@@ -390,7 +399,7 @@
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     </form>                       
                                     <li id="cancel-sending-btn" {% if section_number == 4 %}style="opacity: 0.5; pointer-events: none;"{% endif %}>           
-                                        <img src="{{ url_for('static', filename='img/cancel-send.png')}}" alt="">
+                                        <img src="{{ url_for('static', filename='img/cancel-send.svg')}}" alt="">
                                         <a class="li-title">
                                             <span>Отменить</span>   
                                         </a>
@@ -402,7 +411,7 @@
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     </form>
                                     <li id="control-report-btn" {% if section_number == 4 %}style="opacity: 0.5; pointer-events: none;"{% endif %}>           
-                                        <img src="{{ url_for('static', filename='img/icon_control.png')}}" alt="">
+                                        <img src="{{ url_for('static', filename='img/icon_control.svg')}}" alt="">
                                         <a class="li-title"><span>Контроль</span></a>   
                                     </li> 
                                 {% endif %}
@@ -412,14 +421,14 @@
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     </form>
                                     <li id="agreed-report-btn" {% if section_number == 4 %}style="opacity: 0.5; pointer-events: none;"{% endif %}>
-                                        <img src="{{ url_for('static', filename='img/icon_galochka.png') }}" alt="">
+                                        <img src="{{ url_for('static', filename='img/icon_galochka.svg') }}" alt="">
                                         <a class="li-title"><span>Согласовать</span></a>
                                     </li>
                                 {% endif %}
 
                                 {% if current_version.status == 'Согласовано' %} 
                                     <li id="sent-report-btn" {% if section_number == 4 %}style="opacity: 0.5; pointer-events: none;"{% endif %}>
-                                        <img src="{{ url_for('static', filename='img/icon_send.png') }}" alt="">
+                                        <img src="{{ url_for('static', filename='img/icon_send.svg') }}" alt="">
                                         <a class="li-title"><span>Отправить</span></a>
                                     </li>
                                 {% endif %}
@@ -507,15 +516,15 @@
                             <div class="message-bubble">
                                 <p class="text-ticket">{{ row.note }}</p>
                                 <div class="bubble-status">
-                                    {% if row.luck %}
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                                            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="#34B7F1"/>
-                                        </svg>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="#34B7F1"/>
+                                    </svg>
+                                    {#{% if row.luck %}
                                     {% else %}
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
                                             <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="#FF5252"/>
                                         </svg>
-                                    {% endif %}
+                                    {% endif %}#}
                                 </div>
                             </div>
                             
@@ -602,9 +611,8 @@
                             <div class="section-header">
                                 <h3 class="section-title">Текст сообщения</h3>
                             </div>
-                            <div class="answer-highlight-second">
-                                <div class="highlight-icon">💡</div>
-                                <p>При наличии ошибок в отчете укажите их в соответствующем поле. Если ошибки отсутствуют, измените статус на <strong>"Одобренный"</strong>.</p>
+                            <div class="glass-info-block">
+                                <p>При наличии ошибок в отчете укажите их. Если ошибки отсутствуют, измените статус на <strong>«Одобренный»</strong></p>
                             </div>
                             <textarea name="text" maxlength="399" required class="message-field__textarea" placeholder="Введите ваше сообщение..." oninput="updateCounter(this)"></textarea>
                             <div class="message-field__counter" id="messageCounter">0/399</div>
@@ -614,7 +622,7 @@
                             {% if current_version and current_version.status not in ['Одобрен', 'Готов к удалению', 'Есть замечания'] and current_user and current_user.type != 'Смотрящий' %}
                             <div class="model_but_area right">
                                 <button type="submit" class="blue_btn">
-                                    {{ icons.icon_email() }}
+                                    {{ icons.icon_send() }}
                                     <span>Отправить сообщение</span>
                                 </button>
                             </div>
