@@ -4,11 +4,11 @@ from flask_login import current_user
 
 class Version_reportView(ModelView):
     column_display_pk = True
-    column_list = ['id', 'begin_time', 'change_time', 'status', 'sent_time', 'fio', 'telephone', 'email', 'hasNot','report_id']
+    column_list = ['id', 'begin_time', 'change_time', 'status', 'sent_time', 'hasNot', 'report_id']
     column_default_sort = ('fio', True)
-    column_sortable_list = ('id', 'begin_time', 'change_time', 'status', 'sent_time', 'fio', 'telephone', 'email', 'hasNot', 'report_id')
+    column_sortable_list = ('id', 'begin_time', 'change_time', 'status', 'sent_time', 'hasNot', 'report_id')
     
-    column_searchable_list = ['id', 'telephone', 'email']
+    column_searchable_list = ['id']
     AVAILABLE_versions_TYPES = [
         (u'Заполнение', u'Заполнение'),
         (u'Контроль пройден', u'Контроль пройден'),

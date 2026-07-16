@@ -537,7 +537,6 @@
             </div>
         </div>
 
-        {% if auditor_info or (current_version and current_version.email) %}
         <div class="form-container">
             <form method="POST" action="/send-comment" class="comment-form">
                 <div class="comment-form__grid {% if auditor_info %}comment-form__grid_respondent{% endif %}">
@@ -576,21 +575,21 @@
                                     {{ icons.icon_email() }}
                                     <div class="detail-content">
                                         <div class="detail-label">Email</div>
-                                        <div class="detail-value">{{ current_version.email }}</div>
+                                        <div class="detail-value">{{ current_version.report.user.email }}</div>
                                     </div>
                                 </div>
                                 <div class="detail-item">    
                                     {{ icons.icon_profile() }}
                                     <div class="detail-content">
                                         <div class="detail-label">ФИО</div>
-                                        <div class="detail-value">{{ current_version.fio }}</div>
+                                        <div class="detail-value">{{ current_version.report.user.fio }}</div>
                                     </div>
                                 </div>
                                 <div class="detail-item">
                                     {{ icons.icon_phone() }}
                                     <div class="detail-content">
                                         <div class="detail-label">Номер телефона</div>
-                                        <div class="detail-value">{{ current_version.telephone }}</div>
+                                        <div class="detail-value">{{ current_version.report.user.telephone }}</div>
                                     </div>
                                 </div>
                             {% endif %}
@@ -626,7 +625,6 @@
                 </div>
             </form>
         </div>
-        {% endif %}
     </div>
     
     {% if current_report and content and not tickets %}
