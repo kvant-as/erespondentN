@@ -19,11 +19,10 @@
     <div class="contener_row">
         {{ content.left_menu(active_tab) }}
         <div class="personal-info_area">
-                <div class="answer-highlight-second" >
-                    <div class="highlight-icon">💡</div>
+                <div class="glass-info-block">
                     {% if user.type == 'Респондент' or user.type == 'Администратор'%}
                         <p>Указывайте персональные данные лица заполняющего отчеты.</p>
-                        <p>После <strong>создания</strong> первого отчета редактирование организационных данных становится <strong>недоступным</strong>.</p>
+                        <p>После <strong>создания</strong> первого отчета редактирование организационных данных становится <strong>недоступным</strong></p>
                     {% elif user.type == 'Аудитор' or user.type == 'Смотрящий' %}
                         <p>Указывайте свои настоящие данные для того чтобы с вами могли связаться.</p>
                     {% endif %}

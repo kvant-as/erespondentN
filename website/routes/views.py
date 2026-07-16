@@ -678,9 +678,6 @@ def create_report():
             new_version_report = Version_report(
                 begin_time = current_utc_time(), 
                 status = "Заполнение",
-                fio = current_user.fio,
-                telephone = current_user.telephone,
-                email = current_user.email,
                 report=new_report
             )
             db.session.add(new_version_report)
@@ -821,9 +818,6 @@ def copy_report():
             new_version = Version_report(
                 begin_time=current_utc_time(),
                 status="Заполнение",
-                fio=current_user.fio,
-                telephone=current_user.telephone,
-                email=current_user.email,
                 report_id=new_report.id
             )
             db.session.add(new_version)
@@ -1216,9 +1210,9 @@ def change_category_report():
             return redirect(request.referrer or url_for('views.index'))
         
         try:
-            recipient_user = User.query.filter_by(email=current_version.email).first()
+            recipient_user = User.query.filter_by(email=current_version.report.user.email).first()
             if recipient_user is None:
-                flash(f'Пользователь с email {current_version.email} не найден.', 'error')
+                flash(f'Пользователь с email {current_version.report.user.email} не найден.', 'error')
                 return redirect(request.referrer or url_for('views.index'))
         except Exception as e:
             flash(f'Ошибка при поиске пользователя: {str(e)}', 'error')
@@ -1313,7 +1307,7 @@ def rollbackreport(id):
             return redirect(request.referrer)
         
         current_version = Version_report.query.filter_by(report_id=id).first()
-        recipient_user = User.query.filter_by(email=current_version.email).first()    
+        recipient_user = User.query.filter_by(email=current_version.report.user.email).first()    
         if current_version:
             if current_version.status != 'Отправлен':
                 if isinstance(current_version.audit_time, datetime):
