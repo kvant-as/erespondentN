@@ -198,9 +198,8 @@
                   <h3 class="change-position">Отправить отчет</h3>
                   {{ icons.icon_close() }}
               </div>
-              <div class="answer-highlight-second" style = "max-width: 550px;">
-                  <div class="highlight-icon">💡</div>
-                  <p>Перетащите <strong>файл сертификата ЭЦП</strong> для отправки отчета. Если у вас возникнут вопросы, пожалуйста, ознакомьтесь с <a href="/FAQ#faq11" class="instruction-link">инструкцией</a> по работе.</p>
+              <div class="glass-info-block" style = "max-width: 550px;">
+                  <p>Перетащите файл сертификата ЭЦП для отправки отчета. Если у вас возникнут вопросы, пожалуйста, ознакомьтесь с <a href="/FAQ#faq11" class="instruction-link">инструкцией</a> по работе.</p>
               </div>
               <form id="sentForm" style = "text-align: center;" method="POST" enctype="multipart/form-data">
                   <div id="drop-area" class="drop-area" role="button" tabindex="0" aria-labelledby="file-upload-label">
@@ -218,7 +217,7 @@
                   <input type="hidden" id = "report-id-null" name="report-id-null" value="{% if current_version and current_version.id %}{{current_version.id}}{% endif %}">
                   <div class="model_but_area right">
                       <button type="submit" id = "send_button" class="blue_btn">
-                          {{ icons.icon_email() }}
+                          {{ icons.icon_send() }}
                           <span>Отправить на проверку</span>
                       </button>
                   </div>  

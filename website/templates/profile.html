@@ -153,10 +153,6 @@
             <h3 class = "change-position">Загрузка статистики</h3>
             {{ icons.icon_close() }}
         </div>
-        <div class="answer-highlight-second" style = "max-width: 510px;">
-            <div class="highlight-icon">💡</div>
-            <p>Выберите необходимый отчетный период.</p>
-        </div>
         <form action="/load_org_stat" method="POST">
             <input type="hidden" name="modal_add_year" id="selected-year-add" value="{{previous_year}}">
             <input type="hidden" name="modal_add_quarter" id="selected-quarter-add" value="{{previous_quarter}}">
