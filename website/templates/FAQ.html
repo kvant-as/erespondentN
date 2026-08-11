@@ -141,13 +141,13 @@
                     </li>
                 </ul>
                 {% endif %}
-                
+
+                <li data-question="7">
+                    <a href="javascript:void(0)">Как задать вопрос?</a>
+                </li>
                 <li data-question="4">
                     <a href="javascript:void(0)">О приложении</a>
                 </li>
-                <li data-question="7">
-                    <a href="javascript:void(0)">Помощь</a>
-                </li> 
             </ul>
         </nav>
         
@@ -501,25 +501,19 @@
                         <h1>Как задать вопрос администратору?</h1>
                     </div>
                     <div class="infos">
-                        <div class="answer-highlight-second">
-                            <div class="highlight-icon">💬</div>
-                            <div>
-                                <p>Если у вас возникли вопросы или проблемы, вы можете напрямую обратиться к администратору системы. Для этого выполните следующие шаги:</p>
-                            </div>
-                        </div>
+                    
+                        <p>Если у вас возникли вопросы или проблемы, вы можете напрямую обратиться к администратору системы. Для этого выполните следующие шаги:</p>
                         
                         <ol class="steps-list">
-                            <li><strong>Перейдите на <a class = "instruction-link" href="/">Главную страницу</a></strong> веб-приложения.</li>
-                            <li><strong>Прокрутите страницу вниз</strong> до самого конца.</li>
-                            <li>Найдите <a class = "instruction-link" href="/#askquestion-form">форму обратной связи</a> в нижней части страницы.</li>
+                            <li>Перейдите к <a class="instruction-link" href="/#askquestion-form">форме обратной связи</a>.</li>
                             <li>Выберите ваш <strong>тип вопроса</strong> из доступных на выбор.</li>
                             <li><strong>Введите ваш вопрос</strong> если выбрали <strong>Прочее</strong>, или же введите данные организации если выбрали <strong>Нет организации.</strong></li>
-                            <li><strong>Нажмите кнопку отправки</strong> — ваше сообщение будет отправлено администратору.</li>
+                            <li><strong>Нажмите кнопку отправки</strong> — ваше сообщение будет отправлено администратору на рассмотрение.</li>
                         </ol>
                         
                         <div class="p_img">
                             <img src="{{ url_for('static', filename='img/post/askquestion-form-default.png') }}" alt="">
-                            <span>Рисунок 15 - Форма для обращения к администратору</span>
+                            <span>Рисунок 15 - Форма обратной связи</span>
                         </div>  
                         
                         <div class="answer-highlight-second">
@@ -1815,8 +1809,7 @@
                         <p><strong>Инструкция по редактированию данных организации:</strong></p>
 
                         <ol class="steps-list">
-                            <li>Перейдите на <a class="instruction-link" href="/">главную страницу</a> сайта ErespondentN.</li>
-                            <li>Прокрутите страницу вниз до <strong>формы обратной связи</strong>.</li>
+                            <li>Перейдите к  <a class="instruction-link" href="/#askquestion-form">форме обратной связи</a>.</li>
                             <li>В поле <strong>«Выберите тип вопроса»</strong> выберите значение <strong>«Изменить данные организации»</strong>.</li>
                         </ol>
 

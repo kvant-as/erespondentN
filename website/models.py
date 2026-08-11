@@ -4,16 +4,6 @@ from sqlalchemy.orm import relationship, backref
 from sqlalchemy import Numeric
 from .time import current_utc_time
 
-class Message(db.Model):
-    __tablename__ = 'message'
-    id = db.Column(db.Integer, primary_key=True)
-    create_time = db.Column(db.DateTime, default=current_utc_time())
-    sender_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
-    recipient_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
-    text = db.Column(db.String(500))
-    sender = db.relationship('User', foreign_keys=[sender_id], backref=backref('sent_messages', lazy=True, cascade="all, delete-orphan"))
-    recipient = db.relationship('User', foreign_keys=[recipient_id], backref=backref('received_messages', lazy=True, cascade="all, delete-orphan"))
-
 class User(db.Model, UserMixin):
     __tablename__ = 'user'
     id = db.Column(db.Integer, primary_key=True)
@@ -25,28 +15,55 @@ class User(db.Model, UserMixin):
     last_active = db.Column(db.DateTime, nullable=False, default=current_utc_time())
     reports = db.relationship('Report', backref='user', lazy=True, cascade="all, delete-orphan")
     organization_id = db.Column(db.Integer, db.ForeignKey('organization.id'))
-    organization = db.relationship('Organization', backref='users')
+    organization = db.relationship('Organization', back_populates='users')
+
+class Message(db.Model):
+    __tablename__ = 'message'
+    id = db.Column(db.Integer, primary_key=True)
+    create_time = db.Column(db.DateTime, default=current_utc_time())
+    sender_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    recipient_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    to_admin = db.Column(db.Boolean, default=False)
+    is_read = db.Column(db.Boolean, default=False)
+    read_time = db.Column(db.DateTime, nullable=True)
+    text = db.Column(db.String(500))
+    sender = db.relationship('User', foreign_keys=[sender_id], backref=backref('sent_messages', lazy=True, cascade="all, delete-orphan"))
+    recipient = db.relationship('User', foreign_keys=[recipient_id], backref=backref('received_messages', lazy=True, cascade="all, delete-orphan"))
 
 class Organization(db.Model):
     __tablename__ = 'organization'
     id = db.Column(db.Integer, primary_key=True)
+    
+    is_active = db.Column(db.Boolean, default=True)
     full_name = db.Column(db.String())
     okpo = db.Column(db.String, unique=True)
     ynp = db.Column(db.String(), nullable=True)
-    # ministry_id = db.Column(db.Integer, db.ForeignKey('ministry.id'), nullable=True)
-    ministry = db.Column(db.String()) 
-    is_active = db.Column(db.Boolean, default=True)
-    reports = db.relationship('Report', backref='organization', lazy=True)
-    # @property
-    # def ministry(self):
-    #     return self.ministry_rel.name if self.ministry_rel else None
 
-# class Ministry(db.Model):
-#     __tablename__ = 'ministry'
-#     id = db.Column(db.Integer, primary_key=True)
-#     name = db.Column(db.String(200), nullable=False, unique=True)
-#     code = db.Column(db.String(50), nullable=True)
-#     organizations = db.relationship('Organization', backref='ministry_rel', lazy=True)
+    region_id = db.Column(db.Integer, db.ForeignKey('regions.id'))
+    ministry_id = db.Column(db.Integer, db.ForeignKey('ministry.id'), nullable=True)
+    
+    is_regular = db.Column(db.Boolean, default=False)
+    is_coordinator = db.Column(db.Boolean, default=False)
+    is_approver = db.Column(db.Boolean, default=False)
+    is_region_management = db.Column(db.Boolean, default=False)
+    
+    region = db.relationship("Region", back_populates="organizations")
+    ministry = db.relationship("Ministry", back_populates="organizations")
+    users = db.relationship("User", back_populates="organization")
+    reports = db.relationship('Report', backref='organization', lazy=True)
+    
+class Region(db.Model):
+    __tablename__ = 'regions'
+    id = db.Column(db.Integer, primary_key=True)
+    number = db.Column(db.Integer, unique=True, nullable=False)
+    name = db.Column(db.String(), nullable=False)
+    organizations = db.relationship("Organization", back_populates="region")
+    
+class Ministry(db.Model):
+    __tablename__ = 'ministry'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False, unique=True)
+    organizations = db.relationship('Organization', back_populates="ministry")
 
 class Report(db.Model):
     __tablename__ = 'report'
@@ -55,7 +72,6 @@ class Report(db.Model):
     year = db.Column(db.Integer)
     quarter = db.Column(db.Integer)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))  
-    # time_of_receipt = db.Column(db.DateTime) 
     versions = db.relationship('Version_report', backref='report', cascade="all, delete-orphan")
 
 class Version_report(db.Model):
@@ -66,9 +82,6 @@ class Version_report(db.Model):
     sent_time = db.Column(db.DateTime)
     audit_time = db.Column(db.DateTime)
     status = db.Column(db.String(20))
-    # fio = db.Column(db.String(100))
-    # telephone = db.Column(db.String())    
-    # email = db.Column(db.String())
     hasNot = db.Column(db.Boolean, default=False)
     report_id = db.Column(db.Integer, db.ForeignKey('report.id'))
     sections = db.relationship('Sections', backref='version_report', lazy=True, cascade="all, delete-orphan")

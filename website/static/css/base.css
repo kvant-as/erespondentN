@@ -1399,11 +1399,11 @@ main {
 }
 
 .custom-alert.alert-success {
-    background: linear-gradient(135deg, rgba(76, 175, 80, 0.3) 0%, rgba(58, 161, 62, 0.747) 100%);;
+    background: linear-gradient(135deg, rgba(76, 175, 80, 0.3) 0%, rgba(93, 209, 97, 0.747) 100%);;
 }
 
 .custom-alert.alert-danger {
-    background: linear-gradient(135deg, rgba(244, 67, 54, 0.3) 0%, rgba(252, 17, 0, 0.541) 100%);
+    background: linear-gradient(135deg, rgba(244, 67, 54, 0.3) 0%, rgba(255, 65, 52, 0.541) 100%);
 }
 
 
@@ -3113,6 +3113,38 @@ main {
     margin-left: auto;
 }
 
+.reply_info {
+    margin-bottom: 14px;
+}
+
+.reply_recipient {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    font-size: 13px;
+}
+
+.reply_label {
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.reply_name {
+    color: #1a2332;
+    font-weight: 600;
+}
+
+.reply_phone {
+    color: #4A6CF7;
+    font-weight: 500;
+}
+
+.reply_email {
+    color: #6b7280;
+    font-size: 12px;
+}
+
 .account_messageArea img {
     width: 28px;
     height: 28px;
@@ -3151,7 +3183,23 @@ main {
     background-color: #f9f9f9;
 }
 
-/* Заголовок сообщения */
+.message_cont .mes.read {
+    background-color: #f7f8ff;
+    opacity: 0.7;
+}
+
+.message_cont .mes.read .mes-text {
+    color: #7a7f8b;
+}
+
+.message_cont .mes.read .mes-header {
+    color: #8e94a1;
+}
+
+.message_cont .mes.read .mes-time {
+    color: #a0a6b3;
+}
+
 .message_header {
     display: flex;
     justify-content: space-between;
@@ -3162,14 +3210,30 @@ main {
 }
 
 .time_mes {
-    font-size: 12px;
-    color: #666;
-    font-weight: 500;
-    flex: 1;
-    min-width: 120px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #6b7280;
 }
 
-.sender {
+.msg-date {
+    color: #4a5568;
+    font-weight: 500;
+    font-size: 12px;
+}
+
+.msg-time {
+    color: #2d3748;
+    font-weight: 600;
+    background: #ebf8ff;
+    padding: 2px 5px;
+    border-radius: 14px;
+    font-size: 13px;
+    font-family: 'Courier New', monospace;
+}
+
+.time_mes .sender {
     color: #2c5282;
     font-weight: 600;
     background: #ebf8ff;
@@ -3180,7 +3244,10 @@ main {
     white-space: nowrap;
 }
 
-/* Действия с сообщением */
+.message_cont .mes.read .msg-time {
+    background: #dce0e8;
+}
+
 .message_actions {
     display: flex;
     gap: 6px;
@@ -7493,6 +7560,69 @@ th.resizable .resizer {
 
 .print-btn:hover .print-btn svg {
     transform: rotate(12deg);
+}
+
+.mark-read-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    background: white;
+    border: 1px solid #e0e5f0;
+    border-radius: 6px;
+    color: #2d3748;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.mark-read-btn:hover {
+    background: #4CAF50;
+    border-color: #4CAF50;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(76, 175, 80, 0.2);
+}
+
+.mark-read-btn svg {
+    transition: transform 0.2s ease;
+}
+
+.mark-read-btn:hover svg {
+    transform: scale(1.2);
+}
+
+.mark-all-read-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 10px;
+    background: white;
+    border: 1px solid #e0e5f0;
+    border-radius: 8px;
+    color: #2d3748;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.mark-all-read-btn:hover {
+    background: #4CAF50;
+    border-color: #4CAF50;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}
+
+.mark-all-read-btn svg {
+    width: 18px;
+    height: 18px;
+    transition: transform 0.2s ease;
+}
+
+.mark-all-read-btn:hover svg {
+    transform: scale(1.1);
 }
 
 @media (max-width: 640px) {

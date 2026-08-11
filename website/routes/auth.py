@@ -81,12 +81,12 @@ def login():
                     db.session.commit()
 
                     response = create_login_response(user)
-                    flash('Авторизация прошла успешно.', 'success')
+                    flash('Авторизация прошла успешно', 'success')
                     return response
                 
-            flash('Неправильный email или пароль.', 'error')
+            flash('Неправильный email или пароль', 'error')
         else:
-            flash('Введите данные для авторизации.', 'error')
+            flash('Введите данные для авторизации', 'error')
 
     return redirect(url_for('views.login'))
 
@@ -97,7 +97,7 @@ def logout():
     response = clear_session_cookie(response)
     logout_user()
 
-    flash('Выполнен выход из аккаунта.', 'success')
+    flash('Выполнен выход из аккаунта', 'success')
     return response
 
 @auth.route('/sign', methods=['POST'])
@@ -108,11 +108,11 @@ def sign():
         password2 = request.form.get('password2')
         if email and password1:
             if User.query.filter(func.lower(User.email) == func.lower(email)).first():
-                flash('Пользователь с таким email уже существует.', 'error')
+                flash('Пользователь с таким email уже существует', 'error')
             elif not re.match(r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$', email):
-                flash('Некорректный адрес электронной почты.', 'error') 
+                flash('Некорректный адрес электронной почты', 'error') 
             elif password1 != password2:
-                flash('Ошибка в подтверждении пароля.', 'error') 
+                flash('Ошибка в подтверждении пароля', 'error') 
             else:      
                 session['temp_user'] = {
                     'email': email,
@@ -120,10 +120,10 @@ def sign():
                 }
                 session.permanent = True
                 send_activation_email(email) 
-                flash('Проверьте свою почту для активации аккаунта.', 'success')
+                flash('Проверьте свою почту для активации аккаунта', 'success')
                 return redirect(url_for('views.code'))
         else:
-            flash('Введите данные для регистрации.', 'error')    
+            flash('Введите данные для регистрации', 'error')    
     return redirect(url_for('views.sign'))
 
 @auth.route('/code', methods=['POST'])
@@ -134,7 +134,7 @@ def code():
         ])
         
         if 'temp_user' not in session or 'activation_code' not in session:
-            flash('Сессия истекла. Пожалуйста, начните регистрацию заново.', 'error')
+            flash('Сессия истекла. Пожалуйста, начните регистрацию заново', 'error')
             return redirect(url_for('views.sign'))
         
         if input_code == session.get('activation_code'):
@@ -158,7 +158,7 @@ def code():
             flash('Аккаунт успешно активирован! Теперь перейдите к заполнению профиля!', 'success')
             return response
         else:
-            flash('Некорректный код активации.', 'error')
+            flash('Некорректный код активации', 'error')
     return redirect(url_for('views.code'))
 
 @auth.route('/resend-code', methods=['POST'])
@@ -186,7 +186,7 @@ def add_personal_parametrs():
         id_org = request.form.get('id_org', '').strip()
 
         if not all([name, second_name, telephone]):
-            flash('Заполните все обязательные поля.', 'error')
+            flash('Заполните все обязательные поля', 'error')
             return redirect(url_for('views.profile_common'))
 
         fio = f"{second_name} {name} {patronymic}".strip()
@@ -196,24 +196,24 @@ def add_personal_parametrs():
 
         existing_telephone = User.query.filter(User.id != current_user.id, User.telephone == telephone).first()
         if existing_telephone:
-            flash('Пользователь с таким номером телефона уже существует.', 'error')
+            flash('Пользователь с таким номером телефона уже существует', 'error')
             return redirect(url_for('views.profile_common'))
         current_user.telephone = telephone
         db.session.commit()
         
         if not all([id_org]):
-            flash('Выберите предприятие.', 'error')
+            flash('Выберите предприятие', 'error')
             return redirect(url_for('views.profile_common'))
         
         organization = Organization.query.filter_by(id=id_org).first()
         if not organization:
-            flash('Организация не найдена.', 'error')
+            flash('Организация не найдена', 'error')
             return redirect(url_for('views.profile_common'))
         db.session.commit()
 
         # existing_userOrg = User.query.filter_by(organization_id=organization.id).first()
         # if existing_userOrg and existing_userOrg.id != current_user.id:
-        #     flash('Аккаунт с такой организацией уже существует.', 'error')
+        #     flash('Аккаунт с такой организацией уже существует', 'error')
         #     return redirect(url_for('views.profile_common'))
         
         current_user.organization_id = organization.id
@@ -222,7 +222,7 @@ def add_personal_parametrs():
         session.pop('activation_code', None)
         
         db.session.commit()
-        flash('Данные успешно обновлены.', 'success')
+        flash('Данные успешно обновлены', 'success')
         
     return redirect(url_for('views.profile_common'))
 
@@ -235,15 +235,15 @@ def profile_password():
         conf_new_password = request.form.get('conf_new_password')
         
         if not (old_password and new_password and conf_new_password):
-            flash('Введите все поля для смены пароля.', 'error')
+            flash('Введите все поля для смены пароля', 'error')
             return redirect(url_for('views.profile_password'))
 
         if not check_password_hash(current_user.password, old_password):
-            flash('Неправильный старый пароль.', 'error')
+            flash('Неправильный старый пароль', 'error')
             return redirect(url_for('views.profile_password'))
 
         if new_password != conf_new_password:
-            flash('При подтверждении пароля произошла ошибка.', 'error')
+            flash('При подтверждении пароля произошла ошибка', 'error')
             return redirect(url_for('views.profile_password'))
 
         user = User.query.filter_by(id=current_user.id).first()
@@ -256,7 +256,7 @@ def profile_password():
         response = clear_session_cookie(response)
         logout_user()
     
-        flash('Пароль изменён. Выполнен выход из системы.', 'success')
+        flash('Пароль изменён. Выполнен выход из системы', 'success')
         return response
     return redirect(url_for('views.profile_password'))
 
@@ -264,7 +264,7 @@ def profile_password():
 def relod_password():
     email = request.form.get('email_relod')
     if not email:
-        flash('Пожалуйста, введите свой email, затем нажмите «Забыли пароль?» для восстановления доступа.', 'error')
+        flash('Пожалуйста, введите свой email, затем нажмите «Забыли пароль?» для восстановления доступа', 'error')
         return redirect(url_for('views.login'))
     user = User.query.filter(func.lower(User.email) == func.lower(email)).first()
     if user:
@@ -275,12 +275,12 @@ def relod_password():
         # ip_address, location, os, browser = get_location_info(user_agent_string)
         
         send_email(new_password, email, 'new_pass')
-        flash('Новый пароль был отправлен вам на email.', 'success')
+        flash('Новый пароль был отправлен вам на email', 'success')
         user.password = hashed_password
         db.session.commit()
         return redirect(url_for('views.login'))
     else:
-        flash('Пользователя с таким email не существует.', 'error')
+        flash('Пользователя с таким email не существует', 'error')
         return redirect(url_for('views.login'))
     
 @auth.route('/profile/danger-zone', methods=['POST', 'GET'])
@@ -299,17 +299,17 @@ def delete_account():
         confirm_email = request.form.get('confirm_email', '').strip()
         
         if not confirm_email:
-            flash('Email не указан.', 'error')
+            flash('Email не указан', 'error')
             return redirect(url_for('auth.profile_danger'))
         
         if confirm_email != current_user.email:
-            flash('Email не совпадает. Введите правильный адрес для подтверждения удаления.', 'error')
+            flash('Email не совпадает. Введите правильный адрес для подтверждения удаления', 'error')
             return redirect(url_for('auth.profile_danger'))
         
         user = User.query.get(current_user.id)
         
         if not user:
-            flash('Пользователь не найден.', 'error')
+            flash('Пользователь не найден', 'error')
             return redirect(url_for('auth.profile_danger'))
         
         has_approved = db.session.query(
@@ -323,7 +323,7 @@ def delete_account():
         ).scalar()
         
         if has_approved:
-            flash('Невозможно удалить аккаунт, так как есть отчеты со статусом "Одобрен".', 'error')
+            flash('Невозможно удалить аккаунт, так как есть отчеты со статусом "Одобрен"', 'error')
             return redirect(url_for('auth.profile_danger'))     
            
         if current_user.type == 'Администратор':
@@ -335,13 +335,13 @@ def delete_account():
         
         logout_user()
         
-        flash(f'Аккаунт {user.email} успешно удален.', 'success')
+        flash(f'Аккаунт {user.email} успешно удален', 'success')
         return redirect(url_for('auth.sign'))
         
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f'Ошибка при удалении аккаунта: {str(e)}')
-        flash('Произошла ошибка при удалении аккаунта. Попробуйте позже.', 'error')
+        flash('Произошла ошибка при удалении аккаунта. Попробуйте позже', 'error')
         return redirect(url_for('auth.profile_danger'))
     
 @auth.route('/change-email', methods=['GET', 'POST'])

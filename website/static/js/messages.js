@@ -1,5 +1,6 @@
 let messageUpdateInterval = null;
 let isLoadingMessages = false;
+const currentUserType = document.querySelector('meta[name="user-type"]')?.content || '';
 
 function startMessageAutoUpdate() {
     if (messageUpdateInterval) {
@@ -94,37 +95,62 @@ function updateMessagesContainer(messages, totalCount) {
     if (messages.length === 0) {
         container.innerHTML = `
             <div class="mes empty">
-                <div class="text_mes">Нет уведомлений</div>
+                <div class="text_mes">Нет сообщений</div>
             </div>
         `;
         updateMessageCount(0);
         return;
     }
     
-    const messagesHtml = messages.map(msg => `
-        <div class="mes" id="message-${msg.id}">
+    const isAdmin = currentUserType === "Администратор";
+    
+    const messagesHtml = messages.map(msg => {
+        const dateParts = msg.create_time.split(' ');
+        const date = dateParts[0] || '';
+        const time = dateParts[1] || '';
+        
+        const senderName = msg.sender ? (msg.sender.fio || msg.sender.email) : '';
+        const senderPhone = msg.sender ? msg.sender.telephone : '';
+        const senderEmail = msg.sender ? msg.sender.email : '';
+        const senderType = msg.sender ? msg.sender.type : '';
+        
+        return `
+        <div class="mes ${msg.is_read ? 'read' : 'unread'}" id="message-${msg.id}">
             <div class="message_header">
                 <div class="time_mes">
-                    ${msg.create_time}
-                    ${msg.sender_id ? `- <span class="sender">${msg.sender_type === "Администратор" ? 'Система' : escapeHtml(msg.sender_email)}</span>` : ''}
+                    <span class="msg-date">${date}</span>
+                    <span class="msg-time">${time}</span>
+                    ${msg.sender_id && isAdmin ? `- <span class="sender">${senderType === "Администратор" ? 'Система' : escapeHtml(senderEmail)}</span>` : ''}
                 </div>
                 <div class="message_actions">
-                    ${msg.can_reply ? `
+                    ${isAdmin && !msg.is_read ? `
+                    <button class="mark-read-btn" 
+                            onclick="markMessageAsRead(${msg.id})"
+                            title="Отметить как прочитанное">
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:16px; height:16px;">
+                            <path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75L9 17.25L19.5 6.75"/>
+                        </svg>
+                    </button>
+                    ` : ''}
+                    ${msg.can_reply && isAdmin ? `
                     <button class="reply_btn" 
-                            onclick="showReplyForm(${msg.id}, '${msg.sender_type === 'Администратор' ? 'Администратор' : escapeHtml(msg.sender_email)}')"
+                            onclick="showReplyForm(${msg.id}, '${senderType === 'Администратор' ? 'Администратор' : escapeHtml(senderEmail)}', '${escapeHtml(senderName)}', '${senderPhone}')"
                             title="Ответить">
                         Ответить
                     </button>
                     ` : ''}
-                    <button class="delete_btn" 
-                            onclick="deleteMessage(${msg.id})"
-                            title="Удалить сообщение">
-                        ✕
-                    </button>
                 </div>
             </div>
             <div class="text_mes">${escapeHtml(msg.text)}</div>
             <div class="reply_form" id="replyForm-${msg.id}" style="display: none;">
+                <div class="reply_info">
+                    <div class="reply_recipient">
+                        <span class="reply_label">Кому:</span>
+                        <span class="reply_name">${escapeHtml(senderName || senderEmail)}</span>
+                        ${senderPhone ? `<span class="reply_phone">(${escapeHtml(senderPhone)})</span>` : ''}
+                        ${senderEmail && senderEmail !== senderName ? `<span class="reply_email">${escapeHtml(senderEmail)}</span>` : ''}
+                    </div>
+                </div>
                 <textarea class="reply_textarea" 
                         id="replyText-${msg.id}" 
                         placeholder="Введите ваш ответ..." 
@@ -135,13 +161,14 @@ function updateMessagesContainer(messages, totalCount) {
                 </div>
             </div>
         </div>
-    `).join('');
+    `}).join('');
     
     container.innerHTML = messagesHtml;
     updateMessageCount(totalCount);
 }
 
 function escapeHtml(text) {
+    if (!text) return '';
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
@@ -157,46 +184,23 @@ function updateMessageCount(count) {
             countElement.style.display = 'inline-flex';
         }
     }
-    
-    let deleteAllForm = document.querySelector('.account_messageArea form');
-    if (!deleteAllForm) {
-        const accountMessageArea = document.querySelector('.account_messageArea');
-        if (accountMessageArea && count > 0) {
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = '/delete_all_message';
-            form.innerHTML = `
-                <input type="hidden" name="csrf_token" value="${document.querySelector('meta[name="csrf-token"]').getAttribute('content')}">
-                <button type="submit" class="print-btn delete">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"></path>
-                    </svg>
-                    <span>Удалить все</span>
-                </button>
-            `;
-            accountMessageArea.appendChild(form);
-            deleteAllForm = form;
-        }
-    }
-    
-    if (deleteAllForm) {
-        if (count === 0) {
-            deleteAllForm.style.display = 'none';
-        } else {
-            deleteAllForm.style.display = 'block';
-        }
-    }
 }
 
-function performDeletion(messageId, messageElement, deleteBtn, originalText, cancelBtn) {
-    if (cancelBtn && cancelBtn.parentNode) {
-        cancelBtn.remove();
+function markMessageAsRead(messageId) {
+    const isAdmin = currentUserType === "Администратор";
+    if (!isAdmin) {
+        console.log('Только администратор может отмечать сообщения как прочитанные');
+        return;
     }
     
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+    if (!csrfToken) {
+        console.error('CSRF токен не найден');
+        return;
+    }
     
-    fetch(`/delete_message/${messageId}`, {
-        method: 'DELETE',
+    fetch(`/api/mark_read/${messageId}`, {
+        method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             'X-CSRFToken': csrfToken
@@ -205,101 +209,38 @@ function performDeletion(messageId, messageElement, deleteBtn, originalText, can
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            messageElement.style.transition = 'all 0.3s ease';
-            messageElement.style.height = messageElement.offsetHeight + 'px';
-            
-            setTimeout(() => {
-                messageElement.style.height = '0';
-                messageElement.style.padding = '0';
-                messageElement.style.margin = '0';
-                messageElement.style.opacity = '0';
-                messageElement.style.border = 'none';
-                messageElement.style.overflow = 'hidden';
-                
-                setTimeout(() => {
-                    messageElement.remove();
-                    loadMessages();
-                }, 300);
-            }, 50);
+            loadMessages();
         } else {
-            resetDeleteButton(deleteBtn, originalText);
+            console.error('Ошибка:', data.error);
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        resetDeleteButton(deleteBtn, originalText);
     });
 }
 
-function deleteMessage(messageId) {
-    const messageElement = document.getElementById(`message-${messageId}`);
-    if (!messageElement) return;
+function showReplyForm(messageId, recipientEmail, recipientName, recipientPhone) {
+    const isAdmin = currentUserType === "Администратор";
+    if (!isAdmin) return;
     
-    const deleteBtn = messageElement.querySelector('.delete_btn');
-    const messageActions = messageElement.querySelector('.message_actions');
-    
-    const originalText = deleteBtn.innerHTML;
-    
-    deleteBtn.disabled = true;
-    deleteBtn.innerHTML = 'Удаление...';
-    deleteBtn.style.opacity = '0.5';
-    deleteBtn.style.cursor = 'default';
-    
-    let secondsLeft = 5;
-    
-    const cancelBtn = document.createElement('button');
-    cancelBtn.className = 'cancel_btn';
-    cancelBtn.innerHTML = `Отмена (${secondsLeft})`;
-    cancelBtn.style.marginLeft = '8px';
-    cancelBtn.style.padding = '2px 8px';
-    cancelBtn.style.background = '#f56565';
-    cancelBtn.style.color = 'white';
-    cancelBtn.style.border = 'none';
-    cancelBtn.style.borderRadius = '4px';
-    cancelBtn.style.cursor = 'pointer';
-    cancelBtn.style.fontSize = '12px';
-    
-    messageActions.appendChild(cancelBtn);
-    
-    const countdown = setInterval(() => {
-        secondsLeft--;
-        cancelBtn.innerHTML = `Отмена (${secondsLeft})`;
-        
-        if (secondsLeft <= 0) {
-            clearInterval(countdown);
-            performDeletion(messageId, messageElement, deleteBtn, originalText, cancelBtn);
-        }
-    }, 1000);
-    
-    const cancelDeletion = () => {
-        clearInterval(countdown);
-        resetDeleteButton(deleteBtn, originalText);
-        cancelBtn.remove();
-    };
-    
-    cancelBtn.addEventListener('click', cancelDeletion);
-    cancelBtn.__cancelHandler = cancelDeletion;
-}
-
-function resetDeleteButton(button, originalText) {
-    button.disabled = false;
-    button.innerHTML = originalText;
-    button.style.opacity = '0.7';
-    button.style.cursor = 'pointer';
-}
-
-function showReplyForm(messageId, recipientEmail) {
     document.querySelectorAll('.reply_form').forEach(form => {
-        form.style.display = 'none';
+        if (form) {
+            form.style.display = 'none';
+        }
     });
     
     const replyForm = document.getElementById(`replyForm-${messageId}`);
     const textarea = document.getElementById(`replyText-${messageId}`);
     
-    if (replyForm) {
+    if (replyForm && textarea) {
         replyForm.style.display = 'block';
         textarea.value = '';
-        textarea.placeholder = `Ответ для ${recipientEmail}`;
+        
+        const nameDisplay = recipientName || recipientEmail;
+        const phoneDisplay = recipientPhone ? ` (${recipientPhone})` : '';
+        const emailDisplay = recipientEmail && recipientEmail !== recipientName ? ` <${recipientEmail}>` : '';
+        
+        
         textarea.focus();
         replyForm.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
@@ -309,28 +250,38 @@ function cancelReply(messageId) {
     const replyForm = document.getElementById(`replyForm-${messageId}`);
     const textarea = document.getElementById(`replyText-${messageId}`);
     
-    if (replyForm) {
+    if (replyForm && textarea) {
         textarea.value = '';
         replyForm.style.display = 'none';
     }
 }
 
 function submitReply(messageId) {
+    const isAdmin = currentUserType === "Администратор";
+    if (!isAdmin) return;
+    
     const textarea = document.getElementById(`replyText-${messageId}`);
     if (!textarea) return;
     
     const replyText = textarea.value.trim();
+    if (!replyText) {
+        alert('Введите текст ответа');
+        return;
+    }
+    
     const submitBtn = document.querySelector(`#replyForm-${messageId} .reply_submit_btn`);
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
     
-    
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Отправка...';
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Отправка...';
+    }
     
     fetch(`/reply_to_message/${messageId}`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            'X-CSRFToken': csrfToken
         },
         body: JSON.stringify({
             text: replyText
@@ -346,25 +297,21 @@ function submitReply(messageId) {
             }
             loadMessages();
         } else {
-
+            alert(data.error || 'Ошибка при отправке ответа');
         }
     })
     .catch(error => {
         console.error('Error:', error);
+        alert('Ошибка при отправке ответа');
     })
     .finally(() => {
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Отправить';
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Отправить';
+        }
     });
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    // startMessageAutoUpdate();
-    
     loadMessages();
-
-
-    // window.addEventListener('beforeunload', function() {
-    //     stopMessageAutoUpdate();
-    // });
 });
