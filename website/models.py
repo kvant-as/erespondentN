@@ -144,4 +144,9 @@ class News(db.Model):
     title = db.Column(db.String(100))
     text = db.Column(db.String(4000))
     img_name = db.Column(db.String(20))
+    
+    is_published = db.Column(db.Boolean, default=False)
+    published_at = db.Column(db.DateTime, nullable=True)
+    views_count = db.Column(db.Integer, default=0)
+    
     created_time = db.Column(db.DateTime, nullable=False, default=current_utc_time())
