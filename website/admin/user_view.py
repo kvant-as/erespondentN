@@ -9,9 +9,9 @@ from website.models import User
 
 class UserView(ModelView):
     column_display_pk = True
-    column_list = ['id', 'type', 'email', 'fio', 'telephone', 'reports', 'organization', 'last_active']
+    column_list = ['id', 'type', 'email', 'fio', 'telephone', 'organization', 'last_active', 'reports']
     column_default_sort = ('id', True)
-    column_sortable_list = ('id', 'type', 'email', 'fio', 'telephone', 'reports', 'organization', 'last_active')
+    column_sortable_list = ('id', 'type', 'email', 'fio', 'telephone', 'last_active')
     
     can_delete = True
     can_create = True
@@ -46,6 +46,10 @@ class UserView(ModelView):
     
     create_modal = True
     edit_modal = True
+    
+    column_formatters = {
+        'organization': lambda view, context, model, name: model.organization.full_name if model.organization else '-'
+    }
     
     def scaffold_form(self):
         form_class = super(UserView, self).scaffold_form()

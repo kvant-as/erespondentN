@@ -225,33 +225,6 @@ def generate_excel_report(version_id):
         ws.page_margins.header = 0.3
         ws.page_margins.footer = 0.3
 
-    def get_org_name_by_okpo(okpo):
-        dop_org_data = [
-            ('Брестское областное управление', '100000001000'),
-            ('Витебское областное управление', '200000002000'),
-            ('Гомельское областное управление', '300000003000'),
-            ('Гродненское областное управление', '400000004000'),
-            ('Управление г. Минск', '500000005000'),
-            ('Минское областное управление', '600000006000'),
-            ('Могилевское областное управление', '700000007000'),
-            ('Департамент по энергоэффективности', '800000008000'),
-        ]
-    
-        if not okpo or len(str(okpo)) < 4:
-            return ""  
-        
-        okpo_str = str(okpo)
-        if len(okpo_str) >= 4:
-            fourth_from_end = okpo_str[-4]  
-        else:
-            return ""
-        
-        for name, code in dop_org_data:
-            if code.endswith(str(fourth_from_end) + "000"):
-                return name
-        
-            return ""
-
     def title_list(wb, report):
         ws = wb.create_sheet("Титульный лист", 0)
         columns = [("A", 8.43), ("B", 8.43), ("C", 8.43), ("D", 8.43),
@@ -298,13 +271,19 @@ def generate_excel_report(version_id):
             ws["B3"].font = regular_font_9
             ws["B3"].alignment = center 
                         
-            okpo = report.organization.okpo
-            org_name = get_org_name_by_okpo(okpo)
-            
-            if org_name:
-                org_text = f"{org_name} по надзору за рациональным использованием ТЭР"
+
+            region = report.organization.region
+            region_management_org = None
+            if region:
+                region_management_org = Organization.query.filter(
+                    Organization.region_id == region.id,
+                    Organization.is_region_management == True
+                ).first()
+
+            if region_management_org:
+                org_text = f"{region_management_org.full_name}"
             else:
-                org_text = f"областное (городское) управление по надзору за рациональным использованием ТЭР"
+                org_text = "областное (городское) управление по надзору за рациональным использованием ТЭР"
                         
             ws.merge_cells("B5:F5")
             ws["B5"].value = org_text
@@ -565,94 +544,6 @@ def generate_excel_report(version_id):
 
     return send_file(file_stream, as_attachment=True, download_name=f'{current_report.organization.okpo}_{current_report.year}_{current_report.quarter}.xlsx', mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 
-def get_approved_reports(form_data):
-    year_filter = form_data.get('year_filter')
-    quarter_filter = form_data.get('quarter_filter')
-
-    filters = []
-    if year_filter:
-        filters.append(Report.year == year_filter)
-    if quarter_filter:
-        filters.append(Report.quarter == quarter_filter)
-
-    current_user_type = current_user.type
-    user_okpo = str(current_user.organization.okpo)
-    okpo_digit = user_okpo[0] 
-
-    current_app.logger.info(f"4-я цифра с конца OKPO пользователя: {okpo_digit}")
-
-    special_condition = False
-    if okpo_digit.isdigit() and int(okpo_digit) in SPECIAL_OKPO_LISTS:
-        special_condition = True
-    
-
-    excluded_condition = False
-    if okpo_digit.isdigit() and int(okpo_digit) in EXCLUDED_OKPO_LISTS:
-        excluded_condition = True
-
-    subquery = db.session.query(
-        Organization.okpo,
-        Report.year,
-        Report.quarter,
-        func.max(Version_report.sent_time).label('max_sent_time')
-    ).join(
-        Report, Report.id == Version_report.report_id
-    ).join(
-        Organization, Organization.id == Report.org_id
-    ).filter(
-        Version_report.status == "Одобрен",
-        *filters
-    ).group_by(
-        Organization.okpo, Report.year, Report.quarter
-    ).subquery()
-
-    query = Version_report.query.options(
-        joinedload(Version_report.report),
-        joinedload(Version_report.sections).joinedload(Sections.product)
-    ).join(
-        Report, Report.id == Version_report.report_id
-    ).join(
-        Organization, Organization.id == Report.org_id
-    ).join(
-        subquery,
-        db.and_(
-            Organization.okpo == subquery.c.okpo,
-            Report.year == subquery.c.year,
-            Report.quarter == subquery.c.quarter,
-            Version_report.sent_time == subquery.c.max_sent_time
-        )
-    ).filter(
-        Version_report.status == "Одобрен",
-        *filters
-    )
-
-    if not (current_user_type == "Администратор" or (current_user_type == "Аудитор" and okpo_digit == "8")):
-        digit_condition = func.substr(func.cast(Organization.okpo, db.String), func.length(Organization.okpo) - 3, 1) == okpo_digit
-        
-        if special_condition and excluded_condition:
-            query = query.filter(
-                or_(
-                    digit_condition,
-                    Organization.okpo.in_(SPECIAL_OKPO_LISTS[int(okpo_digit)])
-                ),
-                ~Organization.okpo.in_(EXCLUDED_OKPO_LISTS[int(okpo_digit)])
-            )
-        elif special_condition:
-            query = query.filter(
-                or_(
-                    digit_condition,
-                    Organization.okpo.in_(SPECIAL_OKPO_LISTS[int(okpo_digit)])
-                )
-            )
-        elif excluded_condition:
-            query = query.filter(
-                digit_condition,
-                ~Organization.okpo.in_(EXCLUDED_OKPO_LISTS[int(okpo_digit)])
-            )
-        else:
-            query = query.filter(digit_condition)
-    return query.all()
-
 def create_dbf_zip(versions):
     zip_buffer = io.BytesIO()
     with zipfile.ZipFile(zip_buffer, 'a', zipfile.ZIP_DEFLATED) as zip_file:
@@ -844,189 +735,6 @@ def send_zip_file(zip_buffer):
         mimetype='application/zip',
         headers={"Content-Disposition": "attachment;filename=reports_DBF.zip"}
     )
-    
-SPECIAL_OKPO_LISTS = { # убрать откуда номер региона : ['ОКПО']        
-    6: ['030662355000'],
-    6: ['020133895000'],
-    5: ['305144986000'],
-}
-
-EXCLUDED_OKPO_LISTS = { # добавить куда номер региона : ['ОКПО']
-    5: ['030662355000'],
-    5: ['020133895000'],
-    6: ['305144986000']
-}
-
-def get_reports_by_status(status, year=None, quarter=None, region=None):
-    def translate_status(status):
-        status_map = {
-            'not_viewed': 'Отправлен',
-            'remarks': 'Есть замечания',
-            'to_download': 'Одобрен',
-            'to_delete': 'Готов к удалению'
-        }
-        return status_map.get(status)
-
-    filters = []
-    statuses = [
-        'Отправлен',
-        'Есть замечания',
-        'Одобрен',
-        'Готов к удалению'
-    ]
-    
-    if year:
-        filters.append(Report.year == year)
-    if quarter:
-        filters.append(Report.quarter == quarter)
-    
-    user_type = current_user.type
-    okpo_digit = str(current_user.organization.okpo)[0]
-
-    special_condition = False
-    if okpo_digit.isdigit() and int(okpo_digit) in SPECIAL_OKPO_LISTS:
-        special_condition = True
-    
-    excluded_condition = False
-    if okpo_digit.isdigit() and int(okpo_digit) in EXCLUDED_OKPO_LISTS:
-        excluded_condition = True
-
-    # Базовый фильтр по региону из выпадающего списка
-    region_filter = None
-    if region and region.isdigit():
-        region_filter = region
-
-    if user_type == "Администратор" or user_type == "Смотрящий":
-        base_query = Report.query.join(Version_report)
-        
-        if region_filter:
-            base_query = base_query.join(Organization).filter(
-                func.substr(Organization.okpo, func.length(Organization.okpo) - 3, 1) == region_filter
-            )
-        
-        if status == 'all_reports':
-            query = base_query.filter(
-                or_(*[Version_report.status == s for s in statuses]),
-                *filters
-            )
-        else:
-            trans_status = translate_status(status)
-            if trans_status:
-                query = base_query.filter(
-                    Version_report.status == trans_status,
-                    *filters
-                )
-            else:
-                return []
-        return query.order_by().all()
-    
-    else:
-        if status == 'all_reports':
-            query = Report.query.join(Version_report).join(Organization)
-            
-            # Добавляем региональный фильтр если он есть
-            if region_filter:
-                query = query.filter(
-                    func.substr(Organization.okpo, func.length(Organization.okpo) - 3, 1) == region_filter
-                )
-            
-            if special_condition and excluded_condition:
-                return query.filter(
-                    or_(
-                        and_(
-                            or_(*[Version_report.status == s for s in statuses]),
-                            func.substr(Organization.okpo, func.length(Organization.okpo) - 3, 1) == okpo_digit
-                        ),
-                        and_(
-                            or_(*[Version_report.status == s for s in statuses]),
-                            Organization.okpo.in_(SPECIAL_OKPO_LISTS[int(okpo_digit)])
-                        )
-                    ),
-                    ~Organization.okpo.in_(EXCLUDED_OKPO_LISTS[int(okpo_digit)]),
-                    *filters
-                ).order_by().all()
-            elif special_condition:
-                return query.filter(
-                    or_(
-                        and_(
-                            or_(*[Version_report.status == s for s in statuses]),
-                            func.substr(Organization.okpo, func.length(Organization.okpo) - 3, 1) == okpo_digit
-                        ),
-                        and_(
-                            or_(*[Version_report.status == s for s in statuses]),
-                            Organization.okpo.in_(SPECIAL_OKPO_LISTS[int(okpo_digit)])
-                        )
-                    ),
-                    *filters
-                ).order_by().all()
-            elif excluded_condition:
-                return query.filter(
-                    or_(*[Version_report.status == s for s in statuses]),
-                    *filters,
-                    func.substr(Organization.okpo, func.length(Organization.okpo) - 3, 1) == okpo_digit,
-                    ~Organization.okpo.in_(EXCLUDED_OKPO_LISTS[int(okpo_digit)])
-                ).order_by().all()
-            else:
-                return query.filter(
-                    or_(*[Version_report.status == s for s in statuses]),
-                    *filters,
-                    func.substr(Organization.okpo, func.length(Organization.okpo) - 3, 1) == okpo_digit
-                ).order_by().all()
-        else:
-            trans_status = translate_status(status)
-            if trans_status:
-                query = Report.query.join(Version_report).join(Organization)
-                
-                # Добавляем региональный фильтр если он есть
-                if region_filter:
-                    query = query.filter(
-                        func.substr(Organization.okpo, func.length(Organization.okpo) - 3, 1) == region_filter
-                    )
-                
-                if special_condition and excluded_condition:
-                    return query.filter(
-                        or_(
-                            and_(
-                                Version_report.status == trans_status,
-                                func.substr(Organization.okpo, func.length(Organization.okpo) - 3, 1) == okpo_digit
-                            ),
-                            and_(
-                                Version_report.status == trans_status,
-                                Organization.okpo.in_(SPECIAL_OKPO_LISTS[int(okpo_digit)])
-                            )
-                        ),
-                        ~Organization.okpo.in_(EXCLUDED_OKPO_LISTS[int(okpo_digit)]),
-                        *filters
-                    ).order_by().all()
-                elif special_condition:
-                    return query.filter(
-                        or_(
-                            and_(
-                                Version_report.status == trans_status,
-                                func.substr(Organization.okpo, func.length(Organization.okpo) - 3, 1) == okpo_digit
-                            ),
-                            and_(
-                                Version_report.status == trans_status,
-                                Organization.okpo.in_(SPECIAL_OKPO_LISTS[int(okpo_digit)])
-                            )
-                        ),
-                        *filters
-                    ).order_by().all()
-                elif excluded_condition:
-                    return query.filter(
-                        Version_report.status == trans_status,
-                        *filters,
-                        func.substr(Organization.okpo, func.length(Organization.okpo) - 3, 1) == okpo_digit,
-                        ~Organization.okpo.in_(EXCLUDED_OKPO_LISTS[int(okpo_digit)])
-                    ).order_by().all()
-                else:
-                    return query.filter(
-                        Version_report.status == trans_status,
-                        *filters,
-                        func.substr(Organization.okpo, func.length(Organization.okpo) - 3, 1) == okpo_digit
-                    ).order_by().all()
-            else:
-                return []
             
 from lxml import etree
     

@@ -150,21 +150,16 @@
                                 value="{{current_user.organization.ynp if current_user.organization.ynp else 'Нет данных'}}" readonly>
                             </td>
                         </tr>
-                        
-                        {%if current_user.type == 'Администратор'%}
-                        <tr>
-                            <td><span title = "Республиканский орган государственного управления">Министерство</span></td>
-                            <td>    
-                                <input 
-                                    type="text" 
-                                    name = "ministry_common"  
-                                    placeholder="Министерство предприятия" 
-                                    value="{{current_user.organization.ministry if current_user.organization.ministry else 'Вышестоящая организация'}}" readonly>
-                            </td>
-                        </tr> 
-                        {%endif%}   
-                    {%else%}
                     {%endif%}
+                    <tr>
+                        <td><span title = "Республиканский орган государственного управления">Регион</span></td>
+                        <td>    
+                            <input 
+                                type="text"
+                                placeholder="Регион предприятия" 
+                                value="{{current_user.organization.region.name if current_user.organization.region else 'Нет данных'}}" readonly>
+                        </td>
+                    </tr>
                 </table>
                 <div class = "how-to-change-org-data">
                     <span>Для того чтобы изменить данные организации прочитайте</span>&nbsp; 
@@ -172,12 +167,14 @@
                 </div>
                 <div class="dop-info-cont">
                     <div class="dop-cont-note">
-                        <svg class="dop-cont-icon" viewBox="0 0 20 20" fill="currentColor">
-                            <circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="1.5" fill="none"/>
-                            <path d="M10 7v4M10 13h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                        </svg>
                         <span>
-                            <span class="required-mark">*</span> — обязательные поля
+                            <span class="required-mark">*</span> 
+                        </span>
+                        <span>
+                            —
+                        </span>
+                        <span>
+                            обязательные поля
                         </span>
                     </div>
                     <div class="dop-cont-note">
@@ -187,7 +184,7 @@
                             <circle cx="10" cy="12" r="1" fill="currentColor" opacity="0.5"/>
                         </svg>#}
                         <span>
-                            <span class="gray-field-note">Серые поля</span> — только для просмотра
+                            <span class="gray-field-note">Серое поле</span> — только для просмотра
                         </span>
                     </div>
                 </div>

@@ -11032,7 +11032,7 @@ th.resizable .resizer {
     }
 }
 
-/* Эффект параллакса для картинки */
+
 @media (prefers-reduced-motion: no-preference) {
     .media_illuminate {
         transform-style: preserve-3d;
@@ -11180,7 +11180,7 @@ th.resizable .resizer {
     font-size: 13.5px;
     color: #3d3d3d;
     text-align: end;
-    padding: 5px 15px;
+    padding: 8px;
 }
 
 .news_list {
