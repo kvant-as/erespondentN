@@ -1612,13 +1612,13 @@ def send_for_admin():
                 flash('Не обнаружено изменений в данных организации.', 'error')
                 return redirect(url_for('views.beginPage'))
             
-            new_message = Message(
-                text=f"Ваше сообщение на редактирование организации было отправлено.",
-                recipient_id=current_user.id,
-                create_time=current_utc_time()
-            )
-            db.session.add(new_message)
-            db.session.commit()
+            # new_message = Message(
+            #     text=f"Ваше сообщение на редактирование организации было отправлено.",
+            #     recipient_id=current_user.id,
+            #     create_time=current_utc_time()
+            # )
+            # db.session.add(new_message)
+            # db.session.commit()
             
             update_organization_data_with_delay(
                 organization_id=organization.id,

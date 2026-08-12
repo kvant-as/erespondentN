@@ -61,6 +61,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 statusElement.textContent = 'Выбран: ' + number + '. ' + name;
                 statusElement.classList.add('selected');
                 
+                // Вызываем обновление сравнения и валидацию
+                updateInlineComparison();
                 validateForm();
             });
         });
@@ -149,16 +151,30 @@ document.addEventListener('DOMContentLoaded', function() {
         inputElement.classList.remove('input-error');
     }
 
+    function getRegionNameById(regionId) {
+        if (!regionId) return '';
+        const btn = document.querySelector('#newOrgData .region-btn[data-value="' + regionId + '"]');
+        if (btn) {
+            return btn.querySelector('.region-name').textContent;
+        }
+        // Проверяем также в блоках добавления
+        const btnAdd = document.querySelector('#addOrgFields .region-btn[data-value="' + regionId + '"]');
+        if (btnAdd) {
+            return btnAdd.querySelector('.region-name').textContent;
+        }
+        return regionId;
+    }
+
     function updateInlineComparison() {
         const oldName = organizationOldName.value;
         const oldYnp = organizationOldYnp.value;
         const oldOkpo = organizationOldOkpo.value;
         const oldRegion = organizationOldRegion.value;
         
-        const newName = newNameInput.value;
-        const newYnp = newYnpInput.value;
-        const newOkpo = newOkpoInput.value;
-        const newRegion = newRegionHidden.value;
+        const newName = newNameInput ? newNameInput.value : '';
+        const newYnp = newYnpInput ? newYnpInput.value : '';
+        const newOkpo = newOkpoInput ? newOkpoInput.value : '';
+        const newRegion = newRegionHidden ? newRegionHidden.value : '';
         
         if (oldNameHint) {
             if (oldName) {
@@ -186,15 +202,33 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (oldRegionHint) {
             if (oldRegion) {
-                const regionBtn = document.querySelector('#newOrgData .region-btn[data-value="' + oldRegion + '"]');
-                const regionName = regionBtn ? regionBtn.querySelector('.region-name').textContent : oldRegion;
-                oldRegionHint.textContent = '(старый: ' + regionName + ')';
+                const regionName = getRegionNameById(oldRegion);
+                oldRegionHint.textContent = '(старый: ' + (regionName || oldRegion) + ')';
             } else {
                 oldRegionHint.textContent = '';
             }
         }
         
         function getStatusHtml(oldVal, newVal, fieldName) {
+            // Для региона обрабатываем особо, так как значения могут быть числами
+            if (fieldName === 'Регион') {
+                const oldStr = String(oldVal || '');
+                const newStr = String(newVal || '');
+                if (!oldStr) {
+                    if (newStr) {
+                        return '<span class="comparison-status-inline status-changed-inline">Будет добавлено</span>';
+                    }
+                    return '<span class="comparison-status-inline status-empty-inline">Ожидает выбора</span>';
+                }
+                if (!newStr) {
+                    return '<span class="comparison-status-inline status-empty-inline">Ожидает выбора</span>';
+                }
+                if (oldStr !== newStr) {
+                    return '<span class="comparison-status-inline status-changed-inline">✏️ ' + fieldName + ' будет изменено</span>';
+                }
+                return '<span class="comparison-status-inline status-unchanged-inline">✓ Без изменений</span>';
+            }
+            
             if (!oldVal) {
                 if (newVal && newVal.trim() !== '') {
                     return '<span class="comparison-status-inline status-changed-inline">Будет добавлено</span>';
@@ -224,11 +258,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const newRegionName = newRegion ? getRegionNameById(newRegion) : '';
             regionStatusInline.innerHTML = getStatusHtml(oldRegionName, newRegionName, 'Регион');
         }
-    }
-
-    function getRegionNameById(regionId) {
-        const btn = document.querySelector('.region-btn[data-value="' + regionId + '"]');
-        return btn ? btn.querySelector('.region-name').textContent : regionId;
     }
 
     function validateForm() {
@@ -262,10 +291,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 const oldYnp = organizationOldYnp.value;
                 const oldRegion = organizationOldRegion.value;
                 
-                const newName = newNameInput.value.trim();
-                const newOkpo = newOkpoInput.value.trim();
-                const newYnp = newYnpInput.value.trim();
-                const newRegion = newRegionHidden.value;
+                const newName = newNameInput ? newNameInput.value.trim() : '';
+                const newOkpo = newOkpoInput ? newOkpoInput.value.trim() : '';
+                const newYnp = newYnpInput ? newYnpInput.value.trim() : '';
+                const newRegion = newRegionHidden ? newRegionHidden.value : '';
                 
                 if (newName && newName !== oldName) {
                     hasAnyValidChange = true;
