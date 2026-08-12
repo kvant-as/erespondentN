@@ -506,10 +506,12 @@
                         <div class="tickets-message-content">
                             <div class="message-header">
                                 <span class="message-sender">
-                                    {{ _('Аудитор') }}
+                                    {{ _('Проверяющий') }}
                                 </span>
                                 <span class="message-time">
                                     {{ row.begin_time.strftime('%H:%M') if row.begin_time else '--:--' }}
+
+                                    
                                 </span>
                             </div>
                             
@@ -529,7 +531,7 @@
                             </div>
                             
                             <div class="message-date">
-                                {{ row.begin_time.strftime('%d %b %Y') if row.begin_time else '' }}
+                                {{ (row.begin_time) | ru_date }}
                             </div>
                         </div>
                     </div>

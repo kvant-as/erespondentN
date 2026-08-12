@@ -6,11 +6,16 @@ document.addEventListener('DOMContentLoaded', function() {
     const addNameInput = document.getElementById('organizationName');
     const addOkpoInput = document.getElementById('organizationOkpo');
     const addYnpInput = document.getElementById('organizationYnp');
-    const problemTextarea = document.getElementById('problemDescription');
+    const addRegionHidden = document.getElementById('organizationRegion');
+    const addRegionStatus = document.getElementById('addRegionSelectionStatus');
+    const addRegionBtns = document.querySelectorAll('#addOrgFields .region-btn');
     
     const newNameInput = document.getElementById('newOrganizationName');
     const newOkpoInput = document.getElementById('newOrganizationOkpo');
     const newYnpInput = document.getElementById('newOrganizationYnp');
+    const newRegionHidden = document.getElementById('newOrganizationRegion');
+    const newRegionStatus = document.getElementById('newRegionSelectionStatus');
+    const newRegionBtns = document.querySelectorAll('#newOrgData .region-btn');
     
     const addOrgFields = document.getElementById('addOrgFields');
     const organizationSearchBlock = document.getElementById('organizationSearchBlock');
@@ -23,19 +28,48 @@ document.addEventListener('DOMContentLoaded', function() {
     const organizationOldName = document.getElementById('organizationOldName');
     const organizationOldOkpo = document.getElementById('organizationOldOkpo');
     const organizationOldYnp = document.getElementById('organizationOldYnp');
+    const organizationOldRegion = document.getElementById('organizationOldRegion');
     
     const oldNameHint = document.getElementById('oldNameHint');
     const oldYnpHint = document.getElementById('oldYnpHint');
     const oldOkpoHint = document.getElementById('oldOkpoHint');
+    const oldRegionHint = document.getElementById('oldRegionHint');
     
     const nameStatusInline = document.getElementById('nameStatusInline');
     const ynpStatusInline = document.getElementById('ynpStatusInline');
     const okpoStatusInline = document.getElementById('okpoStatusInline');
+    const regionStatusInline = document.getElementById('regionStatusInline');
     
     let searchTimeout = null;
     let currentPage = 1;
     let isLoading = false;
     let hasMore = true;
+
+    function setupRegionButtons(btns, hiddenInput, statusElement) {
+        btns.forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                const value = this.dataset.value;
+                const name = this.querySelector('.region-name').textContent;
+                const number = this.dataset.number;
+                
+                btns.forEach(function(b) {
+                    b.classList.remove('selected');
+                });
+                
+                this.classList.add('selected');
+                hiddenInput.value = value;
+                statusElement.textContent = 'Выбран: ' + number + '. ' + name;
+                statusElement.classList.add('selected');
+                
+                // Вызываем обновление сравнения и валидацию
+                updateInlineComparison();
+                validateForm();
+            });
+        });
+    }
+
+    setupRegionButtons(addRegionBtns, addRegionHidden, addRegionStatus);
+    setupRegionButtons(newRegionBtns, newRegionHidden, newRegionStatus);
 
     function checkOkpoValidity(value) {
         if (value.length === 0) return true;
@@ -68,7 +102,7 @@ document.addEventListener('DOMContentLoaded', function() {
             errorDiv.style.color = 'red';
             errorDiv.style.fontSize = '12px';
             errorDiv.style.marginTop = '5px';
-            errorDiv.textContent = 'ОКПО должен содержать 12 цифр, 9-ая цифра отражает регион остальные могут быть 0';
+            errorDiv.textContent = 'ОКПО должен содержать 12 цифр';
             inputElement.parentNode.insertBefore(errorDiv, inputElement.nextSibling);
             return;
         }
@@ -117,18 +151,34 @@ document.addEventListener('DOMContentLoaded', function() {
         inputElement.classList.remove('input-error');
     }
 
+    function getRegionNameById(regionId) {
+        if (!regionId) return '';
+        const btn = document.querySelector('#newOrgData .region-btn[data-value="' + regionId + '"]');
+        if (btn) {
+            return btn.querySelector('.region-name').textContent;
+        }
+        // Проверяем также в блоках добавления
+        const btnAdd = document.querySelector('#addOrgFields .region-btn[data-value="' + regionId + '"]');
+        if (btnAdd) {
+            return btnAdd.querySelector('.region-name').textContent;
+        }
+        return regionId;
+    }
+
     function updateInlineComparison() {
         const oldName = organizationOldName.value;
         const oldYnp = organizationOldYnp.value;
         const oldOkpo = organizationOldOkpo.value;
+        const oldRegion = organizationOldRegion.value;
         
-        const newName = newNameInput.value;
-        const newYnp = newYnpInput.value;
-        const newOkpo = newOkpoInput.value;
+        const newName = newNameInput ? newNameInput.value : '';
+        const newYnp = newYnpInput ? newYnpInput.value : '';
+        const newOkpo = newOkpoInput ? newOkpoInput.value : '';
+        const newRegion = newRegionHidden ? newRegionHidden.value : '';
         
         if (oldNameHint) {
             if (oldName) {
-                oldNameHint.textContent = `(старое: ${oldName.substring(0, 40)}${oldName.length > 40 ? '...' : ''})`;
+                oldNameHint.textContent = '(старое: ' + oldName.substring(0, 40) + (oldName.length > 40 ? '...' : '') + ')';
             } else {
                 oldNameHint.textContent = '';
             }
@@ -136,7 +186,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (oldYnpHint) {
             if (oldYnp) {
-                oldYnpHint.textContent = `(старый: ${oldYnp})`;
+                oldYnpHint.textContent = '(старый: ' + oldYnp + ')';
             } else {
                 oldYnpHint.textContent = '(старое: Нет данных)';
             }
@@ -144,13 +194,41 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (oldOkpoHint) {
             if (oldOkpo) {
-                oldOkpoHint.textContent = `(старый: ${oldOkpo})`;
+                oldOkpoHint.textContent = '(старый: ' + oldOkpo + ')';
             } else {
                 oldOkpoHint.textContent = '';
             }
         }
+
+        if (oldRegionHint) {
+            if (oldRegion) {
+                const regionName = getRegionNameById(oldRegion);
+                oldRegionHint.textContent = '(старый: ' + (regionName || oldRegion) + ')';
+            } else {
+                oldRegionHint.textContent = '';
+            }
+        }
         
         function getStatusHtml(oldVal, newVal, fieldName) {
+            // Для региона обрабатываем особо, так как значения могут быть числами
+            if (fieldName === 'Регион') {
+                const oldStr = String(oldVal || '');
+                const newStr = String(newVal || '');
+                if (!oldStr) {
+                    if (newStr) {
+                        return '<span class="comparison-status-inline status-changed-inline">Будет добавлено</span>';
+                    }
+                    return '<span class="comparison-status-inline status-empty-inline">Ожидает выбора</span>';
+                }
+                if (!newStr) {
+                    return '<span class="comparison-status-inline status-empty-inline">Ожидает выбора</span>';
+                }
+                if (oldStr !== newStr) {
+                    return '<span class="comparison-status-inline status-changed-inline">✏️ ' + fieldName + ' будет изменено</span>';
+                }
+                return '<span class="comparison-status-inline status-unchanged-inline">✓ Без изменений</span>';
+            }
+            
             if (!oldVal) {
                 if (newVal && newVal.trim() !== '') {
                     return '<span class="comparison-status-inline status-changed-inline">Будет добавлено</span>';
@@ -161,7 +239,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 return '<span class="comparison-status-inline status-empty-inline">Ожидает ввода</span>';
             }
             if (oldVal !== newVal) {
-                return `<span class="comparison-status-inline status-changed-inline">✏️ ${fieldName} будет изменено</span>`;
+                return '<span class="comparison-status-inline status-changed-inline">✏️ ' + fieldName + ' будет изменено</span>';
             }
             return '<span class="comparison-status-inline status-unchanged-inline">✓ Без изменений</span>';
         }
@@ -174,6 +252,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         if (okpoStatusInline) {
             okpoStatusInline.innerHTML = getStatusHtml(oldOkpo, newOkpo, 'ОКПО');
+        }
+        if (regionStatusInline) {
+            const oldRegionName = oldRegion ? getRegionNameById(oldRegion) : '';
+            const newRegionName = newRegion ? getRegionNameById(newRegion) : '';
+            regionStatusInline.innerHTML = getStatusHtml(oldRegionName, newRegionName, 'Регион');
         }
     }
 
@@ -193,8 +276,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const nameValid = addNameInput && addNameInput.value.trim() !== '';
             const okpoValid = addOkpoInput && addOkpoInput.value.length === 12 && checkOkpoValidity(addOkpoInput.value);
             const ynpValid = addYnpInput && addYnpInput.value.length === 9;
+            const regionValid = addRegionHidden && addRegionHidden.value !== '';
             
-            submitButton.disabled = !(nameValid && okpoValid && ynpValid);
+            submitButton.disabled = !(nameValid && okpoValid && ynpValid && regionValid);
             
         } else if (selectedValue === 'organization-edit') {
             const hasSelectedOrg = selectedOrgId.value !== '';
@@ -205,10 +289,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 const oldName = organizationOldName.value;
                 const oldOkpo = organizationOldOkpo.value;
                 const oldYnp = organizationOldYnp.value;
+                const oldRegion = organizationOldRegion.value;
                 
-                const newName = newNameInput.value.trim();
-                const newOkpo = newOkpoInput.value.trim();
-                const newYnp = newYnpInput.value.trim();
+                const newName = newNameInput ? newNameInput.value.trim() : '';
+                const newOkpo = newOkpoInput ? newOkpoInput.value.trim() : '';
+                const newYnp = newYnpInput ? newYnpInput.value.trim() : '';
+                const newRegion = newRegionHidden ? newRegionHidden.value : '';
                 
                 if (newName && newName !== oldName) {
                     hasAnyValidChange = true;
@@ -235,6 +321,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         return;
                     }
                 }
+
+                if (newRegion && newRegion !== oldRegion) {
+                    hasAnyValidChange = true;
+                }
             }
             
             submitButton.disabled = !(hasSelectedOrg && hasAnyValidChange);
@@ -251,7 +341,72 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    async function searchOrganizations(query, page = 1) {
+    function clearOrganizationSelection() {
+        selectedOrgId.value = '';
+        organizationOldName.value = '';
+        organizationOldOkpo.value = '';
+        organizationOldYnp.value = '';
+        organizationOldRegion.value = '';
+        
+        if (newNameInput) newNameInput.value = '';
+        if (newOkpoInput) newOkpoInput.value = '';
+        if (newYnpInput) newYnpInput.value = '';
+        if (newRegionHidden) newRegionHidden.value = '';
+        if (newRegionStatus) {
+            newRegionStatus.textContent = 'Регион не выбран';
+            newRegionStatus.classList.remove('selected');
+        }
+        newRegionBtns.forEach(function(b) {
+            b.classList.remove('selected');
+        });
+        if (organizationSearch) organizationSearch.value = '';
+        if (newOrgData) newOrgData.style.display = 'none';
+        
+        updateInlineComparison();
+        validateForm();
+    }
+
+    function selectOrganization(org) {
+        selectedOrgId.value = org.id;
+        organizationOldName.value = org.full_name;
+        organizationOldOkpo.value = org.okpo || '';
+        organizationOldYnp.value = org.ynp || '';
+        organizationOldRegion.value = org.region_id || '';
+        
+        if (newNameInput) newNameInput.value = org.full_name;
+        if (newOkpoInput) newOkpoInput.value = org.okpo || '';
+        if (newYnpInput) newYnpInput.value = org.ynp || '';
+        if (newRegionHidden && org.region_id) {
+            newRegionHidden.value = org.region_id;
+            newRegionBtns.forEach(function(b) {
+                b.classList.remove('selected');
+                if (b.dataset.value == org.region_id) {
+                    b.classList.add('selected');
+                }
+            });
+            const btn = document.querySelector('#newOrgData .region-btn[data-value="' + org.region_id + '"]');
+            if (btn) {
+                const name = btn.querySelector('.region-name').textContent;
+                const number = btn.dataset.number;
+                newRegionStatus.textContent = 'Выбран: ' + number + '. ' + name;
+                newRegionStatus.classList.add('selected');
+            }
+        }
+        
+        if (organizationSearch) organizationSearch.value = org.full_name;
+        if (searchResults) {
+            searchResults.innerHTML = '';
+            searchResults.classList.remove('show');
+        }
+        
+        if (newOrgData) newOrgData.style.display = 'block';
+        
+        updateInlineComparison();
+        validateForm();
+    }
+
+    async function searchOrganizations(query, page) {
+        page = page || 1;
         if (!query.trim() || query.length < 2) {
             if (searchResults) {
                 searchResults.innerHTML = '';
@@ -269,7 +424,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         try {
-            const response = await fetch(`/api/organizations?q=${encodeURIComponent(query)}&page=${page}`);
+            const response = await fetch('/api/organizations?q=' + encodeURIComponent(query) + '&page=' + page);
             const data = await response.json();
             
             if (page === 1 && searchResults) {
@@ -280,17 +435,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 searchResults.innerHTML = '<div class="search-loading">Ничего не найдено</div>';
                 hasMore = false;
             } else if (searchResults) {
-                data.organizations.forEach(org => {
+                data.organizations.forEach(function(org) {
                     const item = document.createElement('div');
                     item.className = 'search-result-item';
-                    item.innerHTML = `
-                        <div class="search-result-name">${escapeHtml(org.full_name)}</div>
-                        <div class="search-result-details">
-                            <span class="search-result-okpo">ОКПО: ${org.okpo || '—'}</span>
-                            <span class="search-result-ynp">УНП: ${org.ynp || '—'}</span>
-                        </div>
-                    `;
-                    item.addEventListener('click', () => selectOrganization(org));
+                    item.innerHTML = '<div class="search-result-name">' + escapeHtml(org.full_name) + '</div><div class="search-result-details"><span class="search-result-okpo">ОКПО: ' + (org.okpo || '—') + '</span><span class="search-result-ynp">УНП: ' + (org.ynp || '—') + '</span><span class="search-result-region">Регион: ' + (org.region_name || '—') + '</span></div>';
+                    item.addEventListener('click', function() {
+                        selectOrganization(org);
+                    });
                     searchResults.appendChild(item);
                 });
                 
@@ -318,44 +469,6 @@ document.addEventListener('DOMContentLoaded', function() {
         return div.innerHTML;
     }
 
-    function selectOrganization(org) {
-        selectedOrgId.value = org.id;
-        organizationOldName.value = org.full_name;
-        organizationOldOkpo.value = org.okpo || '';
-        organizationOldYnp.value = org.ynp || '';
-        
-        if (newNameInput) newNameInput.value = org.full_name;
-        if (newOkpoInput) newOkpoInput.value = org.okpo || '';
-        if (newYnpInput) newYnpInput.value = org.ynp || '';
-        
-        if (organizationSearch) organizationSearch.value = org.full_name;
-        if (searchResults) {
-            searchResults.innerHTML = '';
-            searchResults.classList.remove('show');
-        }
-        
-        if (newOrgData) newOrgData.style.display = 'block';
-        
-        updateInlineComparison();
-        validateForm();
-    }
-
-    function clearOrganizationSelection() {
-        selectedOrgId.value = '';
-        organizationOldName.value = '';
-        organizationOldOkpo.value = '';
-        organizationOldYnp.value = '';
-        
-        if (newNameInput) newNameInput.value = '';
-        if (newOkpoInput) newOkpoInput.value = '';
-        if (newYnpInput) newYnpInput.value = '';
-        if (organizationSearch) organizationSearch.value = '';
-        if (newOrgData) newOrgData.style.display = 'none';
-        
-        updateInlineComparison();
-        validateForm();
-    }
-
     if (organizationSearch) {
         organizationSearch.addEventListener('input', function(e) {
             clearTimeout(searchTimeout);
@@ -365,7 +478,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 clearOrganizationSelection();
             }
             
-            searchTimeout = setTimeout(() => {
+            searchTimeout = setTimeout(function() {
                 if (query.length >= 2) {
                     searchOrganizations(query, 1);
                 } else if (searchResults) {
@@ -437,6 +550,8 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    const problemTextarea = document.getElementById('problemDescription');
+
     function updateFieldsVisibility() {
         const selectedValue = questionTypeSelect.value;
         
@@ -447,7 +562,9 @@ document.addEventListener('DOMContentLoaded', function() {
             problemTextarea.closest('.form-group').style.display = 'none';
         }
         
-        document.querySelectorAll('.input-error').forEach(el => el.classList.remove('input-error'));
+        document.querySelectorAll('.input-error').forEach(function(el) {
+            el.classList.remove('input-error');
+        });
         const okpoError = document.getElementById('okpoError');
         const ynpError = document.getElementById('ynpError');
         if (okpoError) okpoError.remove();

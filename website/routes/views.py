@@ -1,19 +1,32 @@
 from decimal import Decimal
 from io import BytesIO
 import os
-# from tkinter.tix import Meter
 from flask import Blueprint, current_app, make_response, render_template, redirect, url_for, flash, request, jsonify, session
 from flask_login import current_user, login_required
 
 from website.ecp import check_certificate_expiry
-from website.export import generate_excel_report,  get_reports_by_status
-from website.report import check_version_editable, control_func, parse_int, create_section, ZERO_DECIMAL,  get_organizations_with_reports_excel_xlsx, process_section_calculations, redirect_back, subtract_from_aggregated_sections, to_decimal, update_aggregated_sections, update_section_fields, update_version_status
-from website.organization import create_new_organization, update_organization_data_with_delay, validate_okpo, validate_ynp
+from website.export import generate_excel_report
 
+from website.report import (
+    check_version_editable, 
+    control_func, parse_int, 
+    create_section, ZERO_DECIMAL,  
+    get_organizations_with_reports_excel_xlsx, 
+    process_section_calculations, 
+    redirect_back, 
+    subtract_from_aggregated_sections, 
+    to_decimal, 
+    update_aggregated_sections, 
+    update_section_fields, 
+    update_version_status, 
+    get_reports_by_status 
+    )
+
+from website.organization import create_new_organization, get_current_quarter, update_organization_data_with_delay, validate_okpo, validate_ynp
 
 from ..email import send_email
 from website.sessions import session_required
-from ..models import User, Organization, Report, Version_report, Ticket, DirUnit, DirProduct, Sections, Message, News
+from ..models import Region, User, Organization, Report, Version_report, Ticket, DirUnit, DirProduct, Sections, Message, News
 from .. import db
 from sqlalchemy import asc, case, desc
 from functools import wraps
@@ -107,6 +120,7 @@ def beginPage():
     organization_data = Organization.query.count()
     report_data = Report.query.count()
     latest_news = News.query.order_by(desc(News.id)).first()
+    regions = Region.query.order_by(Region.number).all()
     return render_template('begin_page.html', 
                            latest_news=latest_news,
                            user=current_user, 
@@ -114,7 +128,8 @@ def beginPage():
                            organization_data = organization_data, 
                            report_data = report_data,
                            previous_quarter = get_previous_quarter(),
-                           previous_year=get_report_year()
+                           previous_year=get_report_year(), 
+                           regions=regions
                            )
 
 @views.route('/sign', methods=['GET'])
@@ -154,102 +169,72 @@ def profile():
                            current_user=current_user, 
                            accwelcomeModal = True)
 
-@views.route('/api/messages', methods=['GET'])
-@login_required
-def get_messages_api():
-    try:
-        messages = Message.query.filter_by(recipient_id=current_user.id).order_by(Message.id.desc()).all()
-        
-        messages_data = []
-        for msg in messages:
-            messages_data.append({
-                'id': msg.id,
-                'create_time': msg.create_time.strftime('%d.%m.%Y %H:%M'),
-                'text': msg.text,
-                'sender_id': msg.sender_id,
-                'sender_email': msg.sender.email if msg.sender else None,
-                'sender_type': msg.sender.type if msg.sender else None,
-                'can_reply': current_user.type == "Администратор" and msg.sender_id != current_user.id and msg.sender_id is not None
-            })
-        
-        return jsonify({
-            'success': True,
-            'messages': messages_data,
-            'count': len(messages_data)
-        })
-        
-    except Exception as e:
-        current_app.logger.error(f"Ошибка при получении сообщений: {str(e)}")
-        return jsonify({
-            'success': False,
-            'error': 'Ошибка при загрузке сообщений'
-        }), 500
 
-
-@views.route('/delete_message/<int:message_id>', methods=['DELETE'])
-@login_required
-def delete_message(message_id):
-    try:
-        message = Message.query.filter_by(
-            id=message_id, 
-            recipient_id=current_user.id
-        ).first()
+# @views.route('/delete_message/<int:message_id>', methods=['DELETE'])
+# @login_required
+# def delete_message(message_id):
+#     try:
+#         message = Message.query.filter_by(
+#             id=message_id, 
+#             recipient_id=current_user.id
+#         ).first()
         
-        if not message:
-            return jsonify({
-                'success': False, 
-                'error': 'Сообщение не найдено или у вас нет прав на его удаление'
-            }), 404
+#         if not message:
+#             return jsonify({
+#                 'success': False, 
+#                 'error': 'Сообщение не найдено или у вас нет прав на его удаление'
+#             }), 404
         
-        db.session.delete(message)
-        db.session.commit()
+#         db.session.delete(message)
+#         db.session.commit()
         
-        remaining_messages = Message.query.filter_by(
-            recipient_id=current_user.id
-        ).order_by(Message.id.desc()).all()
+#         remaining_messages = Message.query.filter_by(
+#             recipient_id=current_user.id
+#         ).order_by(Message.id.desc()).all()
         
-        return jsonify({
-            'success': True, 
-            'message': 'Сообщение удалено',
-            'remaining_count': len(remaining_messages)
-        })
+#         return jsonify({
+#             'success': True, 
+#             'message': 'Сообщение удалено',
+#             'remaining_count': len(remaining_messages)
+#         })
             
-    except Exception as e:
-        db.session.rollback()
-        current_app.logger.error(f"Ошибка при удалении сообщения: {str(e)}")
-        return jsonify({'success': False, 'error': 'Внутренняя ошибка сервера'}), 500
+#     except Exception as e:
+#         db.session.rollback()
+#         current_app.logger.error(f"Ошибка при удалении сообщения: {str(e)}")
+#         return jsonify({'success': False, 'error': 'Внутренняя ошибка сервера'}), 500
 
-@views.route('/delete_all_message', methods=['POST'])
-@login_required
-def delete_all_message():
-    try:
-        messages = Message.query.filter_by(
-            recipient_id=current_user.id
-        ).all()
+# @views.route('/delete_all_message', methods=['POST'])
+# @login_required
+# def delete_all_message():
+#     try:
+#         messages = Message.query.filter_by(
+#             recipient_id=current_user.id
+#         ).all()
         
-        if not messages:
-            flash('Нет сообщений для удаления.', 'error')
-            return redirect(url_for('views.profile'))
+#         if not messages:
+#             flash('Нет сообщений для удаления.', 'error')
+#             return redirect(url_for('views.profile'))
         
-        for message in messages:
-            db.session.delete(message)
+#         for message in messages:
+#             db.session.delete(message)
         
-        db.session.commit()
-        flash('Все сообщения успешно удалены.', 'success')
-        current_app.logger.debug("Все сообщения удалены")
+#         db.session.commit()
+#         flash('Все сообщения успешно удалены', 'success')
+#         current_app.logger.debug("Все сообщения удалены")
             
-    except Exception as e:
-        db.session.rollback()
-        current_app.logger.error(f"Ошибка при удалении сообщений: {str(e)}")
-        flash('Ошибка при удалении сообщений', 'error')
+#     except Exception as e:
+#         db.session.rollback()
+#         current_app.logger.error(f"Ошибка при удалении сообщений: {str(e)}")
+#         flash('Ошибка при удалении сообщений', 'error')
         
-    return redirect(url_for('views.profile'))
+#     return redirect(url_for('views.profile'))
 
-@views.route('/get_messages_count')
-@login_required
-def get_messages_count():
-    count = Message.query.filter_by(recipient_id=current_user.id).count()
-    return jsonify({'count': count})
+
+# @views.route('/get_messages_count')
+# @login_required
+# def get_messages_count():
+#     count = Message.query.filter_by(recipient_id=current_user.id).count()
+#     return jsonify({'count': count})
 
 @views.route('/reply_to_message/<int:message_id>', methods=['POST'])
 @login_required
@@ -349,10 +334,8 @@ def profile_session():
         'profile_session.html',
         # current_session=current_session,
         # other_sessions=other_sessions,
-                        active_tab = 'session'
+        active_tab = 'session'
     )
-
-
 
 @views.route('/profile/password', methods=['GET'])
 @login_required
@@ -393,25 +376,22 @@ def report_area():
                            )
 
 def get_auditor_info_by_user(current_user):
-    if not current_user.organization or not current_user.organization.okpo:
-        return None
-    okpo_str = str(current_user.organization.okpo)
-    
-    if len(okpo_str) < 4:
+    if not current_user.organization or not current_user.organization.region:
         return None
     
-    fourth_digit = okpo_str[-4]
+    region_id = current_user.organization.region.id
     
-    auditor_okpo = fourth_digit + '000'
+    region_management_org = Organization.query.filter(
+        Organization.region_id == region_id,
+        Organization.is_region_management == True
+    ).first()
     
-    auditor_org = Organization.query.filter_by(okpo=auditor_okpo).first()
-    
-    if not auditor_org:
+    if not region_management_org:
         return None
     
     auditor = User.query.filter(
         User.type == 'Аудитор',
-        User.organization_id == auditor_org.id
+        User.organization_id == region_management_org.id
     ).first()
     
     if not auditor:
@@ -419,8 +399,8 @@ def get_auditor_info_by_user(current_user):
     
     return {
         'fio': auditor.fio or 'Не указано',
-        # 'telephone': auditor.telephone or 'Не указан',
-        'organization': auditor_org.full_name or 'Не указано',
+        'telephone': auditor.telephone or 'Не указан',
+        'organization': region_management_org.full_name or 'Не указано',
     }
 
 @views.route('/reports/<string:report_type>/<int:id>', methods=['GET'])
@@ -721,7 +701,7 @@ def create_report():
                     )
                     db.session.add(section)
                 db.session.commit()
-            flash(f'Отчет {year}/{quarter} успешно создан.', 'success')
+            flash(f'Отчет {year}/{quarter} успешно создан', 'success')
         else:
             flash(f'Отчет {year} года {quarter} квартала уже существует.', 'error')
     return redirect(url_for('views.report_area'))
@@ -762,7 +742,7 @@ def change_period_report():
             current_report.year = year
             current_report.quarter = quarter
             db.session.commit()
-            flash('Параметры обновлены.', 'success')
+            flash('Параметры обновлены', 'success')
         else:
             flash('Отчет не найден.', 'error')
 
@@ -960,7 +940,7 @@ def delete_report(report_id):
             
             db.session.delete(current_report)
             db.session.commit()
-            flash('Отчет удален.', 'success')
+            flash('Отчет удален', 'success')
             
         except Exception as e:
             db.session.rollback()
@@ -1024,7 +1004,7 @@ def add_section():
             update_aggregated_sections(data['current_version_id'], data['section_number'])
             update_version_status(current_version)
             
-            flash('Продукция была добавлена.', 'success')
+            flash('Продукция была добавлена', 'success')
             
         except Exception as e:
             db.session.rollback()
@@ -1065,7 +1045,7 @@ def change_section():
             update_version_status(current_version)
             
             db.session.commit()
-            flash('Параметры обновлены.', 'success')
+            flash('Параметры обновлены', 'success')
             
         except Exception as e:
             db.session.rollback()
@@ -1100,7 +1080,7 @@ def remove_section(id):
             db.session.commit()
             
             update_version_status(current_version)
-            flash('Продукция была удалена.', 'success')
+            flash('Продукция была удалена', 'success')
             
         except Exception as e:
             db.session.rollback()
@@ -1289,7 +1269,7 @@ def change_category_report():
             print(f'Ошибка отправки email: {str(e)}')
             flash('Статус изменен, но возникла ошибка при отправке уведомления на email.', 'warning')
         
-        flash(f'Статус отчета "{organization_name}" за {report.year} год {report.quarter} квартал был изменен на «{status_itog}».', 'success')
+        flash(f'Статус отчета "{organization_name}" за {report.year} год {report.quarter} квартал был изменен на «{status_itog}»', 'success')
         return redirect(request.referrer or url_for('views.index'))
         
     except Exception as e:
@@ -1336,7 +1316,7 @@ def rollbackreport(id):
                     )
                     db.session.add(ticket_message)
                     db.session.commit()
-                    flash('Статус отчёта был изменён на «Непросмотренный».', 'success')
+                    flash('Статус отчёта был изменён на «Непросмотренный»', 'success')
             else:
                 flash('Статус отчёта уже установлен как «Непросмотренный».', 'error')
             return redirect(request.referrer)
@@ -1372,7 +1352,7 @@ def send_comment():
             db.session.add(new_comment)
             current_version.hasNot = True
             db.session.commit()
-            flash('Сообщение отправлено, теперь можно сменить статус.', 'success')
+            flash('Сообщение отправлено, теперь можно сменить статус', 'success')
         
             status_mapping = {
                 'Отправлен': 'not_viewed',
@@ -1521,8 +1501,9 @@ def print_version_tickets():
         response.headers['Content-Disposition'] = 'attachment; filename=' + f"kvitancii_{report.organization.okpo}_{report.year}_{report.quarter}.pdf"
         
         return response
-        
-@views.route('/send_for_admin', methods=['POST'])
+
+
+@views.route('/send-for-admin', methods=['POST'])
 @login_required 
 @session_required
 def send_for_admin():
@@ -1532,10 +1513,12 @@ def send_for_admin():
         organization_name = request.form.get('organization_name', '')
         organization_okpo = request.form.get('organization_okpo', '')
         organization_ynp = request.form.get('organization_ynp', '')
+        organization_region = request.form.get('organization_region', '')
         
         new_organization_name = request.form.get('new_organization_name', '')
         new_organization_okpo = request.form.get('new_organization_okpo', '')
         new_organization_ynp = request.form.get('new_organization_ynp', '')
+        new_organization_region = request.form.get('new_organization_region', '')
         selected_org_id = request.form.get('selected_org_id', '')
         
         if not question_type:
@@ -1543,8 +1526,8 @@ def send_for_admin():
             return redirect(url_for('views.beginPage'))
         
         if question_type == 'organization-none':
-            if not organization_name or not organization_okpo or not organization_ynp:
-                flash('Заполните название организации, УНП и ОКПО.', 'error')
+            if not organization_name or not organization_okpo or not organization_ynp or not organization_region:
+                flash('Заполните все поля (название, УНП, ОКПО, регион).', 'error')
                 return redirect(url_for('views.beginPage'))
             
             is_valid_okpo, okpo_error = validate_okpo(organization_okpo)
@@ -1557,7 +1540,15 @@ def send_for_admin():
                 flash(ynp_error, 'error')
                 return redirect(url_for('views.beginPage'))
             
-            create_new_organization(organization_name, organization_okpo, organization_ynp, current_user)
+            create_new_organization(
+                organization_name, 
+                organization_okpo, 
+                organization_ynp, 
+                organization_region, 
+                current_user
+            )
+            
+            flash('Ваш запрос на добавление организации отправлен.', 'success')
             
         elif question_type == 'organization-edit':
             if not selected_org_id:
@@ -1573,17 +1564,21 @@ def send_for_admin():
                 flash('Вы можете изменять данные только своей организации.', 'error')
                 return redirect(url_for('views.beginPage'))
             
+            current_quarter, current_year = get_current_quarter()
+            
             has_approved_reports = Report.query.join(Version_report).filter(
                 Report.org_id == organization.id,
+                Report.year == current_year,
+                Report.quarter == current_quarter,
                 Version_report.status.in_(["Отправлен", "Одобрен", "Есть замечания", "Готов к удалению"])
             ).first()
             
             if has_approved_reports:
-                flash('Нельзя изменить данные организации, так как есть отправленные отчеты.', 'error')
+                flash('Нельзя изменить данные организации, так как есть отправленные отчеты за текущий квартал.', 'error')
                 return redirect(url_for('views.beginPage'))
             
             has_changes = False
-
+            
             if new_organization_okpo and new_organization_okpo != organization.okpo:
                 is_valid, error_msg = validate_okpo(new_organization_okpo)
                 if not is_valid:
@@ -1606,57 +1601,64 @@ def send_for_admin():
             if new_organization_name and new_organization_name != organization.full_name:
                 has_changes = True
             
+            if new_organization_region and str(new_organization_region) != str(organization.region_id):
+                region = Region.query.get(new_organization_region)
+                if not region:
+                    flash('Выбранный регион не найден.', 'error')
+                    return redirect(url_for('views.beginPage'))
+                has_changes = True
+            
             if not has_changes:
                 flash('Не обнаружено изменений в данных организации.', 'error')
                 return redirect(url_for('views.beginPage'))
             
-            new_message = Message(
-                text=f"Ваше сообщение на редактирование организации было отправлено.",
-                recipient_id=current_user.id,
-                create_time = current_utc_time()
-            )
-            db.session.add(new_message)
-            db.session.commit()
+            # new_message = Message(
+            #     text=f"Ваше сообщение на редактирование организации было отправлено.",
+            #     recipient_id=current_user.id,
+            #     create_time=current_utc_time()
+            # )
+            # db.session.add(new_message)
+            # db.session.commit()
             
             update_organization_data_with_delay(
                 organization_id=organization.id,
                 new_name=new_organization_name if new_organization_name else None,
                 new_okpo=new_organization_okpo if new_organization_okpo else None,
                 new_ynp=new_organization_ynp if new_organization_ynp else None,
-                user_id=current_user.id
+                new_region_id=new_organization_region if new_organization_region else None,
+                user_id=current_user.id,
+                delay_seconds=10
             )
+            
+            flash('Ваш запрос на редактирование организации отправлен.', 'success')
             
         elif question_type == 'other':
             if not problem_description:
                 flash('Опишите ваш вопрос.', 'error')
                 return redirect(url_for('views.beginPage'))
             
-            admins = User.query.filter_by(type="Администратор").all()
-            if admins:
-                for admin in admins:
-                    new_message = Message(
-                        sender_id=current_user.id,
-                        text=problem_description,
-                        recipient_id=admin.id,
-                        create_time = current_utc_time()
-                    )
-                    db.session.add(new_message)
-                db.session.commit()
-                flash('Сообщение отправлено администратору.', 'success')
-            else:
-                flash('Администраторы не найдены.', 'error')
-                
             new_message = Message(
-                text=f"Ваше сообщение «{problem_description}» было отправлено.",
-                recipient_id=current_user.id,
-                create_time = current_utc_time()
+                sender_id=current_user.id,
+                text=problem_description,
+                to_admin=True,
+                create_time=current_utc_time()
             )
             db.session.add(new_message)
             db.session.commit()
+            
+            new_message = Message(
+                text=f"Ваше сообщение «{problem_description}» было отправлено.",
+                recipient_id=current_user.id,
+                create_time=current_utc_time()
+            )
+            db.session.add(new_message)
+            db.session.commit()
+            
+            flash('Сообщение отправлено администратору', 'success')
+            
         else:
             flash('Неверный тип вопроса.', 'error')
             return redirect(url_for('views.beginPage'))
-        flash('Ваш вопрос был отправлен.', 'succes')
         
     return redirect(url_for('views.profile'))
 

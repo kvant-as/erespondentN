@@ -37,7 +37,7 @@ from reportlab.pdfbase import pdfmetrics
 
 from . import db
 from .models import (
-    User, Organization, Report, Version_report, DirUnit,
+    Region, User, Organization, Report, Version_report, DirUnit,
     DirProduct, Sections, Ticket, Message
 )
 
@@ -59,12 +59,12 @@ def send_delayed_response(user_id, text, delay_seconds=10):
         )
         db.session.add(new_message)
         db.session.commit()
-        current_app.logger.error("Сообщение отправлено пользователю.")
+        current_app.logger.info("Сообщение отправлено пользователю.")
 
     thread = threading.Thread(target=send_message)
     thread.daemon = True
     thread.start()
-    current_app.logger.error("Сообщение в обработке.")
+    current_app.logger.info("Сообщение в обработке.")
 
 def validate_okpo(okpo):
     if len(okpo) != 12:
@@ -80,12 +80,18 @@ def validate_ynp(ynp):
         return False, "УНП должен содержать ровно 9 цифр"
     return True, ""
 
-def update_organization_data_with_delay(organization_id, new_name=None, new_okpo=None, new_ynp=None, user_id=None, delay_seconds=10):
+        
+def get_current_quarter():
+    now = datetime.now()
+    quarter = (now.month - 1) // 3 + 1
+    return quarter, now.year
+
+def update_organization_data_with_delay(organization_id, new_name=None, new_okpo=None, new_ynp=None, new_region_id=None, user_id=None, delay_seconds=10):
     @copy_current_request_context
     def update_task():
         time.sleep(delay_seconds)
         
-        from website.models import Organization, User, Message, Report, Version_report, db
+        from website.models import Organization, User, Message, Report, Version_report, Region, db
         
         organization = Organization.query.get(organization_id)
         if not organization:
@@ -106,16 +112,20 @@ def update_organization_data_with_delay(organization_id, new_name=None, new_okpo
             )
             return
         
+        current_quarter, current_year = get_current_quarter()
+        
         has_approved_reports = Report.query.join(Version_report).filter(
             Report.org_id == organization.id,
-            Version_report.status == 'Одобрено'
+            Report.year == current_year,
+            Report.quarter == current_quarter,
+            Version_report.status.in_(["Отправлен", "Одобрен", "Есть замечания", "Готов к удалению"])
         ).first()
         
         if has_approved_reports:
-            current_app.logger.error(f"У организации {organization.id} есть одобренные отчеты. Редактирование запрещено.")
+            current_app.logger.error(f"У организации {organization.id} есть отправленные отчеты за текущий квартал. Редактирование запрещено.")
             send_delayed_response(
                 user.id,
-                "Ошибка: нельзя изменить данные организации, так как есть одобренные отчеты.",
+                "Ошибка: нельзя изменить данные организации, так как есть отправленные отчеты за текущий квартал.",
                 delay_seconds=2
             )
             return
@@ -152,37 +162,39 @@ def update_organization_data_with_delay(organization_id, new_name=None, new_okpo
             changes.append(f"УНП: '{organization.ynp}' → '{new_ynp}'")
             organization.ynp = new_ynp.strip()
         
-        db.session.commit()
+        if new_region_id and str(new_region_id) != str(organization.region_id):
+            region = Region.query.get(new_region_id)
+            if not region:
+                current_app.logger.error(f"Регион с ID {new_region_id} не найден")
+                send_delayed_response(
+                    user.id, 
+                    "Ошибка: выбранный регион не найден. Изменения не применены.", 
+                    delay_seconds=2
+                )
+                return
+            
+            old_region_name = organization.region.name if organization.region else "Не указан"
+            changes.append(f"Регион: '{old_region_name}' → '{region.name}'")
+            organization.region_id = new_region_id
         
-        # user_message = Message(
-        #     text=f"Ваши данные организации были изменены:\n" + "\n".join(changes),
-        #     recipient_id=user.id,
-        # )
-        # db.session.add(user_message)
-        # db.session.commit()
+        if not changes:
+            current_app.logger.debug(f"Нет изменений для организации ID {organization_id}")
+            send_delayed_response(
+                user.id,
+                "Изменений в данных организации не обнаружено.",
+                delay_seconds=2
+            )
+            return
+        
+        db.session.commit()
         
         send_delayed_response(
             user.id,
-            "Данные вашей организации успешно обновлены.",
+            f"Данные вашей организации успешно обновлены.\nИзменения:\n" + "\n".join(changes),
             delay_seconds=2
         )
         
-        # admins = User.query.filter_by(type="Администратор").all()
-        # if admins:
-        #     full_message = f"Изменены данные организации (ID: {organization_id})\n"
-        #     full_message += "\n".join(changes)
-        #     full_message += f"\n\nПользователь: {user.email}"
-            
-        #     for admin in admins:
-        #         admin_message = Message(
-        #             sender_id=user.id,
-        #             text=full_message,
-        #             recipient_id=admin.id
-        #         )
-        #         db.session.add(admin_message)
-        #     db.session.commit()
-        
-        current_app.logger.debug(f"Данные организации ID {organization_id} были изменены.")
+        current_app.logger.debug(f"Данные организации ID {organization_id} были изменены: {changes}")
     
     thread = threading.Thread(target=update_task)
     thread.daemon = True
@@ -190,36 +202,46 @@ def update_organization_data_with_delay(organization_id, new_name=None, new_okpo
     current_app.logger.info(f"Изменение организации ID {organization_id} запланировано через {delay_seconds} секунд.")
     return thread
 
-def create_new_organization(organization_name, organization_okpo, organization_ynp, sender):
-    new_message = Message(
-        text=f"Ваше сообщение на добавление организации '{organization_name}' было отправлено.",
-        recipient_id=current_user.id,
-        create_time = current_utc_time()
-    )
-    db.session.add(new_message)
-    db.session.commit()
-    
+def create_new_organization(organization_name, organization_okpo, organization_ynp, organization_region_id, sender):
     existing_org = Organization.query.filter_by(okpo=organization_okpo).first()
     if existing_org:
-        current_app.logger.error("Такая организация уже существует.")
+        current_app.logger.error(f"Организация с ОКПО {organization_okpo} уже существует.")
         send_delayed_response(
             sender.id, 
-            "Ответ на ваше сообщение. Такая организация уже существует."
+            "Ответ на ваше сообщение. Организация с таким ОКПО уже существует."
         )
         return existing_org
+    
+    region = Region.query.get(organization_region_id)
+    if not region:
+        current_app.logger.error(f"Регион с ID {organization_region_id} не найден.")
+        send_delayed_response(
+            sender.id, 
+            "Ответ на ваше сообщение. Выбранный регион не найден."
+        )
+        return None
     
     new_organization = Organization(
         full_name=organization_name,
         okpo=organization_okpo,
-        ynp=organization_ynp
+        ynp=organization_ynp,
+        region_id=organization_region_id
     )
     db.session.add(new_organization)
     db.session.commit()
     
+    new_message = Message(
+        text=f"Ваше сообщение на добавление организации '{organization_name}' было отправлено.",
+        recipient_id=sender.id,
+        create_time=current_utc_time()
+    )
+    db.session.add(new_message)
+    db.session.commit()
+    
     send_delayed_response(
         sender.id, 
-        "Ответ на ваше сообщение. Ваша организация была добавлена."
+        f"Ответ на ваше сообщение. Организация '{organization_name}' была добавлена в регионе '{region.name}'."
     )
     
-    current_app.logger.debug(f"Организация '{organization_name}' была создана.")
+    current_app.logger.debug(f"Организация '{organization_name}' была создана в регионе '{region.name}'.")
     return new_organization

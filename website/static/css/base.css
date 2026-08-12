@@ -1399,11 +1399,11 @@ main {
 }
 
 .custom-alert.alert-success {
-    background: linear-gradient(135deg, rgba(76, 175, 80, 0.3) 0%, rgba(58, 161, 62, 0.747) 100%);;
+    background: linear-gradient(135deg, rgba(76, 175, 80, 0.3) 0%, rgba(93, 209, 97, 0.747) 100%);;
 }
 
 .custom-alert.alert-danger {
-    background: linear-gradient(135deg, rgba(244, 67, 54, 0.3) 0%, rgba(252, 17, 0, 0.541) 100%);
+    background: linear-gradient(135deg, rgba(244, 67, 54, 0.3) 0%, rgba(255, 65, 52, 0.541) 100%);
 }
 
 
@@ -2877,6 +2877,154 @@ main {
     }
 }
 
+.region-buttons-group {
+    margin-top: 15px;
+}
+
+.region-buttons-group label {
+    display: block;
+    margin-bottom: 10px;
+    font-weight: 500;
+    color: #333;
+    font-size: 15px;
+}
+
+.region-buttons-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.region-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    background-color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: inherit;
+    font-size: 14px;
+    color: #333;
+    text-align: left;
+}
+
+.region-btn:hover {
+    border-color: #4a90d9;
+    background-color: #f0f7ff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(74, 144, 217, 0.15);
+}
+
+.region-btn.selected {
+    border-color: #4a90d9;
+    background-color: #e8f0fe;
+    box-shadow: 0 0 0 3px rgba(74, 144, 217, 0.2);
+}
+
+.region-btn .region-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 28px;
+    background-color: #f0f4f8;
+    border-radius: 50%;
+    font-weight: 600;
+    font-size: 13px;
+    color: #4a90d9;
+    flex-shrink: 0;
+}
+
+.region-btn.selected .region-number {
+    background-color: #4a90d9;
+    color: white;
+}
+
+.region-btn .region-name {
+    font-size: 13px;
+    line-height: 1.3;
+}
+
+.region-selection-status {
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    background-color: #f8f9fa;
+    color: #666;
+    margin-top: 5px;
+}
+
+.region-selection-status.selected {
+    background-color: #e8f0fe;
+    color: #4a90d9;
+    font-weight: 500;
+}
+
+.old-data-hint {
+    display: block;
+    font-size: 13px;
+    color: #7f8c8d;
+    margin-top: 6px;
+    font-style: italic;
+}
+
+.comparison-status-inline {
+    display: block;
+    font-size: 13px;
+    margin-top: 4px;
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+
+.status-changed-inline {
+    color: #e67e22;
+    background-color: #fef9e7;
+}
+
+.status-unchanged-inline {
+    color: #27ae60;
+    background-color: #eafaf1;
+}
+
+.status-empty-inline {
+    color: #95a5a6;
+    background-color: #f8f9fa;
+}
+
+.input-error {
+    border-color: #e74c3c !important;
+}
+
+.input-error:focus {
+    border-color: #e74c3c !important;
+    box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.2) !important;
+}
+
+@media (max-width: 768px) {
+    .region-buttons-grid {
+        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+        gap: 8px;
+    }
+    
+    .region-btn {
+        padding: 8px 10px;
+        font-size: 13px;
+    }
+    
+    .region-btn .region-number {
+        min-width: 24px;
+        height: 24px;
+        font-size: 12px;
+    }
+    
+    .region-btn .region-name {
+        font-size: 12px;
+    }
+}
 
 /*================= beginPage end ==============*/
 
@@ -3113,6 +3261,38 @@ main {
     margin-left: auto;
 }
 
+.reply_info {
+    margin-bottom: 14px;
+}
+
+.reply_recipient {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    font-size: 13px;
+}
+
+.reply_label {
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.reply_name {
+    color: #1a2332;
+    font-weight: 600;
+}
+
+.reply_phone {
+    color: #4A6CF7;
+    font-weight: 500;
+}
+
+.reply_email {
+    color: #6b7280;
+    font-size: 12px;
+}
+
 .account_messageArea img {
     width: 28px;
     height: 28px;
@@ -3151,7 +3331,23 @@ main {
     background-color: #f9f9f9;
 }
 
-/* Заголовок сообщения */
+.message_cont .mes.read {
+    background-color: #f7f8ff;
+    opacity: 0.7;
+}
+
+.message_cont .mes.read .mes-text {
+    color: #7a7f8b;
+}
+
+.message_cont .mes.read .mes-header {
+    color: #8e94a1;
+}
+
+.message_cont .mes.read .mes-time {
+    color: #a0a6b3;
+}
+
 .message_header {
     display: flex;
     justify-content: space-between;
@@ -3162,14 +3358,30 @@ main {
 }
 
 .time_mes {
-    font-size: 12px;
-    color: #666;
-    font-weight: 500;
-    flex: 1;
-    min-width: 120px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #6b7280;
 }
 
-.sender {
+.msg-date {
+    color: #4a5568;
+    font-weight: 500;
+    font-size: 12px;
+}
+
+.msg-time {
+    color: #2d3748;
+    font-weight: 600;
+    background: #ebf8ff;
+    padding: 2px 5px;
+    border-radius: 14px;
+    font-size: 13px;
+    font-family: 'Courier New', monospace;
+}
+
+.time_mes .sender {
     color: #2c5282;
     font-weight: 600;
     background: #ebf8ff;
@@ -3180,7 +3392,10 @@ main {
     white-space: nowrap;
 }
 
-/* Действия с сообщением */
+.message_cont .mes.read .msg-time {
+    background: #dce0e8;
+}
+
 .message_actions {
     display: flex;
     gap: 6px;
@@ -7495,6 +7710,69 @@ th.resizable .resizer {
     transform: rotate(12deg);
 }
 
+.mark-read-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    background: white;
+    border: 1px solid #e0e5f0;
+    border-radius: 6px;
+    color: #2d3748;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.mark-read-btn:hover {
+    background: #4CAF50;
+    border-color: #4CAF50;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(76, 175, 80, 0.2);
+}
+
+.mark-read-btn svg {
+    transition: transform 0.2s ease;
+}
+
+.mark-read-btn:hover svg {
+    transform: scale(1.2);
+}
+
+.mark-all-read-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 10px;
+    background: white;
+    border: 1px solid #e0e5f0;
+    border-radius: 8px;
+    color: #2d3748;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.mark-all-read-btn:hover {
+    background: #4CAF50;
+    border-color: #4CAF50;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}
+
+.mark-all-read-btn svg {
+    width: 18px;
+    height: 18px;
+    transition: transform 0.2s ease;
+}
+
+.mark-all-read-btn:hover svg {
+    transform: scale(1.1);
+}
+
 @media (max-width: 640px) {
     .messages-header {
         flex-direction: column;
@@ -10902,7 +11180,7 @@ th.resizable .resizer {
     }
 }
 
-/* Эффект параллакса для картинки */
+
 @media (prefers-reduced-motion: no-preference) {
     .media_illuminate {
         transform-style: preserve-3d;
@@ -11050,7 +11328,7 @@ th.resizable .resizer {
     font-size: 13.5px;
     color: #3d3d3d;
     text-align: end;
-    padding: 5px 15px;
+    padding: 8px;
 }
 
 .news_list {

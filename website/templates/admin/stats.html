@@ -39,13 +39,31 @@
         </tbody>
     </table>
 
+
     <div style="margin-top: 20px;">
+        <form action="{{ url_for('dbs.update_regions') }}" method="get" target="_blank">
+            <button type="submit" class="btn btn-primary">Обновить регионы</button>
+        </form>
+    </div>
+
+    <div style="margin-top: 20px;">
+        <form action="{{ url_for('dbs.update_region_management') }}" method="get" target="_blank">
+            <button type="submit" class="btn btn-warning">
+                Назначить управление регионом
+            </button>
+        </form>
+    </div>
+
+
+    {#<div style="margin-top: 20px;">
         <form action="{{ url_for('dbs.products') }}" method="get" target="_blank">
             <button type="submit" class="btn btn-primary">Показать все продукты</button>
         </form>
     </div>
 
-    {#<div style="margin-top: 20px;">
+    
+    
+    <div style="margin-top: 20px;">
         <form action="{{ url_for('dbs.units') }}" method="get" target="_blank">
             <button type="submit" class="btn btn-primary">Показать все юниты</button>
         </form>

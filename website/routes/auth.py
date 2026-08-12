@@ -81,7 +81,7 @@ def login():
                     db.session.commit()
 
                     response = create_login_response(user)
-                    flash('Авторизация прошла успешно.', 'success')
+                    flash('Авторизация прошла успешно', 'success')
                     return response
                 
             flash('Неправильный email или пароль.', 'error')
@@ -97,7 +97,7 @@ def logout():
     response = clear_session_cookie(response)
     logout_user()
 
-    flash('Выполнен выход из аккаунта.', 'success')
+    flash('Выполнен выход из аккаунта', 'success')
     return response
 
 @auth.route('/sign', methods=['POST'])
@@ -120,7 +120,7 @@ def sign():
                 }
                 session.permanent = True
                 send_activation_email(email) 
-                flash('Проверьте свою почту для активации аккаунта.', 'success')
+                flash('Проверьте свою почту для активации аккаунта', 'success')
                 return redirect(url_for('views.code'))
         else:
             flash('Введите данные для регистрации.', 'error')    
@@ -222,7 +222,7 @@ def add_personal_parametrs():
         session.pop('activation_code', None)
         
         db.session.commit()
-        flash('Данные успешно обновлены.', 'success')
+        flash('Данные успешно обновлены', 'success')
         
     return redirect(url_for('views.profile_common'))
 
@@ -256,7 +256,7 @@ def profile_password():
         response = clear_session_cookie(response)
         logout_user()
     
-        flash('Пароль изменён. Выполнен выход из системы.', 'success')
+        flash('Пароль изменён. Выполнен выход из системы', 'success')
         return response
     return redirect(url_for('views.profile_password'))
 
@@ -275,7 +275,7 @@ def relod_password():
         # ip_address, location, os, browser = get_location_info(user_agent_string)
         
         send_email(new_password, email, 'new_pass')
-        flash('Новый пароль был отправлен вам на email.', 'success')
+        flash('Новый пароль был отправлен вам на email', 'success')
         user.password = hashed_password
         db.session.commit()
         return redirect(url_for('views.login'))
@@ -335,7 +335,7 @@ def delete_account():
         
         logout_user()
         
-        flash(f'Аккаунт {user.email} успешно удален.', 'success')
+        flash(f'Аккаунт {user.email} успешно удален', 'success')
         return redirect(url_for('auth.sign'))
         
     except Exception as e:
