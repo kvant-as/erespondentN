@@ -22,11 +22,11 @@ from website.report import (
     get_reports_by_status 
     )
 
-from website.organization import create_new_organization, update_organization_data_with_delay, validate_okpo, validate_ynp
+from website.organization import create_new_organization, get_current_quarter, update_organization_data_with_delay, validate_okpo, validate_ynp
 
 from ..email import send_email
 from website.sessions import session_required
-from ..models import User, Organization, Report, Version_report, Ticket, DirUnit, DirProduct, Sections, Message, News
+from ..models import Region, User, Organization, Report, Version_report, Ticket, DirUnit, DirProduct, Sections, Message, News
 from .. import db
 from sqlalchemy import asc, case, desc
 from functools import wraps
@@ -120,6 +120,7 @@ def beginPage():
     organization_data = Organization.query.count()
     report_data = Report.query.count()
     latest_news = News.query.order_by(desc(News.id)).first()
+    regions = Region.query.order_by(Region.number).all()
     return render_template('begin_page.html', 
                            latest_news=latest_news,
                            user=current_user, 
@@ -127,7 +128,8 @@ def beginPage():
                            organization_data = organization_data, 
                            report_data = report_data,
                            previous_quarter = get_previous_quarter(),
-                           previous_year=get_report_year()
+                           previous_year=get_report_year(), 
+                           regions=regions
                            )
 
 @views.route('/sign', methods=['GET'])
@@ -1499,8 +1501,9 @@ def print_version_tickets():
         response.headers['Content-Disposition'] = 'attachment; filename=' + f"kvitancii_{report.organization.okpo}_{report.year}_{report.quarter}.pdf"
         
         return response
-        
-@views.route('/send_for_admin', methods=['POST'])
+
+
+@views.route('/send-for-admin', methods=['POST'])
 @login_required 
 @session_required
 def send_for_admin():
@@ -1510,10 +1513,12 @@ def send_for_admin():
         organization_name = request.form.get('organization_name', '')
         organization_okpo = request.form.get('organization_okpo', '')
         organization_ynp = request.form.get('organization_ynp', '')
+        organization_region = request.form.get('organization_region', '')
         
         new_organization_name = request.form.get('new_organization_name', '')
         new_organization_okpo = request.form.get('new_organization_okpo', '')
         new_organization_ynp = request.form.get('new_organization_ynp', '')
+        new_organization_region = request.form.get('new_organization_region', '')
         selected_org_id = request.form.get('selected_org_id', '')
         
         if not question_type:
@@ -1521,8 +1526,8 @@ def send_for_admin():
             return redirect(url_for('views.beginPage'))
         
         if question_type == 'organization-none':
-            if not organization_name or not organization_okpo or not organization_ynp:
-                flash('Заполните название организации, УНП и ОКПО.', 'error')
+            if not organization_name or not organization_okpo or not organization_ynp or not organization_region:
+                flash('Заполните все поля (название, УНП, ОКПО, регион).', 'error')
                 return redirect(url_for('views.beginPage'))
             
             is_valid_okpo, okpo_error = validate_okpo(organization_okpo)
@@ -1535,7 +1540,15 @@ def send_for_admin():
                 flash(ynp_error, 'error')
                 return redirect(url_for('views.beginPage'))
             
-            create_new_organization(organization_name, organization_okpo, organization_ynp, current_user)
+            create_new_organization(
+                organization_name, 
+                organization_okpo, 
+                organization_ynp, 
+                organization_region, 
+                current_user
+            )
+            
+            flash('Ваш запрос на добавление организации отправлен.', 'success')
             
         elif question_type == 'organization-edit':
             if not selected_org_id:
@@ -1551,17 +1564,21 @@ def send_for_admin():
                 flash('Вы можете изменять данные только своей организации.', 'error')
                 return redirect(url_for('views.beginPage'))
             
+            current_quarter, current_year = get_current_quarter()
+            
             has_approved_reports = Report.query.join(Version_report).filter(
                 Report.org_id == organization.id,
+                Report.year == current_year,
+                Report.quarter == current_quarter,
                 Version_report.status.in_(["Отправлен", "Одобрен", "Есть замечания", "Готов к удалению"])
             ).first()
             
             if has_approved_reports:
-                flash('Нельзя изменить данные организации, так как есть отправленные отчеты.', 'error')
+                flash('Нельзя изменить данные организации, так как есть отправленные отчеты за текущий квартал.', 'error')
                 return redirect(url_for('views.beginPage'))
             
             has_changes = False
-
+            
             if new_organization_okpo and new_organization_okpo != organization.okpo:
                 is_valid, error_msg = validate_okpo(new_organization_okpo)
                 if not is_valid:
@@ -1584,6 +1601,13 @@ def send_for_admin():
             if new_organization_name and new_organization_name != organization.full_name:
                 has_changes = True
             
+            if new_organization_region and str(new_organization_region) != str(organization.region_id):
+                region = Region.query.get(new_organization_region)
+                if not region:
+                    flash('Выбранный регион не найден.', 'error')
+                    return redirect(url_for('views.beginPage'))
+                has_changes = True
+            
             if not has_changes:
                 flash('Не обнаружено изменений в данных организации.', 'error')
                 return redirect(url_for('views.beginPage'))
@@ -1591,7 +1615,7 @@ def send_for_admin():
             new_message = Message(
                 text=f"Ваше сообщение на редактирование организации было отправлено.",
                 recipient_id=current_user.id,
-                create_time = current_utc_time()
+                create_time=current_utc_time()
             )
             db.session.add(new_message)
             db.session.commit()
@@ -1601,37 +1625,40 @@ def send_for_admin():
                 new_name=new_organization_name if new_organization_name else None,
                 new_okpo=new_organization_okpo if new_organization_okpo else None,
                 new_ynp=new_organization_ynp if new_organization_ynp else None,
-                user_id=current_user.id
+                new_region_id=new_organization_region if new_organization_region else None,
+                user_id=current_user.id,
+                delay_seconds=10
             )
+            
+            flash('Ваш запрос на редактирование организации отправлен.', 'success')
             
         elif question_type == 'other':
             if not problem_description:
                 flash('Опишите ваш вопрос.', 'error')
                 return redirect(url_for('views.beginPage'))
             
-    
             new_message = Message(
                 sender_id=current_user.id,
                 text=problem_description,
                 to_admin=True,
-                create_time = current_utc_time()
+                create_time=current_utc_time()
             )
             db.session.add(new_message)
             db.session.commit()
-            flash('Сообщение отправлено администратору', 'success')
-        
-                
+            
             new_message = Message(
                 text=f"Ваше сообщение «{problem_description}» было отправлено.",
                 recipient_id=current_user.id,
-                create_time = current_utc_time()
+                create_time=current_utc_time()
             )
             db.session.add(new_message)
             db.session.commit()
+            
+            flash('Сообщение отправлено администратору', 'success')
+            
         else:
             flash('Неверный тип вопроса.', 'error')
             return redirect(url_for('views.beginPage'))
-        flash('Ваш вопрос был отправлен.', 'succes')
         
     return redirect(url_for('views.profile'))
 

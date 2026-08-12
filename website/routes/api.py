@@ -27,7 +27,13 @@ def get_organizations():
     page = request.args.get("page", 1, type=int)
     search_query = request.args.get("q", "", type=str)
 
-    query = Organization.query
+    query = Organization.query.filter(
+        db.or_(
+            Organization.is_region_management == False,
+            Organization.is_region_management.is_(None)
+        )
+    )
+    
     if search_query:
         query = query.filter(
             db.or_(
@@ -46,7 +52,8 @@ def get_organizations():
                 "full_name": org.full_name,
                 "okpo": org.okpo,
                 "ynp": org.ynp,
-                "ministry": org.ministry,
+                "region_id": org.region_id,
+                "region_name": org.region.name if org.region else None
             }
             for org in pagination.items
         ],
