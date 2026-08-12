@@ -4,7 +4,7 @@ from flask import (
     Blueprint, json, jsonify, make_response, request
 )
 
-from website.models import DirProduct, DirUnit, Sections
+from website.models import DirProduct, DirUnit, Organization, Sections, Region
 from .. import db
 
 dbs = Blueprint('dbs', __name__)
@@ -695,3 +695,90 @@ def products():
 #         </html>
 #         """
 #         return error_html, 500
+
+@dbs.route('/update_regions')
+def update_regions():
+    region_data = [
+        (1, 'Брестская область'),
+        (2, 'Витебская область'),
+        (3, 'Гомельская область'),
+        (4, 'Гродненская область'),
+        (5, 'г. Минск'),
+        (6, 'Минская область'),
+        (7, 'Могилевская область'),
+    ]
+    
+    # Добавляем регионы
+    regions_added = 0
+    for number, name in region_data:
+        existing_region = Region.query.filter_by(number=number).first()
+        if not existing_region:
+            new_region = Region(number=number, name=name)
+            db.session.add(new_region)
+            regions_added += 1
+    
+    db.session.commit()
+    
+    # Обновляем организации
+    organizations = Organization.query.all()
+    updated_count = 0
+    
+    for org in organizations:
+        if org.okpo and len(org.okpo) >= 4:
+            try:
+                region_code = int(org.okpo[-4])
+                if 1 <= region_code <= 7:
+                    region = Region.query.filter_by(number=region_code).first()
+                    if region:
+                        org.region_id = region.id
+                        updated_count += 1
+            except ValueError:
+                continue
+    
+    db.session.commit()
+    
+    return jsonify({
+        'success': True,
+        'regions_added': regions_added,
+        'organizations_updated': updated_count,
+        'message': f'Добавлено {regions_added} регионов. Обновлено {updated_count} организаций.'
+    })
+    
+@dbs.route('/update_region_management')
+def update_region_management():
+    # Список ID организаций с соответствующими регионами
+    organizations_data = [
+        {'id': 7942, 'region_number': 1, 'name': 'Брестское областное управление по надзору за рациональным использованием ТЭР'},
+        {'id': 7945, 'region_number': 2, 'name': 'Витебское областное управление по надзору за рациональным использованием ТЭР'},
+        {'id': 7941, 'region_number': 3, 'name': 'Гомельское областное управление по надзору за рациональным использованием ТЭР'},
+        {'id': 7940, 'region_number': 4, 'name': 'Гродненское областное управление по надзору за рациональным использованием ТЭР'},
+        {'id': 7943, 'region_number': 5, 'name': 'Минское городское управление по надзору за рациональным использованием ТЭР'},
+        {'id': 7946, 'region_number': 6, 'name': 'Минское областное управление по надзору за рациональным использованием ТЭР'},
+        {'id': 7944, 'region_number': 7, 'name': 'Могилевское областное управление по надзору за рациональным использованием ТЭР'},
+    ]
+    
+    updated_count = 0
+    not_found = []
+    
+    for data in organizations_data:
+        org = Organization.query.get(data['id'])
+        if org:
+            org.is_region_management = True
+            org.full_name = data['name']
+            
+            region = Region.query.filter_by(number=data['region_number']).first()
+            if region:
+                org.region_id = region.id
+            
+            updated_count += 1
+        else:
+            not_found.append(data['id'])
+    
+    db.session.commit()
+    
+    return jsonify({
+        'success': True,
+        'updated_count': updated_count,
+        'not_found': not_found,
+        'message': f'Обновлено {updated_count} организаций. Не найдено: {not_found if not_found else "нет"}'
+    })

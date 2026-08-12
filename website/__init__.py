@@ -56,6 +56,7 @@ def create_app():
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
     app.config['TESTING'] = False
+    
     # oauth = OAuth(app)
     # google = oauth.register(
     #     name='google',
@@ -125,6 +126,16 @@ def create_app():
     @app.errorhandler(401)
     def unauthorized_handler(error):
         return redirect(url_for("views.login", next=request.url))
+ 
+    @app.template_filter('ru_date')
+    def ru_date(date):
+        months = {
+            1: 'Января', 2: 'Февраля', 3: 'Марта',
+            4: 'Апреля', 5: 'Мая', 6: 'Июня',
+            7: 'Июля', 8: 'Августа', 9: 'Сентября',
+            10: 'Октября', 11: 'Ноября', 12: 'Декабря'
+        }
+        return f"{date.day} {months[date.month]} {date.year}"
  
     # @app.context_processor
     # def inject_online_users():

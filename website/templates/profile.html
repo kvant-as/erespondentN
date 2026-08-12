@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Личный кабинет - ErespondentN{% endblock %}
 {% block content %}
+<meta name="user-type" content="{{ current_user.type }}">
 
 <div class = "account_cont">
     <div class = "privetstvie_cont">
@@ -15,6 +16,7 @@
                 </div>
                 {{ icons.icon_arrow_right() }}
             </button>
+            
             <button class = "account_buttons" onclick="window.location.href='/FAQ'">
                 <div class="first_path">
                     <img src="{{ url_for('static', filename='img/faq.png')}}"  alt="">
@@ -22,14 +24,8 @@
                 </div>
                 {{ icons.icon_arrow_right() }}
             </button>
-            <button class = "account_buttons" onclick="window.location.href='/#toadmin'">
-                <div class="first_path">
-                    <img src="{{ url_for('static', filename='img/email.png')}}"  alt="">
-                    <span>Обратная связь</span>
-                </div>
-                {{ icons.icon_arrow_right() }}
-            </button>
-            {%if current_user.type == 'Администратор' or current_user.type == 'Респондент'%}
+
+                   {%if current_user.type == 'Администратор' or current_user.type == 'Респондент'%}
                 <button class="acc-btn-otherbtn blue_btn" onclick="window.location.href='/reports'">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                         <path d="M12 4.5v15M4.5 12h15" />
@@ -57,6 +53,14 @@
         {%else%}
         {%endif%}
 
+            <button class = "account_buttons" onclick="window.location.href='/#toadmin'">
+                <div class="first_path">
+                    <img src="{{ url_for('static', filename='img/email.png')}}"  alt="">
+                    <span>Обратная связь</span>
+                </div>
+                {{ icons.icon_arrow_right() }}
+            </button>
+
         {%if current_user.type == 'Администратор'%}
             <button class = "account_buttons" onclick="window.location.href='/admin'">
                 <div class="first_path">
@@ -72,76 +76,10 @@
         <div class="account_messages">
             <div class="account_messageArea">
                 <img src="{{ url_for('static', filename='img/icon_messages.png')}}" alt="">
-                <span>Уведомления</span>
-                {% if messages %}
-                    <form method="POST" action="{{ url_for('views.delete_all_message') }}">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button type="submit" class="print-btn delete">
-                            {{ icons.delete_icon() }} 
-                            <span>Удалить все</span>
-                        </button>
-                    </form>
-                {% endif %}
+                <span>Сообщения</span>
             </div>
             <div class="message_cont" id="messagesContainer">
-                {% if messages %}
-                    {% for row in messages %}
-                    <div class="mes" id="message-{{ row.id }}">
-                        <div class="message_header">
-                            <div class="time_mes">
-                                {{ row.create_time.strftime('%d.%m.%Y %H:%M') }}
-                                {% if row.sender_id != None %} 
-                                - <span class="sender">
-                                    {% if row.sender.type == "Администратор" %}
-                                        Система
-                                    {% else %}
-                                        {{ row.sender.email }}
-                                    {% endif %}
-                                </span>
-                                {% endif %}
-                            </div>
-                            <div class="message_actions">
-                                {% if current_user.type == "Администратор" and row.sender_id != current_user.id and row.sender_id != None %}
-                                <button class="reply_btn" 
-                                        onclick="showReplyForm({{ row.id }}, 
-                                            {% if row.sender.type == 'Администратор' %}
-                                                'Администратор'
-                                            {% else %}
-                                                '{{ row.sender.email|e }}'
-                                            {% endif %})"
-                                        title="Ответить"
-                                        data-message-id="{{ row.id }}">
-                                    Ответить
-                                </button>
-                                {% endif %}
-                                
-                                <button class="delete_btn" 
-                                        onclick="deleteMessage({{ row.id }})"
-                                        title="Удалить сообщение"
-                                        data-message-id="{{ row.id }}">
-                                    ✕
-                                </button>
-                            </div>
-                        </div>
-                        <div class="text_mes">{{ row.text }}</div>
-                        
-                        <div class="reply_form" id="replyForm-{{ row.id }}" style="display: none;">
-                            <textarea class="reply_textarea" 
-                                    id="replyText-{{ row.id }}" 
-                                    placeholder="Введите ваш ответ..." 
-                                    rows="3"></textarea>
-                            <div class="reply_actions">
-                                <button class="reply_submit_btn" onclick="submitReply({{ row.id }})">Отправить</button>
-                                <button class="reply_cancel_btn" onclick="cancelReply({{ row.id }})">Отмена</button>
-                            </div>
-                        </div>
-                    </div>
-                    {% endfor %}
-                {% else %}
-                <div class="mes empty">
-                    <div class="text_mes">Нет уведомлений</div>
-                </div>
-                {% endif %}
+
             </div>
         </div>
     </div>

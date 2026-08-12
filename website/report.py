@@ -13,7 +13,6 @@ from sqlalchemy import and_, or_
 from sqlalchemy.sql import func, or_
 import math
 
-from website.export import get_reports_by_status
 from website.time import current_utc_time
 from .models import Organization, Report, Sections, Version_report
 from . import db
@@ -310,3 +309,86 @@ def control_func(id):
 
     return redirect(request.referrer) 
 
+def get_reports_by_status(status, year=None, quarter=None, region=None):
+    def translate_status(status):
+        status_map = {
+            'not_viewed': 'Отправлен',
+            'remarks': 'Есть замечания',
+            'to_download': 'Одобрен',
+            'to_delete': 'Готов к удалению'
+        }
+        return status_map.get(status)
+
+    filters = []
+    statuses = [
+        'Отправлен',
+        'Есть замечания',
+        'Одобрен',
+        'Готов к удалению'
+    ]
+    
+    if year:
+        filters.append(Report.year == year)
+    if quarter:
+        filters.append(Report.quarter == quarter)
+    
+    user_type = current_user.type
+    
+    region_filter = None
+    if region and region.isdigit():
+        region_filter = int(region)
+
+    if user_type == "Администратор" or user_type == "Смотрящий":
+        base_query = Report.query.join(Version_report).join(Organization)
+        
+        if region_filter:
+            base_query = base_query.filter(Organization.region.has(number=region_filter))
+        
+        if status == 'all_reports':
+            query = base_query.filter(
+                or_(*[Version_report.status == s for s in statuses]),
+                *filters
+            )
+        else:
+            trans_status = translate_status(status)
+            if trans_status:
+                query = base_query.filter(
+                    Version_report.status == trans_status,
+                    *filters
+                )
+            else:
+                return []
+        return query.order_by().all()
+    
+    else:
+        current_user_region_number = current_user.organization.region.number if current_user.organization.region else None
+        
+        if status == 'all_reports':
+            query = Report.query.join(Version_report).join(Organization)
+            
+            if region_filter:
+                query = query.filter(Organization.region.has(number=region_filter))
+            elif current_user_region_number is not None:
+                query = query.filter(Organization.region.has(number=current_user_region_number))
+            
+            return query.filter(
+                or_(*[Version_report.status == s for s in statuses]),
+                *filters
+            ).order_by().all()
+            
+        else:
+            trans_status = translate_status(status)
+            if trans_status:
+                query = Report.query.join(Version_report).join(Organization)
+                
+                if region_filter:
+                    query = query.filter(Organization.region.has(number=region_filter))
+                elif current_user_region_number is not None:
+                    query = query.filter(Organization.region.has(number=current_user_region_number))
+                
+                return query.filter(
+                    Version_report.status == trans_status,
+                    *filters
+                ).order_by().all()
+            else:
+                return []

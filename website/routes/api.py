@@ -27,7 +27,13 @@ def get_organizations():
     page = request.args.get("page", 1, type=int)
     search_query = request.args.get("q", "", type=str)
 
-    query = Organization.query
+    query = Organization.query.filter(
+        db.or_(
+            Organization.is_region_management == False,
+            Organization.is_region_management.is_(None)
+        )
+    )
+    
     if search_query:
         query = query.filter(
             db.or_(
@@ -46,7 +52,8 @@ def get_organizations():
                 "full_name": org.full_name,
                 "okpo": org.okpo,
                 "ynp": org.ynp,
-                "ministry": org.ministry,
+                "region_id": org.region_id,
+                "region_name": org.region.name if org.region else None
             }
             for org in pagination.items
         ],
@@ -157,3 +164,117 @@ def download_export(task_id):
 #             'success': False,
 #             'count': 0
 #         }), 500
+
+@api.route('/messages', methods=['GET'])
+@login_required
+def get_messages_api():
+    try:
+        if current_user.type == "Администратор":
+            messages = Message.query.filter(
+                (Message.to_admin == True) | (Message.recipient_id == current_user.id)
+            ).order_by(Message.id.desc()).all()
+        else:
+            messages = Message.query.filter_by(recipient_id=current_user.id).order_by(Message.id.desc()).all()
+        
+        messages_data = []
+        for msg in messages:
+            can_reply = False
+            if current_user.type == "Администратор" and msg.sender_id != current_user.id and msg.sender_id is not None:
+                can_reply = True
+            elif current_user.type != "Администратор" and msg.sender_id == current_user.id and msg.recipient_id is not None:
+                can_reply = True
+            
+            sender_info = {}
+            if msg.sender:
+                sender_info = {
+                    'email': msg.sender.email,
+                    'fio': msg.sender.fio,
+                    'telephone': msg.sender.telephone,
+                    'type': msg.sender.type
+                }
+            
+            messages_data.append({
+                'id': msg.id,
+                'create_time': msg.create_time.strftime('%d.%m.%Y %H:%M'),
+                'text': msg.text,
+                'sender_id': msg.sender_id,
+                'sender': sender_info,
+                'recipient_id': msg.recipient_id,
+                'is_read': msg.is_read,
+                'read_time': msg.read_time.strftime('%d.%m.%Y %H:%M') if msg.read_time else None,
+                'to_admin': msg.to_admin,
+                'can_reply': can_reply
+            })
+        
+        return jsonify({
+            'success': True,
+            'messages': messages_data,
+            'count': len(messages_data)
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"Ошибка при получении сообщений: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': 'Ошибка при загрузке сообщений'
+        }), 500
+        
+@api.route('/mark_all_read', methods=['POST'])
+@login_required
+def mark_all_read_api():
+    try:
+        unread_messages = Message.query.filter_by(
+            recipient_id=current_user.id,
+            is_read=False
+        ).all()
+        
+        count = len(unread_messages)
+        
+        for msg in unread_messages:
+            msg.is_read = True
+            msg.read_time = current_utc_time()
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Все сообщения отмечены как прочитанные.',
+            'count': count
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Ошибка при отметке сообщений как прочитанных: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': 'Ошибка при отметке сообщений как прочитанных'
+        }), 500
+        
+@api.route('/mark_read/<int:message_id>', methods=['POST'])
+@login_required
+def mark_read_api(message_id):
+    try:
+        if current_user.type != "Администратор":
+            return jsonify({
+                'success': False,
+                'error': 'Только администратор может отмечать сообщения как прочитанные'
+            }), 403
+        
+        msg = Message.query.get_or_404(message_id)
+        
+        msg.is_read = True
+        msg.read_time = current_utc_time()
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Сообщение отмечено как прочитанное'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Ошибка при отметке сообщения как прочитанного: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': 'Ошибка при отметке сообщения как прочитанного'
+        }), 500

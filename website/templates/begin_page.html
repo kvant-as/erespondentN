@@ -93,104 +93,133 @@
     {%else%}
     {%endif%}
     {%if current_user.is_authenticated%}
-    <div class="askquestion-row">
-        <div class="askquestion_form">
-            <div class="askquestion_name">Форма обратной связи</div>
-            <form action="/send_for_admin" method="POST" id="askquestion-form">
-                <div class="form-group">
-                 
-                    <select name="askquestion_type" id="questionType" required>
-                        <option value="">Выберите тип вопроса</option>
-                        <option value="organization-none">Нет организации в списке</option>
-                        <option value="organization-edit">Изменить данные организации</option>
-                        <option value="other">Другое</option>
-                    </select>
-                </div>
-
-                <div id="organizationSearchBlock" class="search-org-container" style="display: none;">
+        <div class="askquestion-row">
+            <div class="askquestion_form">
+                <div class="askquestion_name">Форма обратной связи</div>
+                <form action="/send-for-admin" method="POST" id="askquestion-form">
                     <div class="form-group">
-                        <label for="organizationSearch">Поиск организации</label>
-                        <textarea type="text" id="organizationSearch" placeholder="Поиск организации по названию или ОКПО" autocomplete="off" maxlength="150"></textarea>
+                        <select name="askquestion_type" id="questionType" required>
+                            <option value="">Выберите тип вопроса</option>
+                            <option value="organization-none">Нет организации в списке</option>
+                            <option value="organization-edit">Изменить данные организации</option>
+                            <option value="other">Другое</option>
+                        </select>
                     </div>
-                    <div id="searchResults" class="search-results-dropdown"></div>
-                </div>
 
-                <div id="newOrgData" style="display: none;">
-                    <div class="new-org-data">
-                        <div class="info-title">
-                            <div class="glass-info-block">
-                                <p>Отредактируйте реквизиты организации, заменив устаревшие данные на текущие.</p>
+                    <div id="organizationSearchBlock" class="search-org-container" style="display: none;">
+                        <div class="form-group">
+                            <label for="organizationSearch">Поиск организации</label>
+                            <textarea type="text" id="organizationSearch" placeholder="Поиск организации по названию или ОКПО" autocomplete="off" maxlength="150"></textarea>
+                        </div>
+                        <div id="searchResults" class="search-results-dropdown"></div>
+                    </div>
+
+                    <div id="newOrgData" style="display: none;">
+                        <div class="new-org-data">
+                            <div class="info-title">
+                                <div class="glass-info-block">
+                                    <p>Отредактируйте реквизиты организации, заменив устаревшие данные на текущие.</p>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group comparison-field-group">
+                                <label for="newOrganizationName">
+                                    Новое наименование организации
+                                </label>
+                                <textarea name="new_organization_name" id="newOrganizationName" placeholder="Новое наименование организации" maxlength="150"></textarea>
+                                <span class="old-data-hint" id="oldNameHint"></span>
+                                <div class="comparison-status-inline" id="nameStatusInline"></div>
+                            </div>
+                            
+                            <div class="form-group comparison-field-group">
+                                <label for="newOrganizationYnp">
+                                    Новый код УНП
+                                </label>
+                                <input type="text" name="new_organization_ynp" id="newOrganizationYnp" placeholder="Новый код УНП" maxlength="9">
+                                <span class="old-data-hint" id="oldYnpHint"></span>
+                                <div class="comparison-status-inline" id="ynpStatusInline"></div>
+                            </div>
+                            
+                            <div class="form-group comparison-field-group">
+                                <label for="newOrganizationOkpo">
+                                    Новый код ОКПО
+                                </label>
+                                <input type="text" name="new_organization_okpo" id="newOrganizationOkpo" placeholder="Новый код ОКПО" maxlength="12">
+                                <span class="old-data-hint" id="oldOkpoHint"></span>
+                                <div class="comparison-status-inline" id="okpoStatusInline"></div>
+                            </div>
+
+                            <div class="form-group region-buttons-group">
+                                <label>Регион</label>
+                                <div class="region-buttons-grid">
+                                    {% for region in regions %}
+                                        <button type="button" class="region-btn" data-value="{{ region.id }}" data-number="{{ region.number }}">
+                                            <span class="region-number">{{ region.number }}</span>
+                                            <span class="region-name">{{ region.name }}</span>
+                                        </button>
+                                    {% endfor %}
+                                </div>
+                                <input type="hidden" name="new_organization_region" id="newOrganizationRegion" value="">
+                                <div id="newRegionSelectionStatus" class="region-selection-status">Регион не выбран</div>
+                                <span class="old-data-hint" id="oldRegionHint"></span>
+                                <div class="comparison-status-inline" id="regionStatusInline"></div>
                             </div>
                         </div>
-                        
-                        <div class="form-group comparison-field-group">
-                            <label for="newOrganizationName">
-                                Новое наименование организации
-                            </label>
-                            <textarea name="new_organization_name" id="newOrganizationName" placeholder="Новое наименование организации" maxlength="150"></textarea>
-                            <span class="old-data-hint" id="oldNameHint"></span>
-                            <div class="comparison-status-inline" id="nameStatusInline"></div>
+                    </div>
+
+                    <div id="addOrgFields">
+                        <div class="form-group">
+                            <label for="organizationName">Наименование предприятия</label>
+                            <textarea type="text" name="organization_name" id="organizationName" placeholder="Введите полное наименование предприятия" maxlength="150"></textarea>
                         </div>
-                        
-                        <div class="form-group comparison-field-group">
-                            <label for="newOrganizationYnp">
-                                Новый код УНП
-                            </label>
-                            <input type="text" name="new_organization_ynp" id="newOrganizationYnp" placeholder="Новый код УНП" maxlength="9">
-                            <span class="old-data-hint" id="oldYnpHint"></span>
-                            <div class="comparison-status-inline" id="ynpStatusInline"></div>
+                        <div class="form-group">
+                            <label for="organizationYnp">Код УНП</label>
+                            <input type="text" name="organization_ynp" id="organizationYnp" placeholder="Введите код УНП" maxlength="9">
                         </div>
-                        
-                        <div class="form-group comparison-field-group">
-                            <label for="newOrganizationOkpo">
-                                Новый код ОКПО
-                            </label>
-                            <input type="text" name="new_organization_okpo" id="newOrganizationOkpo" placeholder="Новый код ОКПО" maxlength="12">
-                            <span class="old-data-hint" id="oldOkpoHint"></span>
-                            <div class="comparison-status-inline" id="okpoStatusInline"></div>
+                        <div class="form-group">
+                            <label for="organizationOkpo">Код ОКПО</label>
+                            <input type="text" name="organization_okpo" id="organizationOkpo" placeholder="Введите код ОКПО" maxlength="12">
+                        </div>
+                        <div class="form-group region-buttons-group">
+                            <label>Регион</label>
+                            <div class="region-buttons-grid">
+                                {% for region in regions %}
+                                    <button type="button" class="region-btn" data-value="{{ region.id }}" data-number="{{ region.number }}">
+                                        <span class="region-number">{{ region.number }}</span>
+                                        <span class="region-name">{{ region.name }}</span>
+                                    </button>
+                                {% endfor %}
+                            </div>
+                            <input type="hidden" name="organization_region" id="organizationRegion" value="">
+                            <div id="addRegionSelectionStatus" class="region-selection-status">Регион не выбран</div>
                         </div>
                     </div>
-                </div>
 
-                <div id="addOrgFields">
                     <div class="form-group">
-                        <label for="organizationName">Наименование предприятия</label>
-                        <textarea type="text" name="organization_name" id="organizationName" placeholder="Введите полное наименование предприятия" maxlength="150"></textarea>
+                        <label for="problemDescription">Ваш вопрос</label>
+                        <textarea type="text" name="problem_description" id="problemDescription" placeholder="Напишите ваш вопрос" maxlength="300"></textarea>
                     </div>
+                    
                     <div class="form-group">
-                        <label for="organizationYnp">Код УНП</label>
-                        <input type="text" name="organization_ynp" id="organizationYnp" placeholder="Введите код УНП" maxlength="9">
+                        <label for="email">Email</label>
+                        <input type="text" name="email" id="email" value="{{current_user.email}}" readonly>
                     </div>
-                    <div class="form-group">
-                        <label for="organizationOkpo">Код ОКПО</label>
-                        <input type="text" name="organization_okpo" id="organizationOkpo" placeholder="Введите код ОКПО" maxlength="12">
-                    </div>
-                </div>
 
-                <div class="form-group">
-                    <label for="problemDescription">Ваш вопрос</label>
-                    <textarea type="text" name="problem_description" id="problemDescription" placeholder="Напишите ваш вопрос" maxlength="300"></textarea>
-                </div>
-                
-                <div class="form-group">
-                    <label for="email">Email</label>
-                    <input type="text" name="email" id="email" value="{{current_user.email}}" readonly>
-                </div>
+                    <input type="hidden" name="selected_org_id" id="selectedOrgId">
+                    <input type="hidden" name="organization_old_okpo" id="organizationOldOkpo">
+                    <input type="hidden" name="organization_old_ynp" id="organizationOldYnp">
+                    <input type="hidden" name="organization_old_name" id="organizationOldName">
+                    <input type="hidden" name="organization_old_region" id="organizationOldRegion">
 
-                <input type="hidden" name="selected_org_id" id="selectedOrgId">
-                <input type="hidden" name="organization_old_okpo" id="organizationOldOkpo">
-                <input type="hidden" name="organization_old_ynp" id="organizationOldYnp">
-                <input type="hidden" name="organization_old_name" id="organizationOldName">
-
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                
-                <button type="submit" class="blue_btn" id="send-btn">
-                    {{ icons.icon_send() }}
-                    <span>Отправить вопрос</span>
-                </button>
-            </form>
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    
+                    <button type="submit" class="blue_btn" id="send-btn">
+                        {{ icons.icon_send() }}
+                        <span>Отправить вопрос</span>
+                    </button>
+                </form>
+            </div>
         </div>
-    </div>
     {%else%}
     {%endif%}
 </div>
