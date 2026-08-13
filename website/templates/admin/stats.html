@@ -39,13 +39,12 @@
         </tbody>
     </table>
 
-
+    {#
     <div style="margin-top: 20px;">
         <form action="{{ url_for('dbs.update_regions') }}" method="get" target="_blank">
             <button type="submit" class="btn btn-primary">Обновить регионы</button>
         </form>
     </div>
-
     <div style="margin-top: 20px;">
         <form action="{{ url_for('dbs.update_region_management') }}" method="get" target="_blank">
             <button type="submit" class="btn btn-warning">
@@ -53,31 +52,21 @@
             </button>
         </form>
     </div>
-
-
-    {#<div style="margin-top: 20px;">
+    <div style="margin-top: 20px;">
         <form action="{{ url_for('dbs.products') }}" method="get" target="_blank">
             <button type="submit" class="btn btn-primary">Показать все продукты</button>
         </form>
     </div>
-
-    
-    
     <div style="margin-top: 20px;">
         <form action="{{ url_for('dbs.units') }}" method="get" target="_blank">
             <button type="submit" class="btn btn-primary">Показать все юниты</button>
         </form>
     </div>
-
-
-
     <div style="margin-top: 20px;">
         <form action="{{ url_for('dbs.add_products') }}" method="get" target="_blank">
             <button type="submit" class="btn btn-primary">Добавить новые продукты</button>
         </form>
     </div>  
-
-
     <div style="margin-top: 20px;">
         <form action="{{ url_for('dbs.set_products_dates_if_empty') }}" method="post" target="_blank">
             <button type="submit" class="btn btn-primary">Добавить даты для прошлых продуктов</button>
@@ -89,7 +78,6 @@
             <button type="submit" class="btn btn-primary">Добавить новые юниты</button>
         </form>
     </div>
-    
     <div style="margin-top: 20px;">
         <form action="{{ url_for('dbs.migrate_products_v2') }}" method="POST" target="_blank">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -99,5 +87,4 @@
     #}
 
 </div>
-
 {% endblock %}

@@ -32,12 +32,18 @@
             </div>
         </div>
 
-        
+        <div class="form-row">
+            <label class="form-label">Регион</label>
+            <div class="input-wrapper">
+                {{ icons.icon_region() }}
+                <input class="form-input" value="{{ report.organization.region.name }}" readonly disabled>
+            </div>
+        </div>
         <div class="form-row">
             <label class="form-label">Отчетный период</label>
             <div class="input-wrapper">
                 {{ icons.icon_calendar() }}
-                <input class="form-input active" value="{{ report.year }} г. {{ report.quarter|string + ' квартал' }}" readonly disabled>
+                <input class="form-input" value="{{ report.year }} г. {{ report.quarter|string + ' квартал' }}" readonly disabled>
             </div>
         </div>
     </div>

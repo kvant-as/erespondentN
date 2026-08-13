@@ -150,15 +150,15 @@
                                 <polyline points="6 9 12 15 18 9"></polyline>
                             </svg>
                         </div>
-                        <div class="dropdown-menu" id="region-menu" data-user-type="{{ current_user.type }}" data-user-okpo-digit="{{ current_user.organization.okpo|string|first }}">
+                        <div class="dropdown-menu" id="region-menu" data-user-type="{{ current_user.type }}" data-user-region-digit="{{ current_user.organization.region.number if current_user.organization and current_user.organization.region else '' }}">
                             <div class="dropdown-item" data-value="">Все регионы</div>
-                            <div class="dropdown-item" data-value="1">Брестское областное</div>
-                            <div class="dropdown-item" data-value="2">Витебское областное</div>
-                            <div class="dropdown-item" data-value="3">Гомельское областное</div>
-                            <div class="dropdown-item" data-value="4">Гродненское областное</div>
+                            <div class="dropdown-item" data-value="1">Брестская область</div>
+                            <div class="dropdown-item" data-value="2">Витебская область</div>
+                            <div class="dropdown-item" data-value="3">Гомельская область</div>
+                            <div class="dropdown-item" data-value="4">Гродненская область</div>
                             <div class="dropdown-item" data-value="5">г. Минск</div>
-                            <div class="dropdown-item" data-value="6">Минское областное</div>
-                            <div class="dropdown-item" data-value="7">Могилевское областное</div>
+                            <div class="dropdown-item" data-value="6">Минская область</div>
+                            <div class="dropdown-item" data-value="7">Могилевская область</div>
                         </div>
                     </div>
                 </div>
@@ -189,6 +189,15 @@
                             <th class="resizable" data-sort-col="okpo" style="white-space: nowrap; min-width: 140px;">
                                 <span class="sort-label">
                                     ОКПО
+                                    <span class="sort-icon-header">
+                                        {{ icons.icon_sort() }}
+                                    </span>
+                                </span>
+                                <div class="resizer"></div>
+                            </th>
+                            <th class="resizable" data-sort-col="region" style="white-space: nowrap; min-width: 140px;">
+                                <span class="sort-label">
+                                    Регион
                                     <span class="sort-icon-header">
                                         {{ icons.icon_sort() }}
                                     </span>
@@ -237,10 +246,24 @@
                     <tbody id="reports-tbody">
                     </tbody>
                 </table>
-                <div id="infinite-scroll-trigger" style="height: 20px;"></div>
-                <div id="loading-more" class="loading-more" style="display: none;">
-                    <div class="loader-pulse-small"></div>
-                    <div class="loading-text">Загрузка следующих отчётов...</div>
+                <div class="pagination-container" style="display: flex; justify-content: center; align-items: center; gap: 16px; padding: 20px 0; margin-top: 20px;">
+                    <button id="prevPageBtn" class="pagination-btn prev-btn" aria-label="Предыдущая страница" disabled>
+                        <svg class="pagination-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"></path>
+                        </svg>
+                    </button>
+                    
+                    <div class="pagination-pages">
+                        <span id="currentPage" class="page-current">1</span>
+                        <span class="page-separator">/</span>
+                        <span id="totalPages" class="page-total">1</span>
+                    </div>
+                    
+                    <button id="nextPageBtn" class="pagination-btn next-btn" aria-label="Следующая страница">
+                        <svg class="pagination-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"></path>
+                        </svg>
+                    </button>
                 </div>
             </div>
             <div id="empty-state" class="empty-state-container" style="display: none;">
@@ -324,7 +347,7 @@
                 type="button"
                 class="invisible-btn" 
                 style = "font-size: 13px;"
-                onclick="location.href='/audit-area/all_reports?year=&quarter='">
+                onclick="location.href='/audit-area/all_reports?year=&quarter=&region=all'">
                 Все периоды
             </button>
         </div>
@@ -352,15 +375,14 @@
                 <label class="export-region-label">Фильтр по региону</label>
                 <select name="export_region" id="export_region" class="export-region-select">
                     <option value="">Все регионы</option>
-                    <option value="1">Брестское областное</option>
-                    <option value="2">Витебское областное</option>
-                    <option value="3">Гомельское областное</option>
-                    <option value="4">Гродненское областное</option>
+                    <option value="1">Брестская область</option>
+                    <option value="2">Витебская область</option>
+                    <option value="3">Гомельская область</option>
+                    <option value="4">Гродненская область</option>
                     <option value="5">г. Минск</option>
-                    <option value="6">Минское областное</option>
-                    <option value="7">Могилевское областное</option>
+                    <option value="6">Минская область</option>
+                    <option value="7">Могилевская область</option>
                 </select>
-                <span class="export-region-hint">по 4-й цифре ОКПО</span>
             </div>
             {% endif %}
             <div class="format-selection-label">
