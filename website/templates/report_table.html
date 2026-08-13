@@ -236,25 +236,23 @@
                             readonly
                         >
                     </td>
-                    {% if row.total_differents is not none and row.total_differents <= 0.0 %}
-                        <td style="background-color: #a2ff77;">
-                            <input  
-                                type="text"
-                                style="background-color: #a2ff77; color: black;" 
-                                name="row_total_differents" 
-                                value="{{ row.total_differents }}" 
-                                readonly
-                            >
-                        </td>
+                    {% if row.total_differents is not none %}
+                        {% if row.total_differents <= 0.0 %}
+                            <td class="difference-cell difference-negative">
+                                {% if row.total_differents < 0.0 %}
+                                    <span class="difference-arrow">↓</span>
+                                {% endif %}
+                                <span class="difference-value">{{ row.total_differents }}</span>
+                            </td>
+                        {% else %}
+                            <td class="difference-cell difference-positive">
+                                <span class="difference-arrow">↑</span>
+                                <span class="difference-value">{{ row.total_differents }}</span>
+                            </td>
+                        {% endif %}
                     {% else %}
-                        <td style="background-color: #ff7676;">
-                            <input  
-                                type="text"
-                                style="background-color: #ff7676; color: black;" 
-                                name="row_total_differents" 
-                                value="{{ row.total_differents }}" 
-                                readonly
-                            >
+                        <td class="difference-cell difference-empty">
+                            <span class="difference-value">—</span>
                         </td>
                     {% endif %}
                     <td> 

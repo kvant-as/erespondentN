@@ -568,17 +568,20 @@ function sortTable(table, column, direction) {
         case 'okpo':
             columnIndex = 4;
             break;
-        case 'year':
+        case 'region':
             columnIndex = 5;
             break;
-        case 'quarter':
+        case 'year':
             columnIndex = 6;
             break;
-        case 'time':
+        case 'quarter':
             columnIndex = 7;
             break;
-        case 'status':
+        case 'time':
             columnIndex = 8;
+            break;
+        case 'status':
+            columnIndex = 9;
             break;
         default:
             columnIndex = -1;
@@ -603,6 +606,9 @@ function sortTable(table, column, direction) {
         let valueA, valueB;
         
         if (column === 'name') {
+            valueA = cellA.querySelector('input')?.value.trim().toLowerCase() || cellA.textContent.trim().toLowerCase();
+            valueB = cellB.querySelector('input')?.value.trim().toLowerCase() || cellB.textContent.trim().toLowerCase();
+        } else if (column === 'region') {
             valueA = cellA.querySelector('input')?.value.trim().toLowerCase() || cellA.textContent.trim().toLowerCase();
             valueB = cellB.querySelector('input')?.value.trim().toLowerCase() || cellB.textContent.trim().toLowerCase();
         } else if (column === 'okpo') {

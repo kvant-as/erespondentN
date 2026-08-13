@@ -57,11 +57,11 @@ def owner_only(f):
         version_id = kwargs.get('id')
         version = Version_report.query.get(version_id)
         if version is None:
-            flash('Версия отчета не найдена.', 'error')
+            flash('Версия отчета не найдена', 'error')
             return redirect(url_for('views.report_area', user=current_user))
         report = version.report
         if report.user_id != current_user.id and current_user.type != 'Администратор' and current_user.type != 'Аудитор':
-            flash('Недостаточно прав для доступа к этому отчёту.', 'error')
+            flash('Недостаточно прав для доступа к этому отчёту', 'error')
             return redirect(url_for('views.report_area', user=current_user))
         return f(*args, **kwargs)
     return decorated_function
@@ -70,11 +70,11 @@ def profile_complete(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if not current_user.is_authenticated:
-            flash('Требуется авторизация.', 'error')
+            flash('Требуется авторизация', 'error')
             return redirect(url_for('views.login'))  
           
         if not current_user.fio or not current_user.telephone or not current_user.organization_id:
-            flash('Пожалуйста, заполните полностью свой профиль.', 'error')
+            flash('Пожалуйста, заполните полностью свой профиль', 'error')
             return redirect(url_for('views.profile_common'))
         
         return f(*args, **kwargs)
@@ -212,7 +212,7 @@ def profile():
 #         ).all()
         
 #         if not messages:
-#             flash('Нет сообщений для удаления.', 'error')
+#             flash('Нет сообщений для удаления', 'error')
 #             return redirect(url_for('views.profile'))
         
 #         for message in messages:
@@ -489,11 +489,13 @@ def report_info(id):
 def audit_area(status):
     year_filter = request.args.get('year', '')
     quarter_filter = request.args.get('quarter', '')
+    region_filter = request.args.get('region', '')
     
     return render_template('audit_area.html',
                            current_user=current_user,
                            year_filter=year_filter,
                            quarter_filter=quarter_filter,
+                           region_filter=region_filter,
                            previous_quarter=get_previous_quarter(),
                            previous_year=get_report_year(),
                            status_reports=status,
@@ -545,6 +547,7 @@ def api_audit_data():
                 'version_id': version.id,
                 'organization_name': row.organization.full_name,
                 'okpo': row.organization.okpo,
+                'region_name': row.organization.region.name if row.organization.region else 'Не указан',
                 'year': row.year,
                 'quarter': row.quarter,
                 'sent_time': version.sent_time.strftime('%Y-%m-%d') if version.sent_time else '',
@@ -570,7 +573,7 @@ def api_audit_data():
         'per_page': per_page,
         'has_more': end < total_count,
         'count': len(reports_data)
-    })
+    })  
 
 @views.route('/audit-area/report/<int:id>', methods=['GET'])
 @login_required
@@ -703,7 +706,7 @@ def create_report():
                 db.session.commit()
             flash(f'Отчет {year}/{quarter} успешно создан', 'success')
         else:
-            flash(f'Отчет {year} года {quarter} квартала уже существует.', 'error')
+            flash(f'Отчет {year} года {quarter} квартала уже существует', 'error')
     return redirect(url_for('views.report_area'))
 
 @views.route('/change-period-report', methods=['POST'])
@@ -727,16 +730,16 @@ def change_period_report():
 
             sent_version_exists = any(version.status == 'Отправлен' for version in versions)
             if sent_version_exists:
-                flash('После отправки изменение отчета недоступно.', 'error')
+                flash('После отправки изменение отчета недоступно', 'error')
                 return redirect(url_for('views.report_area'))
             
             confirmed_version_exists = any(version.status == 'Одобрен' for version in versions)
             if confirmed_version_exists:
-                flash('Одобренные отчеты не подлежат редактированию.', 'error')
+                flash('Одобренные отчеты не подлежат редактированию', 'error')
                 return redirect(url_for('views.report_area'))
             
             if existing_report and existing_report.id != id:
-                flash('Отчет с таким годом и кварталом уже существует.', 'error')
+                flash('Отчет с таким годом и кварталом уже существует', 'error')
                 return redirect(url_for('views.report_area'))
 
             current_report.year = year
@@ -744,7 +747,7 @@ def change_period_report():
             db.session.commit()
             flash('Параметры обновлены', 'success')
         else:
-            flash('Отчет не найден.', 'error')
+            flash('Отчет не найден', 'error')
 
         return redirect(url_for('views.report_area'))
   
@@ -775,7 +778,7 @@ def copy_report():
             ).first()
             
             if existing_report:
-                flash(f'Отчет {new_year} года {new_quarter} квартала уже существует.', 'error')
+                flash(f'Отчет {new_year} года {new_quarter} квартала уже существует', 'error')
                 return redirect(url_for('views.report_area'))
             
             original_version = Version_report.query.filter_by(
@@ -913,7 +916,7 @@ def delete_report(report_id):
         try:
             current_report = Report.query.filter_by(id=report_id).first()
             if not current_report:
-                flash('Отчет не найден.', 'error')
+                flash('Отчет не найден', 'error')
                 return redirect(url_for('views.report_area'))
             
             versions = Version_report.query.filter_by(report_id=report_id).all()
@@ -921,12 +924,12 @@ def delete_report(report_id):
             
             sent_version_exists = any(version.status == 'Отправлен' for version in versions)
             if sent_version_exists:
-                flash('Отправленный отчет не подлежит удалению.', 'error')
+                flash('Отправленный отчет не подлежит удалению', 'error')
                 return redirect(url_for('views.report_area'))
             
             confirmed_version_exists = any(version.status == 'Одобрен' for version in versions)
             if confirmed_version_exists:
-                flash('Данный отчет не подлежит удалению.', 'error')
+                flash('Данный отчет не подлежит удалению', 'error')
                 return redirect(url_for('views.report_area'))
             
             for ticket in tickets:
@@ -945,7 +948,7 @@ def delete_report(report_id):
         except Exception as e:
             db.session.rollback()
             current_app.logger.error(f'Ошибка при удалении отчета {report_id}: {str(e)}', exc_info=True)
-            flash('Произошла ошибка при удалении отчета.', 'error')
+            flash('Произошла ошибка при удалении отчета', 'error')
         
         return redirect(url_for('views.report_area'))
 
@@ -971,7 +974,7 @@ def add_section():
             
             current_product = DirProduct.query.filter_by(id=data['add_id_product']).first()
             if not current_product:
-                flash('Продукт не найден в справочнике.', 'error')
+                flash('Продукт не найден в справочнике', 'error')
                 return redirect(request.referrer)
             
             current_version = Version_report.query.filter_by(id=data['current_version_id']).first()
@@ -987,7 +990,7 @@ def add_section():
             ).first()
             
             if existing and not data['note']:
-                flash('«Примечание» обязательно для заполнения, так как такая продукция уже есть.', 'error')
+                flash('«Примечание» обязательно для заполнения, так как такая продукция уже есть', 'error')
                 return redirect(request.referrer)
             
             new_section = create_section(data, current_product.id, current_product.CodeProduct)
@@ -1013,7 +1016,7 @@ def add_section():
                 f'Product: {data.get("add_id_product")}, Error: {str(e)}',
                 exc_info=True
             )
-            flash('Произошла ошибка при добавлении продукции.', 'error')
+            flash('Произошла ошибка при добавлении продукции', 'error')
         
         return redirect(request.referrer)
 
@@ -1033,7 +1036,7 @@ def change_section():
             
             current_section = Sections.query.filter_by(id=id_section).first()
             if not current_section:
-                flash('Ошибка при обновлении.', 'error')
+                flash('Ошибка при обновлении', 'error')
                 return redirect_back(current_version)
             
             current_product = DirProduct.query.filter_by(id=current_section.id_product).first()
@@ -1054,7 +1057,7 @@ def change_section():
                 f'Version: {id_version}, Error: {str(e)}',
                 exc_info=True
             )
-            flash('Произошла ошибка при обновлении параметров.', 'error')
+            flash('Произошла ошибка при обновлении параметров', 'error')
         
         return redirect_back(current_version, current_section.section_number if current_section else None)
 
@@ -1090,7 +1093,7 @@ def remove_section(id):
                 f'Error: {str(e)}',
                 exc_info=True
             )
-            flash('Произошла ошибка при удалении продукции.', 'error')
+            flash('Произошла ошибка при удалении продукции', 'error')
         
         return redirect_back(current_version, delete_section.section_number if delete_section else None)
 
@@ -1114,7 +1117,7 @@ def agreed_version(id):
         elif current_version.status == 'Согласовано': 
             flash('Отчет уже согласован.', 'succeful')
         else:
-            flash('Необходимо пройти контроль.', 'error')
+            flash('Необходимо пройти контроль', 'error')
         return redirect(request.referrer)
 
 @views.route('/send-version/<id>', methods=['POST'])
@@ -1126,11 +1129,11 @@ def sent_version(id):
         current_version = Version_report.query.filter_by(id=id).first()
         
         if current_version.status == 'Отправлен':
-            flash('Отчет уже отправлен.', 'error')
+            flash('Отчет уже отправлен', 'error')
             return redirect(request.referrer)
 
         if current_version.status != 'Согласовано':
-            flash('Необходимо согласовать.', 'error')
+            flash('Необходимо согласовать', 'error')
             return redirect(request.referrer)
 
         ALLOWED_EXTENSIONS = {'cer'}
@@ -1138,15 +1141,15 @@ def sent_version(id):
             return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
         if not uploaded_file:
-            flash('Файл сертификата обязателен.', 'error')
+            flash('Файл сертификата обязателен', 'error')
             return redirect(request.referrer)
 
         if not allowed_file(uploaded_file.filename):
-            flash('Неверный формат файла. Загрузите файл в формате .cer.', 'error')
+            flash('Неверный формат файла. Загрузите файл в формате .cer', 'error')
             return redirect(request.referrer)
 
         if not check_certificate_expiry(uploaded_file):
-            flash('Срок действия сертификата истёк или файл некорректен.', 'error')
+            flash('Срок действия сертификата истёк или файл некорректен', 'error')
             return redirect(request.referrer)
 
         current_version.status = 'Отправлен'
@@ -1170,20 +1173,20 @@ def cancle_sent_version(id):
 def change_category_report():
     try:
         if current_user.type == "Смотрящий":
-            flash('У вас нет доступа к этому действию.', 'error')
+            flash('У вас нет доступа к этому действию', 'error')
             return redirect(request.referrer or url_for('views.index'))
         
         action = request.form.get('action')
         report_id = request.form.get('reportId')
         
         if not action or not report_id:
-            flash('Недостаточно данных для выполнения операции.', 'error')
+            flash('Недостаточно данных для выполнения операции', 'error')
             return redirect(request.referrer or url_for('views.index'))
         
         try:
             current_version = Version_report.query.filter_by(report_id=report_id).first()
             if current_version is None:
-                flash(f'Версия отчета с ID {report_id} не найдена.', 'error')
+                flash(f'Версия отчета с ID {report_id} не найдена', 'error')
                 return redirect(request.referrer or url_for('views.index'))
         except Exception as e:
             flash(f'Ошибка при поиске версии отчета: {str(e)}', 'error')
@@ -1192,7 +1195,7 @@ def change_category_report():
         try:
             recipient_user = User.query.filter_by(email=current_version.report.user.email).first()
             if recipient_user is None:
-                flash(f'Пользователь с email {current_version.report.user.email} не найден.', 'error')
+                flash(f'Пользователь с email {current_version.report.user.email} не найден', 'error')
                 return redirect(request.referrer or url_for('views.index'))
         except Exception as e:
             flash(f'Ошибка при поиске пользователя: {str(e)}', 'error')
@@ -1201,7 +1204,7 @@ def change_category_report():
         try:
             report = Report.query.filter_by(id=current_version.report_id).first()
             if report is None:
-                flash(f'Отчет с ID {current_version.report_id} не найден.', 'error')
+                flash(f'Отчет с ID {current_version.report_id} не найден', 'error')
                 return redirect(request.referrer or url_for('views.index'))
         except Exception as e:
             flash(f'Ошибка при поиске отчета: {str(e)}', 'error')
@@ -1210,7 +1213,7 @@ def change_category_report():
         organization_name = report.organization.full_name if report and report.organization else "Неизвестная организация"
         
         if not current_version.hasNot and action != 'to_download':
-            flash('Необходимо уточнить о каких ошибках идет речь.', 'error')
+            flash('Необходимо уточнить о каких ошибках идет речь', 'error')
             return redirect(url_for('views.audit_report', id=current_version.id, tickets_cont='true'))
         
         status_itog = None
@@ -1236,7 +1239,7 @@ def change_category_report():
         elif action == 'to_delete':
             status_itog = 'Готов к удалению'
         else:
-            flash('Неизвестное действие.', 'error')
+            flash('Неизвестное действие', 'error')
             return redirect(request.referrer or url_for('views.index'))
         
         try:
@@ -1283,7 +1286,7 @@ def change_category_report():
 def rollbackreport(id):
     if request.method == 'POST':        
         if current_user.type == "Смотрящий":
-            flash('У вас нет доступа к этому действию.', 'error')
+            flash('У вас нет доступа к этому действию', 'error')
             return redirect(request.referrer)
         
         current_version = Version_report.query.filter_by(report_id=id).first()
@@ -1296,7 +1299,7 @@ def rollbackreport(id):
                     audit_time = datetime.combine(current_version.audit_time, datetime.min.time())
 
                 if audit_time + timedelta(days=92) <= current_utc_time():
-                    flash('Прошло больше 3-ех месяцев, статус отчета изменить нельзя.', 'error')
+                    flash('Прошло больше 3-ех месяцев, статус отчета изменить нельзя', 'error')
                 else: 
                     current_version.status = "Отправлен"
                     current_version.hasNot = False
@@ -1318,10 +1321,10 @@ def rollbackreport(id):
                     db.session.commit()
                     flash('Статус отчёта был изменён на «Непросмотренный»', 'success')
             else:
-                flash('Статус отчёта уже установлен как «Непросмотренный».', 'error')
+                flash('Статус отчёта уже установлен как «Непросмотренный»', 'error')
             return redirect(request.referrer)
         else:
-            flash('Отчет не найден.', 'error')
+            flash('Отчет не найден', 'error')
     return redirect(request.referrer)
 
 @views.route('/send-comment', methods=['POST'])
@@ -1330,7 +1333,7 @@ def rollbackreport(id):
 def send_comment():
     if request.method == 'POST':        
         if current_user.type == "Смотрящий":
-            flash('У вас нет доступа к этому действию.', 'error')
+            flash('У вас нет доступа к этому действию', 'error')
             return redirect(request.referrer)
         
         version_id = request.form.get('version_id')
@@ -1369,7 +1372,7 @@ def send_comment():
                                 year=current_report.year,
                                 quarter=current_report.quarter))
         else:
-            flash('Отчет не найден.', 'error') 
+            flash('Отчет не найден', 'error') 
             return redirect(request.referrer)
 
 @views.route('/export-table', methods=['POST'])
@@ -1522,12 +1525,12 @@ def send_for_admin():
         selected_org_id = request.form.get('selected_org_id', '')
         
         if not question_type:
-            flash('Выберите тип вопроса.', 'error')
+            flash('Выберите тип вопроса', 'error')
             return redirect(url_for('views.beginPage'))
         
         if question_type == 'organization-none':
             if not organization_name or not organization_okpo or not organization_ynp or not organization_region:
-                flash('Заполните все поля (название, УНП, ОКПО, регион).', 'error')
+                flash('Заполните все поля (название, УНП, ОКПО, регион)', 'error')
                 return redirect(url_for('views.beginPage'))
             
             is_valid_okpo, okpo_error = validate_okpo(organization_okpo)
@@ -1552,16 +1555,16 @@ def send_for_admin():
             
         elif question_type == 'organization-edit':
             if not selected_org_id:
-                flash('Выберите организацию из списка.', 'error')
+                flash('Выберите организацию из списка', 'error')
                 return redirect(url_for('views.beginPage'))
             
             organization = Organization.query.get(selected_org_id)
             if not organization:
-                flash('Организация не найдена.', 'error')
+                flash('Организация не найдена', 'error')
                 return redirect(url_for('views.beginPage'))
             
             if current_user.organization_id != organization.id:
-                flash('Вы можете изменять данные только своей организации.', 'error')
+                flash('Вы можете изменять данные только своей организации', 'error')
                 return redirect(url_for('views.beginPage'))
             
             current_quarter, current_year = get_current_quarter()
@@ -1574,7 +1577,7 @@ def send_for_admin():
             ).first()
             
             if has_approved_reports:
-                flash('Нельзя изменить данные организации, так как есть отправленные отчеты за текущий квартал.', 'error')
+                flash('Нельзя изменить данные организации, так как есть отправленные отчеты за текущий квартал', 'error')
                 return redirect(url_for('views.beginPage'))
             
             has_changes = False
@@ -1587,7 +1590,7 @@ def send_for_admin():
                 
                 existing_org = Organization.query.filter_by(okpo=new_organization_okpo).first()
                 if existing_org and existing_org.id != organization.id:
-                    flash('Организация с таким ОКПО уже существует.', 'error')
+                    flash('Организация с таким ОКПО уже существует', 'error')
                     return redirect(url_for('views.beginPage'))
                 has_changes = True
                 
@@ -1604,12 +1607,12 @@ def send_for_admin():
             if new_organization_region and str(new_organization_region) != str(organization.region_id):
                 region = Region.query.get(new_organization_region)
                 if not region:
-                    flash('Выбранный регион не найден.', 'error')
+                    flash('Выбранный регион не найден', 'error')
                     return redirect(url_for('views.beginPage'))
                 has_changes = True
             
             if not has_changes:
-                flash('Не обнаружено изменений в данных организации.', 'error')
+                flash('Не обнаружено изменений в данных организации', 'error')
                 return redirect(url_for('views.beginPage'))
             
             # new_message = Message(
@@ -1634,7 +1637,7 @@ def send_for_admin():
             
         elif question_type == 'other':
             if not problem_description:
-                flash('Опишите ваш вопрос.', 'error')
+                flash('Опишите ваш вопрос', 'error')
                 return redirect(url_for('views.beginPage'))
             
             new_message = Message(
@@ -1657,7 +1660,7 @@ def send_for_admin():
             flash('Сообщение отправлено администратору', 'success')
             
         else:
-            flash('Неверный тип вопроса.', 'error')
+            flash('Неверный тип вопроса', 'error')
             return redirect(url_for('views.beginPage'))
         
     return redirect(url_for('views.profile'))
@@ -1670,11 +1673,11 @@ def load_org_stat():
     quarter_filter = request.form.get('modal_add_quarter')
 
     if not year_filter or not quarter_filter:
-        flash('Не указан год или квартал.', 'error')
+        flash('Не указан год или квартал', 'error')
         return redirect(request.referrer)
 
     if current_user.type not in ["Администратор", "Аудитор"]:
-        flash('У вас нет доступа к отчетам.', 'error')
+        flash('У вас нет доступа к отчетам', 'error')
         return redirect(request.referrer)
 
     allowed_statuses = ["Отправлен", "Одобрен", "Есть замечания", "Готов к удалению"]
@@ -1683,7 +1686,7 @@ def load_org_stat():
     )
 
     if not file_data:
-        flash('Нет организаций с отправленными отчётами за выбранный период.', 'error')
+        flash('Нет организаций с отправленными отчётами за выбранный период', 'error')
         return redirect(request.referrer)
 
     response = make_response(file_data)
