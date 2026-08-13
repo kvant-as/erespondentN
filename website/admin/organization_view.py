@@ -2,6 +2,8 @@ from flask_admin.contrib.sqla import ModelView
 from flask import redirect, url_for
 from flask_login import current_user
 from wtforms import SelectField
+from wtforms.validators import Optional
+from wtforms_sqlalchemy.fields import QuerySelectField
 
 from website.models import Ministry, Region
 
@@ -15,7 +17,6 @@ class OrganizationView(ModelView):
         'ynp',
         'region', 
         'ministry',
-
         'is_active',
         'is_regular',
         'is_coordinator',
@@ -59,26 +60,28 @@ class OrganizationView(ModelView):
     
     form_columns = ['full_name', 'okpo', 'ynp', 'region', 'ministry', 'is_active', 'is_regular', 'is_coordinator', 'is_approver', 'is_region_management']
     
-    form_overrides = {
-        'region': SelectField,
-        'ministry': SelectField
-    }
-    
-    form_args = {
-        'region': dict(
-            label='Регион',
-            coerce=int,
-            choices=lambda: [(r.id, f"{r.number}. {r.name}") for r in Region.query.order_by(Region.number).all()]
-        ),
-        'ministry': dict(
-            label='Министерство',
-            coerce=int,
-            choices=lambda: [(m.id, m.name) for m in Ministry.query.order_by(Ministry.name).all()]
-        )
-    }
-    
     can_export = True
     page_size = 50
+    
+    def scaffold_form(self):
+        form_class = super(OrganizationView, self).scaffold_form()
+        
+        form_class.region = QuerySelectField(
+            'Регион',
+            query_factory=lambda: Region.query.order_by(Region.number).all(),
+            get_label=lambda r: f"{r.number}. {r.name}",
+            allow_blank=False
+        )
+        
+        form_class.ministry = QuerySelectField(
+            'Министерство',
+            query_factory=lambda: Ministry.query.order_by(Ministry.name).all(),
+            get_label=lambda m: m.name,
+            allow_blank=True,
+            blank_text='Не выбрано'
+        )
+        
+        return form_class
     
     def is_accessible(self):
         return current_user.is_authenticated and current_user.type == "Администратор"

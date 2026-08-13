@@ -25,7 +25,7 @@ from openpyxl.utils import get_column_letter
 
 export_tasks = {}
 
-def create_archive_async(export_format, task_id, user_id, okpo_value, year_filter, quarter_filter):
+def create_archive_async(export_format, task_id, user_id, region_value, year_filter, quarter_filter):
     from . import create_app
     from sqlalchemy import func
     
@@ -52,14 +52,14 @@ def create_archive_async(export_format, task_id, user_id, okpo_value, year_filte
             query = Version_report.query.options(
                 joinedload(Version_report.report).joinedload(Report.organization),
                 joinedload(Version_report.sections).joinedload(Sections.product)
-            ).join(Report)
+            ).join(Report).join(Organization)
             
             export_tasks[task_id]['progress'] = 20
             
-            if okpo_value and okpo_value != '8':
-                query = query.join(Organization, Organization.id == Report.org_id).filter(
+            if region_value and region_value != 'all':
+                query = query.filter(
                     Version_report.status == "Одобрен",
-                    func.substr(func.cast(Organization.okpo, db.String), func.length(Organization.okpo) - 3, 1) == okpo_value,
+                    Organization.region.has(number=int(region_value)),
                     *filters
                 )
             else:

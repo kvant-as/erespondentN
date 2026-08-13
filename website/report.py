@@ -358,37 +358,36 @@ def get_reports_by_status(status, year=None, quarter=None, region=None):
                 )
             else:
                 return []
-        return query.order_by().all()
+        return query.order_by(Version_report.sent_time.desc()).all()
     
     else:
-        current_user_region_number = current_user.organization.region.number if current_user.organization.region else None
+        if current_user.organization and current_user.organization.region:
+            user_region_number = current_user.organization.region.number
+        else:
+            user_region_number = None
         
         if status == 'all_reports':
             query = Report.query.join(Version_report).join(Organization)
             
-            if region_filter:
-                query = query.filter(Organization.region.has(number=region_filter))
-            elif current_user_region_number is not None:
-                query = query.filter(Organization.region.has(number=current_user_region_number))
+            if user_region_number:
+                query = query.filter(Organization.region.has(number=user_region_number))
             
             return query.filter(
                 or_(*[Version_report.status == s for s in statuses]),
                 *filters
-            ).order_by().all()
+            ).order_by(Version_report.sent_time.desc()).all()
             
         else:
             trans_status = translate_status(status)
             if trans_status:
                 query = Report.query.join(Version_report).join(Organization)
                 
-                if region_filter:
-                    query = query.filter(Organization.region.has(number=region_filter))
-                elif current_user_region_number is not None:
-                    query = query.filter(Organization.region.has(number=current_user_region_number))
+                if user_region_number:
+                    query = query.filter(Organization.region.has(number=user_region_number))
                 
                 return query.filter(
                     Version_report.status == trans_status,
                     *filters
-                ).order_by().all()
+                ).order_by(Version_report.sent_time.desc()).all()
             else:
                 return []

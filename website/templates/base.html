@@ -50,7 +50,7 @@
                                     {{ icons.icon_reports() }}
                                     Отчеты
                                 </li>
-                                <li onclick="window.location.href='/audit-area/not_viewed?year={{previous_year}}&quarter={{previous_quarter}}'">
+                                <li onclick="window.location.href='/audit-area/not_viewed?year={{previous_year}}&quarter={{previous_quarter}}&region=all'">
                                     {{ icons.icon_audit() }}
                                     Проверка
                                 </li>
@@ -129,7 +129,7 @@
                     {% endif %}
                     
                     {% if current_user.type in ['Администратор', 'Аудитор', 'Смотрящий'] %}
-                        {% set audit_url = '/audit-area/not_viewed?year=' ~ previous_year ~ '&quarter=' ~ previous_quarter %}
+                        {% set audit_url = '/audit-area/not_viewed?year=' ~ previous_year ~ '&quarter=' ~ previous_quarter ~ '&region=all'%}
                         <button onclick="window.location.href='{{ audit_url }}'">
                             {{ icons.icon_audit() }}
                             <span>Проверка</span>

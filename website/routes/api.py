@@ -80,23 +80,28 @@ def start_export():
         user_id = current_user.id
         
         current_user_type = current_user.type
-        okpo_str = str(current_user.organization.okpo)
-        okpo_digit = okpo_str[-4] if len(okpo_str) >= 4 else ''
+        
+        region_value = None
+        region_number = None
+        
+        if current_user.organization and current_user.organization.region:
+            region_number = current_user.organization.region.number
+            region_value = str(region_number)
         
         if current_user_type == "Администратор" or current_user_type == "Смотрящий":
             if export_region and export_region.isdigit():
-                okpo_value = export_region
+                region_value = export_region
             else:
-                okpo_value = '8'
+                region_value = 'all'
         else:
-            if current_user_type != "Администратор" and not (current_user_type == "Аудитор" and okpo_digit == "8"):
-                okpo_value = okpo_digit
+            if region_value:
+                region_value = region_value
             else:
-                okpo_value = '8'
+                region_value = 'all'
         
         thread = threading.Thread(
             target=create_archive_async,
-            args=(export_format, task_id, user_id, okpo_value, year_filter, quarter_filter)
+            args=(export_format, task_id, user_id, region_value, year_filter, quarter_filter)
         )
         thread.daemon = True
         thread.start()

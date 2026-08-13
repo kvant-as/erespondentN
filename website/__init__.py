@@ -88,7 +88,7 @@ def create_app():
         create_database(app, db)
     
     from website.admin.admin_views import MyMainView
-    from .models import User, Organization, Report, Version_report, Ticket, DirUnit, DirProduct, Sections, Message, News
+    from .models import User, Organization, Report, Version_report, Ticket, DirUnit, DirProduct, Sections, Message, News, Region
     
     from website.admin.user_view import UserView
     from website.admin.organization_view import OrganizationView
@@ -100,6 +100,7 @@ def create_app():
     from website.admin.sections_view import SectionsView
     from website.admin.message_view import MessageView
     from website.admin.news_view import NewsView
+    from website.admin.region_view import RegionView
     
     admin = Admin(app, 'Вернуться', index_view=MyMainView(), template_mode='bootstrap4', url='/profile')
     admin.add_view(UserView(User, db.session))
@@ -112,6 +113,7 @@ def create_app():
     admin.add_view(SectionsView(Sections, db.session))
     admin.add_view(MessageView(Message, db.session)) 
     admin.add_view(NewsView(News, db.session)) 
+    admin.add_view(RegionView(Region, db.session)) 
 
     login_manager = LoginManager()
     login_manager.login_view = 'auth.login'
