@@ -16,9 +16,10 @@ from dotenv import load_dotenv
 from website.logs import setup_logging
 
 from flask_wtf.csrf import CSRFProtect
+from common_models.src import db
 
 load_dotenv() 
-db = SQLAlchemy()
+# db = SQLAlchemy()
 babel = Babel()
 migrate = Migrate()
 csrf = CSRFProtect()
@@ -88,7 +89,11 @@ def create_app():
         create_database(app, db)
     
     from website.admin.admin_views import MyMainView
-    from .models import User, Organization, Report, Version_report, Ticket, DirUnit, DirProduct, Sections, Message, News, Region
+    from common_models.src import (
+        User, Organization, Region, Ministry,
+        Message, Report, Version_report, Ticket,
+        DirUnit, DirProduct, Sections, News
+    )
     
     from website.admin.user_view import UserView
     from website.admin.organization_view import OrganizationView
