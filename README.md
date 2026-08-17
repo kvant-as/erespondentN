@@ -9,12 +9,12 @@ The web application automates the processes of respondents forming reports in th
 
 ### Version
 
-4.7.14
+5.7.14
 
 ### Requirements
 
-- python `3.10.0`
-- add `.env` + `files/ministerstvo` + `files/organizations`
+- python `3.12.0`
+- add `.env` with settings
 - PostgreSql `17`
 
 ### Database Settings
@@ -36,6 +36,38 @@ pip install -r requirements.txt         # Install the libraries
 
 ```bash 
 python main.py
+```
+
+### Migrations
+
+```bash 
+# Set FLASK_APP variable
+$env:FLASK_APP = "main.py"
+
+# Verify the application is found
+flask routes
+
+# Initialize Migrations (Run Once)
+flask db init
+
+# Create a Migration
+flask db migrate -m "Description of changes"
+
+# Apply Migrations
+flask db upgrade
+
+
+# Rollback one migration
+flask db downgrade -1
+
+# Rollback to specific version
+flask db downgrade <revision_id>
+
+# Show current database version
+flask db current
+
+# Show migration history
+flask db history
 ```
 
 ### Link
