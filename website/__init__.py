@@ -144,6 +144,14 @@ def create_app():
         }
         return f"{date.day} {months[date.month]} {date.year}"
  
+    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    common_templates = os.path.join(project_root, 'common_models', 'templates')
+    
+    app.jinja_loader.searchpath = [
+        os.path.join(app.root_path, 'templates'),
+        common_templates
+    ]
+ 
     # @app.context_processor
     # def inject_online_users():
     #     from datetime import datetime, timedelta

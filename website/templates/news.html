@@ -27,14 +27,15 @@
                         <h3 class="news_title">{{ all_news.title[:65] }}{% if all_news.title|length > 65 %}...{% endif %}</h3>
                         <p class="news_text">{{ all_news.text[:50] }}{% if all_news.text|length > 50 %}...{% endif %}</p>
                     </div>
+                    {#
                     <div class = "news_time">
                         {{ all_news.created_time.strftime('%d-%m-%Y') }}
-                    </div>
+                    </div>#}
                 </div>
             </a>
             {% endfor %}
             {% else %}
-                <p>Новости отсутствуют.</p>
+                
             {% endif %}
         </div>
     </div>

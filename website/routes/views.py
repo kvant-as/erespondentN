@@ -32,7 +32,7 @@ from sqlalchemy import asc, case, desc
 from functools import wraps
 
 from datetime import datetime, timedelta
-from ..time import current_utc_time, get_previous_quarter, get_report_year
+from common_models.src.time import current_utc_time, get_previous_quarter, get_report_year
 
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfbase.ttfonts import TTFont
@@ -119,7 +119,8 @@ def beginPage():
     user_data = User.query.filter_by(type="Респондент").count()
     organization_data = Organization.query.count()
     report_data = Report.query.count()
-    latest_news = News.query.order_by(desc(News.id)).first()
+    latest_news = News.query.filter(News.is_erespondentn == True).order_by(desc(News.id)).first()  
+    
     regions = Region.query.order_by(Region.number).all()
     return render_template('begin_page.html', 
                            latest_news=latest_news,
@@ -621,7 +622,7 @@ def news_post(id):
 
 @views.route('/news', methods=['GET'])
 def news():
-    all_news = News.query.order_by(News.created_time.desc()).all()
+    all_news = News.query.filter(News.is_erespondentn == True).order_by(News.created_time.desc()).all()
     return render_template('news.html', 
         current_user=current_user,
         all_news=all_news

@@ -5,7 +5,7 @@ from functools import wraps
 from datetime import datetime, timedelta
 from user_agents import parse
 import requests
-from .time import current_utc_time
+from common_models.src import current_utc_time
 
 JWT_ALGORITHM = 'HS256'
 SESSION_COOKIE_NAME = 'session_token'
