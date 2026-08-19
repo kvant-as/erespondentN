@@ -5,7 +5,7 @@
 
 <div class = "account_cont">
     <div class = "privetstvie_cont">
-        <a href = "/profile/common">Добро пожаловать{{' ' + current_user.fio.split()[0] + ' ' + current_user.fio.split()[1] if current_user.fio else ''}}</a>
+        <a href="/profile/common">Добро пожаловать{{ ' ' + current_user.last_name + ' ' + current_user.first_name if current_user.last_name and current_user.first_name else '' }}</a>
     </div>
     <div class = "account_functions">
         <div class = "account_links">

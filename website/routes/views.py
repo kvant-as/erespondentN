@@ -73,10 +73,10 @@ def profile_complete(f):
             flash('Требуется авторизация', 'error')
             return redirect(url_for('views.login'))  
           
-        if not current_user.fio or not current_user.telephone or not current_user.organization_id:
+        if not current_user.last_name or not current_user.first_name or not current_user.telephone or not current_user.organization_id:
             flash('Пожалуйста, заполните полностью свой профиль', 'error')
             return redirect(url_for('views.profile_common'))
-        
+                
         return f(*args, **kwargs)
     
     return decorated_function
@@ -87,7 +87,7 @@ def auditors_only(f):
         if current_user.type not in ['Аудитор', 'Администратор', 'Смотрящий' ]:
             flash('У вас нет прав доступа', 'error')
             return redirect(url_for('views.profile_common'))
-        if not current_user.fio or not current_user.telephone:
+        if not current_user.last_name or not current_user.first_name or not current_user.telephone:
             flash('Пожалуйста, заполните ФИО и номер телефона в профиле', 'error')
             return redirect(url_for('views.profile_common'))
         return f(*args, **kwargs)
@@ -99,7 +99,7 @@ def respondent_only(f):
         if current_user.type not in ['Респондент', 'Администратор' ]:
             flash('У вас нет прав доступа', 'error')
             return redirect(url_for('views.profile_common'))
-        if not current_user.fio or not current_user.telephone:
+        if not current_user.last_name or not current_user.first_name or not current_user.telephone:
             flash('Пожалуйста, заполните ФИО и номер телефона в профиле', 'error')
             return redirect(url_for('views.profile_common'))
         return f(*args, **kwargs)
@@ -399,7 +399,7 @@ def get_auditor_info_by_user(current_user):
         return None
     
     return {
-        'fio': auditor.fio or 'Не указано',
+        'fio': f"{auditor.last_name or ''} {auditor.first_name or ''} {auditor.patronymic_name or ''}".strip() or 'Не указано',
         'telephone': auditor.telephone or 'Не указан',
         'organization': region_management_org.full_name or 'Не указано',
     }

@@ -189,8 +189,9 @@ def add_personal_parametrs():
             flash('Заполните все обязательные поля', 'error')
             return redirect(url_for('views.profile_common'))
 
-        fio = f"{second_name} {name} {patronymic}".strip()
-        current_user.fio = fio
+        current_user.first_name = name
+        current_user.last_name = second_name
+        current_user.patronymic_name = patronymic
         db.session.commit()
 
 

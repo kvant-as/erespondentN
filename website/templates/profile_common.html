@@ -36,13 +36,14 @@
                         <td><span title = "Уровень доступа к функциям">Тип пользователя</span></div></td>
                         <td><input type="text" value="{{current_user.type}}" readonly></td>
                     </tr>#}
-                    <tr>
+                   <tr>
                         <td>Фамилия <span class="required-mark">&#42;</span></td>
                         <td>                    
                             <div class="clear-input_container">
                                 <input type="text" name="second_name_common" placeholder="Введите фамилию" 
-                                value="{{current_user.fio.split()[0] if current_user.fio else ''}}" 
-                                required id="second_name_input" maxlength="50">
+                                value="{{ current_user.last_name or '' }}" 
+                                required id="second_name_input" maxlength="50"
+                                pattern="[^\s]+" title="Только одно слово, без пробелов">
                                 <span class="clear-btn">
                                     &times;
                                 </span>
@@ -54,21 +55,23 @@
                         <td>                    
                             <div class="clear-input_container">
                                 <input type="text" name="name_common" placeholder="Введите имя" 
-                            value="{{current_user.fio.split()[1] if current_user.fio else ''}}" 
-                            required id="name_input" maxlength="50">
+                                value="{{ current_user.first_name or '' }}" 
+                                required id="name_input" maxlength="50"
+                                pattern="[^\s]+" title="Только одно слово, без пробелов">
                                 <span class="clear-btn">
-                                        &times;
+                                    &times;
                                 </span>
                             </div>
                         </td>
                     </tr>
                     <tr>
-                        <td><span title = "Не обязательно для заполнения">Отчество</span></td>
+                        <td><span title="Не обязательно для заполнения">Отчество</span></td>
                         <td>                    
                             <div class="clear-input_container">
                                 <input type="text" name="patronymic_common" placeholder="Введите отчество" 
-                            value="{{current_user.fio.split()[2] if current_user.fio else ''}}" 
-                            id="patronymic_input" maxlength="50">
+                                value="{{ current_user.patronymic_name or '' }}" 
+                                id="patronymic_input" maxlength="50"
+                                pattern="[^\s]+" title="Только одно слово, без пробелов">
                                 <span class="clear-btn">
                                     &times;
                                 </span>

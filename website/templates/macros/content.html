@@ -599,7 +599,7 @@
                                     {{ icons.icon_profile() }}
                                     <div class="detail-content">
                                         <div class="detail-label">ФИО</div>
-                                        <div class="detail-value">{{ current_version.report.user.fio }}</div>
+                                        <div class="detail-value">{{ current_version.report.user.last_name }} {{ current_version.report.user.first_name }} {{ current_version.report.user.patronymic_name or '' }}</div>
                                     </div>
                                 </div>
                                 <div class="detail-item">

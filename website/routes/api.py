@@ -193,7 +193,7 @@ def get_messages_api():
             if msg.sender:
                 sender_info = {
                     'email': msg.sender.email,
-                    'fio': msg.sender.fio,
+                    'fio': f"{msg.sender.last_name or ''} {msg.sender.first_name or ''} {msg.sender.patronymic_name or ''}".strip(),
                     'telephone': msg.sender.telephone,
                     'type': msg.sender.type
                 }

@@ -39,7 +39,7 @@ def create_session_token(user):
         'user_id': user.id,
         'email': user.email,
         'user_type': user.type,
-        'username': user.fio,
+        'username': (user.last_name or "") + " " + (user.first_name or "") + " " + (user.patronymic_name or ""), 
         'session_id': str(uuid.uuid4()),
         # 'device_info': {
         #     'platform': user_agent.os.family or "Unknown",

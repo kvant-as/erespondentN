@@ -9,9 +9,9 @@ from website.models import User
 
 class UserView(ModelView):
     column_display_pk = True
-    column_list = ['id', 'type', 'email', 'fio', 'telephone', 'organization', 'last_active', 'reports']
+    column_list = ['id', 'type', 'email', 'last_name', 'first_name', 'patronymic_name', 'telephone', 'organization', 'last_active', 'reports']
     column_default_sort = ('id', True)
-    column_sortable_list = ('id', 'type', 'email', 'fio', 'telephone', 'last_active')
+    column_sortable_list = ('id', 'type', 'email', 'last_name', 'first_name', 'patronymic_name', 'telephone', 'last_active')
     
     can_delete = True
     can_create = True
@@ -25,8 +25,8 @@ class UserView(ModelView):
         'email': dict(label='email', validators=[Email()]),
     }
     
-    form_create_rules = ('type', 'email', 'fio', 'telephone', 'password', 'organization')
-    form_edit_rules = ('type', 'email', 'fio', 'telephone', 'organization')
+    form_create_rules = ('type', 'email', 'last_name', 'first_name', 'patronymic_name', 'telephone', 'password', 'organization')
+    form_edit_rules = ('type', 'email', 'last_name', 'first_name', 'patronymic_name', 'telephone', 'organization')
     
     AVAILABLE_USER_TYPES = [
         ('Респондент', 'Респондент'),
@@ -40,9 +40,9 @@ class UserView(ModelView):
     }
     
     column_exclude_list = ['password']
-    column_searchable_list = ['email', 'fio', 'telephone', 'id']
-    column_filters = ['id', 'email', 'fio']
-    column_editable_list = ['email', 'fio', 'type']
+    column_searchable_list = ['email', 'last_name', 'first_name', 'patronymic_name', 'telephone', 'id']
+    column_filters = ['id', 'email', 'last_name', 'first_name', 'patronymic_name',]
+    column_editable_list = ['email', 'last_name', 'first_name', 'patronymic_name', 'type']
     
     create_modal = True
     edit_modal = True
