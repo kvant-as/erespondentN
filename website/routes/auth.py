@@ -26,6 +26,7 @@ from flask_login import (
 
 from sqlalchemy import func
 from sqlalchemy.orm import joinedload
+from common_models.src.all_models import Plan
 from website.report import check_version_editable, control_func, create_section, get_organizations_with_reports_excel_xlsx, process_section_calculations, redirect_back, subtract_from_aggregated_sections, to_decimal, update_aggregated_sections, update_section_fields, update_version_status
 from ..export import create_archive_async, generate_excel_report, create_xml_for_version, export_tasks
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -326,6 +327,17 @@ def delete_account():
         if has_approved:
             flash('Невозможно удалить аккаунт, так как есть отчеты со статусом "Одобрен"', 'error')
             return redirect(url_for('auth.profile_danger'))     
+           
+           
+        has_active_plans = Plan.query.filter(
+            Plan.user_id == user.id,
+            (Plan.is_sent == True) | (Plan.is_approved == True) | (Plan.is_error == True)
+        ).first()
+        
+        if has_active_plans:
+            flash('Невозможно удалить аккаунт. У вас есть отправленные, Утвержденные планы или планы с ошибками', 'error')
+            return redirect(url_for('views.profile'))
+           
            
         if current_user.type == 'Администратор':
             flash('Невозможно удалить аккаунт  администратора', 'error')
