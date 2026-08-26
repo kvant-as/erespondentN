@@ -32,17 +32,17 @@
                     <li onclick="window.location.href='/'">
                         <span class="menu-text">Главная</span>
                     </li>
-                    {% if current_user.is_authenticated and (current_user.type == 'Респондент') %}
+                    {% if current_user.is_authenticated and not (current_user.is_admin or current_user.is_auditor or current_user.is_reader) %}
                         <li onclick="window.location.href='/reports'">
                             <span class="menu-text">Отчеты</span>
                         </li>
                     {% endif %}
-                    {% if current_user.is_authenticated and (current_user.type == 'Аудитор' or current_user.type == 'Смотрящий' ) %}
+                    {% if current_user.is_authenticated and (current_user.is_auditor or current_user.is_reader) %}
                         <li onclick="window.location.href='/audit-area/not_viewed?year={{previous_year}}&quarter={{previous_quarter}}'">
                             <span class="menu-text">Отчеты</span>
                         </li>
                     {% endif %}
-                    {% if current_user.is_authenticated and (current_user.type == 'Администратор') %}
+                    {% if current_user.is_authenticated and current_user.is_admin %}
                         <li class="admin-dropdown">
                             <span class="menu-text">Прочее</span>
                             <ul class="admin-dropdown-menu">
@@ -108,7 +108,7 @@
                     
                     <hr>
                     
-                    {% if current_user.type == 'Администратор' %}
+                    {% if current_user.is_admin %}
                         <button onclick="window.location.href='/admin'">
                             {{ icons.icon_admin() }}
                             <span>Админ панель</span>
@@ -121,14 +121,14 @@
                         <span>Главная</span>
                     </button>
                     
-                    {% if current_user.type in ['Администратор', 'Респондент'] %}
+                    {% if current_user.is_admin or not (current_user.is_auditor or current_user.is_reader) %}
                         <button onclick="window.location.href='/reports'">
                             {{ icons.icon_reports() }}
                             <span>Отчеты</span>
                         </button>
                     {% endif %}
-                    
-                    {% if current_user.type in ['Администратор', 'Аудитор', 'Смотрящий'] %}
+
+                    {% if current_user.is_admin or current_user.is_auditor or current_user.is_reader %}
                         {% set audit_url = '/audit-area/not_viewed?year=' ~ previous_year ~ '&quarter=' ~ previous_quarter ~ '&region=all'%}
                         <button onclick="window.location.href='{{ audit_url }}'">
                             {{ icons.icon_audit() }}

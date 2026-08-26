@@ -45,29 +45,29 @@ python main.py
 $env:FLASK_APP = "main.py"
 
 # Verify the application is found
-flask routes
+python -m flask routes
 
 # Initialize Migrations (Run Once)
-flask db init
+python -m flask db init
 
 # Create a Migration
-flask db migrate -m "Description of changes"
+python -m flask db migrate -m "Description of changes"
 
 # Apply Migrations
-flask db upgrade
+python -m flask db upgrade
 
 
 # Rollback one migration
-flask db downgrade -1
+python -m flask db downgrade -1
 
 # Rollback to specific version
-flask db downgrade <revision_id>
+python -m flask db downgrade <revision_id>
 
 # Show current database version
-flask db current
+python -m flask db current
 
 # Show migration history
-flask db history
+python -m flask db history
 ```
 
 ### Link

@@ -3,13 +3,13 @@ from flask_login import current_user
 from ..models import User, Organization, Report, Version_report, Ticket, DirUnit, DirProduct, Sections
 from sqlalchemy.exc import SQLAlchemyError
 from flask_admin.contrib.sqla import ModelView
-from flask import flash, redirect, url_for
+from flask import flash, redirect, request, url_for
 from functools import wraps
 
 def admin_only(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if current_user.type != 'Администратор':
+        if current_user.is_admin == False:
             flash('Недостаточно прав для доступа', 'error')
             return redirect(url_for('views.beginPage'))   
         return f(*args, **kwargs)
@@ -22,7 +22,7 @@ class MyMainView(AdminIndexView):
             return redirect(url_for('auth.login')) 
 
         if not self.is_accessible():
-            return redirect(url_for('views.catalog'))        
+            return redirect(request.referrer)
 
         try:
             user_data = User.query.count()
@@ -49,19 +49,16 @@ class MyMainView(AdminIndexView):
                            )
 
     def is_accessible(self):
-        return current_user.is_authenticated and getattr(current_user, 'type', '') == "Администратор"
+        return current_user.is_authenticated and current_user.is_admin
 
     def inaccessible_callback(self, name, **kwargs):
         if not current_user.is_authenticated:
             return redirect(url_for('auth.login'))
-        return redirect(url_for('views.catalog'))
-
+        return redirect(request.referrer)
 
 class BaseAdminView(ModelView):
     def is_accessible(self):
-        return current_user.is_authenticated and getattr(current_user, 'type', '') == "Администратор" 
+        return current_user.is_authenticated and current_user.is_admin
 
     def inaccessible_callback(self, name, **kwargs):
-        return redirect(url_for('auth.login'))  
-    
-
+        return redirect(url_for('auth.login'))

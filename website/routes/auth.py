@@ -339,8 +339,12 @@ def delete_account():
             return redirect(url_for('views.profile'))
            
            
-        if current_user.type == 'Администратор':
-            flash('Невозможно удалить аккаунт  администратора', 'error')
+        if current_user.is_admin:
+            flash('Невозможно удалить аккаунт администратора', 'error')
+            return redirect(url_for('auth.profile_danger'))
+        
+        if current_user.auditor:
+            flash('Невозможно удалить аккаунт проверяющего отчеты.', 'error')
             return redirect(url_for('auth.profile_danger'))
         
         db.session.delete(user)

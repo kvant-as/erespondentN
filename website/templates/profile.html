@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Личный кабинет - ErespondentN{% endblock %}
 {% block content %}
-<meta name="user-type" content="{{ current_user.type }}">
+<meta name="user-is-admin" content="{{ current_user.is_admin|lower }}">
 
 <div class = "account_cont">
     <div class = "privetstvie_cont">
@@ -25,7 +25,7 @@
                 {{ icons.icon_arrow_right() }}
             </button>
 
-                   {%if current_user.type == 'Администратор' or current_user.type == 'Респондент'%}
+                   {%if current_user.is_admin or not (current_user.is_auditor or current_user.is_reader)%}
                 <button class="acc-btn-otherbtn blue_btn" onclick="window.location.href='/reports'">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                         <path d="M12 4.5v15M4.5 12h15" />
@@ -34,7 +34,7 @@
                 </button>
             {%else%}
             {%endif%}
-            {% if current_user.type in ['Администратор', 'Аудитор', 'Смотрящий'] %}
+            {% if current_user.is_admin or current_user.is_auditor or current_user.is_reader %}
             <button class="acc-btn-otherbtn blue_btn green" onclick="window.location.href='/audit-area/not_viewed?year={{previous_year}}&quarter={{previous_quarter}}';">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                     <circle cx="10" cy="10" r="7"/>
@@ -61,7 +61,7 @@
                 {{ icons.icon_arrow_right() }}
             </button>
 
-        {%if current_user.type == 'Администратор'%}
+        {%if current_user.is_admin%}
             <button class = "account_buttons" onclick="window.location.href='/admin'">
                 <div class="first_path">
                     <img src="{{ url_for('static', filename='img/icon_admin-panel.png')}}"  alt="">
@@ -91,7 +91,7 @@
             <h3 class = "change-position">Загрузка статистики</h3>
             {{ icons.icon_close() }}
         </div>
-        <form action="/load_org_stat" method="POST">
+        <form action="/load-respondent-stats" method="POST">
             <input type="hidden" name="modal_add_year" id="selected-year-add" value="{{previous_year}}">
             <input type="hidden" name="modal_add_quarter" id="selected-quarter-add" value="{{previous_quarter}}">
             <div class="period-selector-advanced" id="add-period-selector">

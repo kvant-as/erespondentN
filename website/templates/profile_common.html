@@ -20,10 +20,10 @@
         {{ content.left_menu(active_tab) }}
         <div class="personal-info_area">
                 <div class="glass-info-block">
-                    {% if user.type == 'Респондент' or user.type == 'Администратор'%}
+                    {% if user.is_admin or not (user.is_auditor or user.is_reader) %}
                         <p>Указывайте персональные данные лица заполняющего отчеты.</p>
                         <p>После <strong>создания</strong> первого отчета редактирование данных организации становится <strong>недоступным</strong></p>
-                    {% elif user.type == 'Аудитор' or user.type == 'Смотрящий' %}
+                    {% elif user.is_auditor or user.is_reader %}
                         <p>Указывайте свои настоящие данные для того чтобы с вами могли связаться.</p>
                     {% endif %}
                     
@@ -34,7 +34,7 @@
                 <table>
                     {#<tr>
                         <td><span title = "Уровень доступа к функциям">Тип пользователя</span></div></td>
-                        <td><input type="text" value="{{current_user.type}}" readonly></td>
+                        <td><input type="text" value="{{current_user.is_admin}}" readonly></td>
                     </tr>#}
                    <tr>
                         <td>Фамилия <span class="required-mark">&#42;</span></td>
@@ -115,24 +115,24 @@
 
                     <tr>
                         <td><span title = "Организация за которую отчитываются">Предприятие <span class="required-mark">&#42;</span></span></td>
-                        <td style = "display: flex; flex-direction: row;" {%if count_reports == 0 and current_user.type != 'Аудитор' and current_user.type != 'Смотрящий'%}id = "link_chooseOrgModal"{%endif%}>
-                            <input 
-                                class = "pred_name" type="text" style = "{%if count_reports == 0 and current_user.type != 'Аудитор'%}
+                        <td style = "display: flex; flex-direction: row;" {%if count_reports == 0 and not current_user.is_auditor and not current_user.is_reader%}id = "link_chooseOrgModal"{%endif%}>
+                            <input
+                                class = "pred_name" type="text" style = "{%if count_reports == 0 and not current_user.is_auditor%}
                                 border-top-right-radius: 0;
-                                border-bottom-right-radius: 0; 
-                                background: white; 
+                                border-bottom-right-radius: 0;
+                                background: white;
                                 width: calc(100% - 70px);
-                                {%else%} {%endif%}" 
+                                {%else%} {%endif%}"
                                 placeholder="Наименование предприятия"  name = "full_name_common" value="{{ current_user.organization.full_name if current_user.organization else '' }}" readonly>
-                                {%if count_reports == 0 and (current_user.type != 'Аудитор' and current_user.type != 'Смотрящий')%}
-                                    <a class="left-input-btn" > 
+                                {%if count_reports == 0 and (not current_user.is_auditor and not current_user.is_reader)%}
+                                    <a class="left-input-btn" >
                                         {{ icons.icon_search() }}
                                     </a>
                                 {%else%} {%endif%}
                                 <input type="hidden" name="id_org" value="{% if current_user.organization %}{{ current_user.organization.id }}{% else %}{% endif %}">
                         </td>
                     </tr>
-                    {%if current_user.type != 'Аудитор' and current_user.type != 'Смотрящий'%}
+                    {%if not current_user.is_auditor and not current_user.is_reader%}
                         <tr>
                             <td><span title = "Общестатистический код предприятий и организаций">ОКПО</span></td>
                             <td>    

@@ -627,7 +627,7 @@
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
                             <input type="hidden" name="version_id" value="{{ current_version.id if current_version else '' }}">
                             
-                            {% if current_version and current_version.status not in ['Одобрен', 'Готов к удалению', 'Есть замечания'] and current_user and current_user.type != 'Смотрящий' %}
+                            {% if current_version and current_version.status not in ['Одобрен', 'Готов к удалению', 'Есть замечания'] and current_user and not current_user.is_reader %}
                             <div class="model_but_area right">
                                 <button type="submit" class="blue_btn">
                                     {{ icons.icon_send() }}

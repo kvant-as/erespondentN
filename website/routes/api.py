@@ -1,4 +1,3 @@
-from datetime import timedelta
 import threading
 import uuid
 
@@ -12,8 +11,7 @@ from common_models.src import current_utc_time
 
 from .. import db
 from ..models import (
-    User, Organization, Report, Version_report, DirUnit,
-    DirProduct, Sections, Ticket, Message
+    Organization, Message
 )
 
 from website.export import export_tasks
@@ -79,8 +77,6 @@ def start_export():
         task_id = str(uuid.uuid4())
         user_id = current_user.id
         
-        current_user_type = current_user.type
-        
         region_value = None
         region_number = None
         
@@ -88,7 +84,7 @@ def start_export():
             region_number = current_user.organization.region.number
             region_value = str(region_number)
         
-        if current_user_type == "Администратор" or current_user_type == "Смотрящий":
+        if current_user.is_admin or current_user.is_reader:
             if export_region and export_region.isdigit():
                 region_value = export_region
             else:
@@ -153,28 +149,12 @@ def download_export(task_id):
         download_name=download_name,
         mimetype='application/zip'
     )
-    
-# @api.route('/online-count', methods=['GET'])
-# def api_online_count():
-#     try:
-#         five_minutes_ago = current_utc_time() - timedelta(minutes=5)
-#         count = User.query.filter(User.last_active >= five_minutes_ago).count()
-#         return jsonify({
-#             'success': True,
-#             'count': count
-#         })
-#     except Exception as e:
-#         current_app.logger.error(f"Error in online count API: {e}")
-#         return jsonify({
-#             'success': False,
-#             'count': 0
-#         }), 500
 
 @api.route('/messages', methods=['GET'])
 @login_required
 def get_messages_api():
     try:
-        if current_user.type == "Администратор":
+        if current_user.is_admin:
             messages = Message.query.filter(
                 (Message.to_admin == True) | (Message.recipient_id == current_user.id)
             ).order_by(Message.id.desc()).all()
@@ -184,9 +164,9 @@ def get_messages_api():
         messages_data = []
         for msg in messages:
             can_reply = False
-            if current_user.type == "Администратор" and msg.sender_id != current_user.id and msg.sender_id is not None:
+            if current_user.is_admin and msg.sender_id != current_user.id and msg.sender_id is not None:
                 can_reply = True
-            elif current_user.type != "Администратор" and msg.sender_id == current_user.id and msg.recipient_id is not None:
+            elif current_user.is_admin and msg.sender_id == current_user.id and msg.recipient_id is not None:
                 can_reply = True
             
             sender_info = {}
@@ -195,7 +175,7 @@ def get_messages_api():
                     'email': msg.sender.email,
                     'fio': f"{msg.sender.last_name or ''} {msg.sender.first_name or ''} {msg.sender.patronymic_name or ''}".strip(),
                     'telephone': msg.sender.telephone,
-                    'type': msg.sender.type
+                    'is_admin': msg.sender.is_admin
                 }
             
             messages_data.append({
@@ -259,7 +239,7 @@ def mark_all_read_api():
 @login_required
 def mark_read_api(message_id):
     try:
-        if current_user.type != "Администратор":
+        if current_user.is_admin == False:
             return jsonify({
                 'success': False,
                 'error': 'Только администратор может отмечать сообщения как прочитанные'

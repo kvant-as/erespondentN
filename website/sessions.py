@@ -11,8 +11,8 @@ JWT_ALGORITHM = 'HS256'
 SESSION_COOKIE_NAME = 'session_token'
 SESSION_DURATION = timedelta(days=7)
 
-def get_user_session_timeout(user_type):
-    return timedelta(hours=9) if user_type in ['Администратор', 'Аудитор'] else timedelta(minutes=60)
+def get_user_session_timeout(user):
+    return timedelta(hours=9) if user.is_admin or user.is_auditor else timedelta(minutes=60)
 
 # def get_device_place(ip):
 #     # Локальные IP не проверяем
@@ -38,7 +38,6 @@ def create_session_token(user):
     payload = {
         'user_id': user.id,
         'email': user.email,
-        'user_type': user.type,
         'username': (user.last_name or "") + " " + (user.first_name or "") + " " + (user.patronymic_name or ""), 
         'session_id': str(uuid.uuid4()),
         # 'device_info': {
@@ -178,7 +177,7 @@ def session_required(view_func):
         if hasattr(last_active, 'tzinfo') and last_active.tzinfo is not None:
             last_active = last_active.replace(tzinfo=None)
         
-        session_timeout = get_user_session_timeout(user.type)
+        session_timeout = get_user_session_timeout(user)
         time_diff = current_time - last_active
         
         if time_diff > session_timeout:

@@ -60,7 +60,7 @@ def owner_only(f):
             flash('Версия отчета не найдена', 'error')
             return redirect(url_for('views.report_area', user=current_user))
         report = version.report
-        if report.user_id != current_user.id and current_user.type != 'Администратор' and current_user.type != 'Аудитор':
+        if report.user_id != current_user.id and current_user.is_admin == False and current_user.is_auditor == False:
             flash('Недостаточно прав для доступа к этому отчёту', 'error')
             return redirect(url_for('views.report_area', user=current_user))
         return f(*args, **kwargs)
@@ -84,39 +84,18 @@ def profile_complete(f):
 def auditors_only(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if current_user.type not in ['Аудитор', 'Администратор', 'Смотрящий' ]:
-            flash('У вас нет прав доступа', 'error')
+        if not (current_user.is_admin or current_user.is_auditor or current_user.is_reader):
+            flash('Недостаточно прав для доступа', 'error')
             return redirect(url_for('views.profile_common'))
         if not current_user.last_name or not current_user.first_name or not current_user.telephone:
             flash('Пожалуйста, заполните ФИО и номер телефона в профиле', 'error')
             return redirect(url_for('views.profile_common'))
         return f(*args, **kwargs)
     return decorated_function
-
-def respondent_only(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if current_user.type not in ['Респондент', 'Администратор' ]:
-            flash('У вас нет прав доступа', 'error')
-            return redirect(url_for('views.profile_common'))
-        if not current_user.last_name or not current_user.first_name or not current_user.telephone:
-            flash('Пожалуйста, заполните ФИО и номер телефона в профиле', 'error')
-            return redirect(url_for('views.profile_common'))
-        return f(*args, **kwargs)
-    return decorated_function
-
-def get_online_users_count():
-    try:
-        five_minutes_ago = current_utc_time() - timedelta(minutes=5)
-        count = User.query.filter(User.last_active >= five_minutes_ago).count()
-        return count
-    except Exception as e:
-        current_app.logger.error(f"Error counting online users: {e}")
-        return 0
     
 @views.route('/', methods=['GET'])
 def beginPage():
-    user_data = User.query.filter_by(type="Респондент").count()
+    user_data = User.query.filter_by().count()
     organization_data = Organization.query.count()
     report_data = Report.query.count()
     latest_news = News.query.filter(News.is_erespondentn == True).order_by(desc(News.id)).first()  
@@ -241,7 +220,7 @@ def profile():
 @login_required
 def reply_to_message(message_id):
     try:
-        if current_user.type != "Администратор":
+        if current_user.is_admin == False:
             return jsonify({
                 'success': False, 
                 'error': 'Только администраторы могут отвечать на сообщения'
@@ -349,7 +328,6 @@ def profile_password():
 @views.route('/reports', methods=['GET'])
 @profile_complete
 @login_required
-@respondent_only
 @session_required
 def report_area():
     report = Report.query.filter_by(user_id=current_user.id).order_by(
@@ -391,7 +369,7 @@ def get_auditor_info_by_user(current_user):
         return None
     
     auditor = User.query.filter(
-        User.type == 'Аудитор',
+        User.is_auditor,
         User.organization_id == region_management_org.id
     ).first()
     
@@ -409,7 +387,6 @@ def get_auditor_info_by_user(current_user):
 @login_required
 @session_required
 @owner_only
-@respondent_only
 def report_section(report_type, id):
     current_version = Version_report.query.filter_by(id=id).first()
     current_report = Report.query.filter_by(id=current_version.report_id).first()
@@ -464,7 +441,6 @@ def report_section(report_type, id):
 @login_required
 @session_required
 @owner_only
-@respondent_only
 def report_info(id):
     current_version = Version_report.query.filter_by(id=id).first()
     current_report = Report.query.filter_by(id=current_version.report_id).first()
@@ -1173,25 +1149,25 @@ def cancle_sent_version(id):
 @session_required
 def change_category_report():
     try:
-        if current_user.type == "Смотрящий":
+        if current_user.is_reader:
             flash('У вас нет доступа к этому действию', 'error')
-            return redirect(request.referrer or url_for('views.index'))
+            return redirect(request.referrer)
         
         action = request.form.get('action')
         report_id = request.form.get('reportId')
         
         if not action or not report_id:
             flash('Недостаточно данных для выполнения операции', 'error')
-            return redirect(request.referrer or url_for('views.index'))
+            return redirect(request.referrer)
         
         try:
             current_version = Version_report.query.filter_by(report_id=report_id).first()
             if current_version is None:
                 flash(f'Версия отчета с ID {report_id} не найдена', 'error')
-                return redirect(request.referrer or url_for('views.index'))
+                return redirect(request.referrer)
         except Exception as e:
             flash(f'Ошибка при поиске версии отчета: {str(e)}', 'error')
-            return redirect(request.referrer or url_for('views.index'))
+            return redirect(request.referrer)
         
         try:
             recipient_user = User.query.filter_by(email=current_version.report.user.email).first()
@@ -1286,7 +1262,7 @@ def change_category_report():
 @session_required
 def rollbackreport(id):
     if request.method == 'POST':        
-        if current_user.type == "Смотрящий":
+        if current_user.is_reader:
             flash('У вас нет доступа к этому действию', 'error')
             return redirect(request.referrer)
         
@@ -1333,7 +1309,7 @@ def rollbackreport(id):
 @session_required
 def send_comment():
     if request.method == 'POST':        
-        if current_user.type == "Смотрящий":
+        if current_user.is_reader:
             flash('У вас нет доступа к этому действию', 'error')
             return redirect(request.referrer)
         
@@ -1666,7 +1642,7 @@ def send_for_admin():
         
     return redirect(url_for('views.profile'))
 
-@views.route('/load_org_stat', methods=['POST'])
+@views.route('/load-respondent-stats', methods=['POST'])
 @login_required 
 @session_required
 def load_org_stat():
@@ -1677,7 +1653,7 @@ def load_org_stat():
         flash('Не указан год или квартал', 'error')
         return redirect(request.referrer)
 
-    if current_user.type not in ["Администратор", "Аудитор"]:
+    if not (current_user.is_admin or current_user.is_auditor):
         flash('У вас нет доступа к отчетам', 'error')
         return redirect(request.referrer)
 

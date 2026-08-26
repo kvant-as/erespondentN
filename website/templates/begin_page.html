@@ -12,12 +12,12 @@
             </div>
             <div class = "hellow_buttonarea"> 
                 {% if current_user.is_authenticated%}
-                    {% if user.type == 'Респондент' or user.type == 'Администратор'%}
+                    {% if user.is_admin or not (user.is_auditor or user.is_reader) %}
                         <button onclick="window.location.href='/reports'" class="blue_btn">
                             {{ icons.icon_add() }}
                             <span>Подать отчет</span>
-                        </button> 
-                    {% elif user.type == 'Аудитор' or user.type == 'Смотрящий'  %}
+                        </button>
+                    {% elif user.is_auditor or user.is_reader %}
                         <button onclick="window.location.href='/audit-area/not_viewed?year={{previous_year}}&quarter={{previous_quarter}}';" class = "blue_btn">
                             {{ icons.icon_search() }}
                             <span>Просмотр отчетов</span>

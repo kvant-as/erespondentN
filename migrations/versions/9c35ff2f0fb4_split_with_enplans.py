@@ -1,8 +1,8 @@
-"""init with enplans
+"""split with enplans
 
-Revision ID: a48b178053c9
-Revises: 925e7a724c74
-Create Date: 2026-08-17 09:39:18.101775
+Revision ID: 9c35ff2f0fb4
+Revises: 
+Create Date: 2026-08-26 11:01:12.459150
 
 """
 from alembic import op
@@ -10,8 +10,8 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = 'a48b178053c9'
-down_revision = '925e7a724c74'
+revision = '9c35ff2f0fb4'
+down_revision = None
 branch_labels = None
 depends_on = None
 
@@ -23,10 +23,13 @@ def upgrade():
         batch_op.add_column(sa.Column('is_enplans', sa.Boolean(), nullable=True))
 
     with op.batch_alter_table('user', schema=None) as batch_op:
-        batch_op.add_column(sa.Column('is_admin', sa.Boolean(), nullable=True))
-        batch_op.add_column(sa.Column('is_auditor', sa.Boolean(), nullable=True))
-        batch_op.add_column(sa.Column('is_approver', sa.Boolean(), nullable=True))
-        batch_op.add_column(sa.Column('is_reader', sa.Boolean(), nullable=True))
+        batch_op.add_column(sa.Column('is_admin', sa.Boolean(), server_default='false', nullable=True))
+        batch_op.add_column(sa.Column('is_auditor', sa.Boolean(), server_default='false', nullable=True))
+        batch_op.add_column(sa.Column('is_approver', sa.Boolean(), server_default='false', nullable=True))
+        batch_op.add_column(sa.Column('is_reader', sa.Boolean(), server_default='false', nullable=True))
+        batch_op.add_column(sa.Column('last_name', sa.String(), nullable=True))
+        batch_op.add_column(sa.Column('first_name', sa.String(), nullable=True))
+        batch_op.add_column(sa.Column('patronymic_name', sa.String(), nullable=True))
         batch_op.add_column(sa.Column('post', sa.String(), nullable=True))
         batch_op.add_column(sa.Column('begin_time', sa.DateTime(), nullable=True))
         batch_op.add_column(sa.Column('reset_password_token', sa.String(length=255), nullable=True))
@@ -48,6 +51,9 @@ def downgrade():
         batch_op.drop_column('reset_password_token')
         batch_op.drop_column('begin_time')
         batch_op.drop_column('post')
+        batch_op.drop_column('patronymic_name')
+        batch_op.drop_column('first_name')
+        batch_op.drop_column('last_name')
         batch_op.drop_column('is_reader')
         batch_op.drop_column('is_approver')
         batch_op.drop_column('is_auditor')

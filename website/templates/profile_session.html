@@ -45,7 +45,7 @@
                 <div class="first-floor">
                     <div class="session-text-area">
                         <a class="session-this-device-name">Если сеанс не активен</a>
-                        <a class="session-this-device_app">{%if current_user.type == 'Аудитор' or current_user.type == 'Администратор'%}9 часов {%else%}60 мин. {%endif%}</a>
+                        <a class="session-this-device_app">{%if current_user.is_auditor or current_user.is_admin%}9 часов {%else%}60 мин. {%endif%}</a>
                     </div>
                 </div>
             </div>

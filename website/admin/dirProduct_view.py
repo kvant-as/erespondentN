@@ -21,7 +21,7 @@ class DirProductView(ModelView):
     column_searchable_list = ['CodeProduct', DirUnit.CodeUnit, 'NameProduct']
 
     def is_accessible(self):
-        return current_user.is_authenticated and current_user.type == "Администратор"
+        return current_user.is_authenticated and current_user.is_admin == True
 
     def inaccessible_callback(self, name, **kwargs):
         return redirect(url_for('views.login'))

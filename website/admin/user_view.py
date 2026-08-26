@@ -9,9 +9,9 @@ from website.models import User
 
 class UserView(ModelView):
     column_display_pk = True
-    column_list = ['id', 'type', 'email', 'last_name', 'first_name', 'patronymic_name', 'telephone', 'organization', 'last_active', 'reports']
+    column_list = ['id', 'email', 'last_name', 'first_name', 'patronymic_name', 'telephone', 'organization', 'last_active', 'is_admin', 'is_auditor', 'is_approver', 'is_reader', 'reports']
     column_default_sort = ('id', True)
-    column_sortable_list = ('id', 'type', 'email', 'last_name', 'first_name', 'patronymic_name', 'telephone', 'last_active')
+    column_sortable_list = ('id', 'email', 'last_name', 'first_name', 'patronymic_name', 'telephone', 'is_admin', 'is_auditor', 'is_approver', 'is_reader', 'last_active')
     
     can_delete = True
     can_create = True
@@ -25,24 +25,14 @@ class UserView(ModelView):
         'email': dict(label='email', validators=[Email()]),
     }
     
-    form_create_rules = ('type', 'email', 'last_name', 'first_name', 'patronymic_name', 'telephone', 'password', 'organization')
-    form_edit_rules = ('type', 'email', 'last_name', 'first_name', 'patronymic_name', 'telephone', 'organization')
+    form_create_rules = ('is_admin', 'is_auditor', 'is_approver', 'is_reader', 'email', 'last_name', 'first_name', 'patronymic_name', 'telephone', 'password', 'organization')
+    form_edit_rules = ('is_admin', 'is_auditor', 'is_approver', 'is_reader', 'email', 'last_name', 'first_name', 'patronymic_name', 'telephone', 'organization')
     
-    AVAILABLE_USER_TYPES = [
-        ('Респондент', 'Респондент'),
-        ('Аудитор', 'Аудитор'),
-        ('Администратор', 'Администратор'),
-        ('Смотрящий', 'Смотрящий'),
-    ]
-    
-    form_choices = {
-        'type': AVAILABLE_USER_TYPES,
-    }
     
     column_exclude_list = ['password']
     column_searchable_list = ['email', 'last_name', 'first_name', 'patronymic_name', 'telephone', 'id']
     column_filters = ['id', 'email', 'last_name', 'first_name', 'patronymic_name',]
-    column_editable_list = ['email', 'last_name', 'first_name', 'patronymic_name', 'type']
+    column_editable_list = ['email', 'last_name', 'first_name', 'patronymic_name', 'is_admin', 'is_auditor', 'is_approver', 'is_reader']
     
     create_modal = True
     edit_modal = True
@@ -68,7 +58,7 @@ class UserView(ModelView):
                 model.password = original.password
         
     def is_accessible(self):
-        return current_user.is_authenticated and current_user.type == "Администратор"
+        return current_user.is_authenticated and current_user.is_admin == True
 
     def inaccessible_callback(self, name, **kwargs):
         return redirect(url_for('views.login'))

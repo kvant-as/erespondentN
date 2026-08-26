@@ -1,6 +1,6 @@
 let messageUpdateInterval = null;
 let isLoadingMessages = false;
-const currentUserType = document.querySelector('meta[name="user-type"]')?.content || '';
+const currentUserIsAdmin = document.querySelector('meta[name="user-is-admin"]')?.content === 'true';
 
 function startMessageAutoUpdate() {
     if (messageUpdateInterval) {
@@ -102,17 +102,17 @@ function updateMessagesContainer(messages, totalCount) {
         return;
     }
     
-    const isAdmin = currentUserType === "Администратор";
-    
+    const isAdmin = currentUserIsAdmin;
+
     const messagesHtml = messages.map(msg => {
         const dateParts = msg.create_time.split(' ');
         const date = dateParts[0] || '';
         const time = dateParts[1] || '';
-        
+
         const senderName = msg.sender ? (msg.sender.fio || msg.sender.email) : '';
         const senderPhone = msg.sender ? msg.sender.telephone : '';
         const senderEmail = msg.sender ? msg.sender.email : '';
-        const senderType = msg.sender ? msg.sender.type : '';
+        const senderIsAdmin = msg.sender ? msg.sender.is_admin : false;
         
         return `
         <div class="mes ${msg.is_read ? 'read' : 'unread'}" id="message-${msg.id}">
@@ -120,7 +120,7 @@ function updateMessagesContainer(messages, totalCount) {
                 <div class="time_mes">
                     <span class="msg-date">${date}</span>
                     <span class="msg-time">${time}</span>
-                    ${msg.sender_id && isAdmin ? `- <span class="sender">${senderType === "Администратор" ? 'Система' : escapeHtml(senderEmail)}</span>` : ''}
+                    ${msg.sender_id && isAdmin ? `- <span class="sender">${senderIsAdmin ? 'Система' : escapeHtml(senderEmail)}</span>` : ''}
                 </div>
                 <div class="message_actions">
                     ${isAdmin && !msg.is_read ? `
@@ -134,7 +134,7 @@ function updateMessagesContainer(messages, totalCount) {
                     ` : ''}
                     ${msg.can_reply && isAdmin ? `
                     <button class="reply_btn" 
-                            onclick="showReplyForm(${msg.id}, '${senderType === 'Администратор' ? 'Администратор' : escapeHtml(senderEmail)}', '${escapeHtml(senderName)}', '${senderPhone}')"
+                            onclick="showReplyForm(${msg.id}, '${senderIsAdmin ? 'Администратор' : escapeHtml(senderEmail)}', '${escapeHtml(senderName)}', '${senderPhone}')"
                             title="Ответить">
                         Ответить
                     </button>
@@ -187,7 +187,7 @@ function updateMessageCount(count) {
 }
 
 function markMessageAsRead(messageId) {
-    const isAdmin = currentUserType === "Администратор";
+    const isAdmin = currentUserIsAdmin;
     if (!isAdmin) {
         console.log('Только администратор может отмечать сообщения как прочитанные');
         return;
@@ -220,7 +220,7 @@ function markMessageAsRead(messageId) {
 }
 
 function showReplyForm(messageId, recipientEmail, recipientName, recipientPhone) {
-    const isAdmin = currentUserType === "Администратор";
+    const isAdmin = currentUserIsAdmin;
     if (!isAdmin) return;
     
     document.querySelectorAll('.reply_form').forEach(form => {
@@ -257,7 +257,7 @@ function cancelReply(messageId) {
 }
 
 function submitReply(messageId) {
-    const isAdmin = currentUserType === "Администратор";
+    const isAdmin = currentUserIsAdmin;
     if (!isAdmin) return;
     
     const textarea = document.getElementById(`replyText-${messageId}`);

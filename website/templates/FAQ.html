@@ -125,7 +125,7 @@
                     </li>
                 </ul> 
                 
-                {% if current_user.is_authenticated and current_user.type != "Респондент" %}
+                {% if current_user.is_authenticated and (current_user.is_admin or current_user.is_auditor or current_user.is_reader) %}
                 <li data-content="audit_faq">
                     <a>Проверка отчета</a>
                     <svg fill="#002762" height="12" viewBox="0 0 7 12" width="7" xmlns="http://www.w3.org/2000/svg">
