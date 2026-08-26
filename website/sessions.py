@@ -8,11 +8,35 @@ import requests
 from common_models.src import current_utc_time
 
 JWT_ALGORITHM = 'HS256'
-SESSION_COOKIE_NAME = 'session_token'
+SESSION_COOKIE_NAME = 'erespondent_session'
 SESSION_DURATION = timedelta(days=7)
 
 def get_user_session_timeout(user):
-    return timedelta(hours=9) if user.is_admin or user.is_auditor else timedelta(minutes=60)
+    return timedelta(hours=9) if user.is_admin or user.is_auditor else timedelta(minutes=30)
+
+def get_session_time_left():
+    from .models import User
+
+    session_data = get_session_from_cookie()
+    if not session_data:
+        return None
+
+    user = User.query.get(session_data['user_id'])
+    if not user:
+        return None
+
+    last_active = datetime.fromisoformat(session_data['last_active'])
+    current_time = current_utc_time()
+
+    if hasattr(current_time, 'tzinfo') and current_time.tzinfo is not None:
+        current_time = current_time.replace(tzinfo=None)
+    if hasattr(last_active, 'tzinfo') and last_active.tzinfo is not None:
+        last_active = last_active.replace(tzinfo=None)
+
+    session_timeout = get_user_session_timeout(user)
+    seconds_left = (session_timeout - (current_time - last_active)).total_seconds()
+
+    return max(0, int(seconds_left)), int(session_timeout.total_seconds())
 
 # def get_device_place(ip):
 #     # Локальные IP не проверяем
@@ -94,7 +118,10 @@ def set_session_cookie(response, token):
 
 
 def create_login_response(user, redirect_endpoint='views.profile'):
-    return redirect(url_for(redirect_endpoint))
+    token = create_session_token(user)
+    response = make_response(redirect(url_for(redirect_endpoint)))
+    response = set_session_cookie(response, token)
+    return response
 
 def verify_session_token(token):
     try:
@@ -149,54 +176,58 @@ def session_required(view_func):
     def wrapper(*args, **kwargs):
         from .models import User
         from . import db
-        
-        if current_app.debug:
-            return view_func(*args, **kwargs)
-        
+
+        debug = current_app.debug
         token = request.cookies.get(SESSION_COOKIE_NAME)
-        
+
         if not token:
+            if debug:
+                return view_func(*args, **kwargs)
             print("No session token in cookie")
             return force_logout()
-        
+
         session_data = verify_session_token(token)
         if not session_data:
+            if debug:
+                return view_func(*args, **kwargs)
             print("Invalid or expired token")
             return force_logout()
-        
+
         user = User.query.get(session_data['user_id'])
         if not user:
+            if debug:
+                return view_func(*args, **kwargs)
             print(f"User not found: {session_data['user_id']}")
             return force_logout()
-        
+
         last_active = datetime.fromisoformat(session_data['last_active'])
         current_time = current_utc_time()
-        
+
         if hasattr(current_time, 'tzinfo') and current_time.tzinfo is not None:
             current_time = current_time.replace(tzinfo=None)
         if hasattr(last_active, 'tzinfo') and last_active.tzinfo is not None:
             last_active = last_active.replace(tzinfo=None)
-        
+
         session_timeout = get_user_session_timeout(user)
         time_diff = current_time - last_active
-        
+
         if time_diff > session_timeout:
             return force_logout()
-        
+
         user.last_active = current_utc_time()
         db.session.commit()
 
         new_token = update_session_activity(token)
         response = view_func(*args, **kwargs)
-        
+
         if isinstance(response, str):
             response = make_response(response)
-        
+
         if new_token and new_token != token:
             response = set_session_cookie(response, new_token)
-        
+
         return response
-    
+
     return wrapper
 
 def get_current_user():

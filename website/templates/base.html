@@ -73,13 +73,19 @@
                 </ul>
             </nav>
         </div>
-        <div class="header-right">   
+        <div class="header-right">
             {#{% if current_user.is_authenticated %}
                 <div class="online-cont">
                     <div class="online-indicator"></div>
                     <span class="online-count">{{ online_users_count }}</span>
                 </div>
             {% endif %}#}
+            {% if current_user.is_authenticated and session_seconds_left is not none %}
+                <div class="session-timer" id="session-timer" data-seconds-left="{{ session_seconds_left }}" data-enforced="{{ session_enforced|lower }}" title="Время до автоматического завершения сеанса при бездействии">
+                    {{ icons.icon_clock() }}
+                    <span id="session-timer-value"></span>
+                </div>
+            {% endif %}
             <div class="user-container">
                 <div class="avatar-wrapper">
                     <div class="avatar-circle">

@@ -108,6 +108,19 @@ def create_app():
     def unauthorized_handler(error):
         return redirect(url_for("views.login", next=request.url))
  
+    @app.context_processor
+    def inject_session_timer():
+        from website.sessions import get_session_time_left
+        info = get_session_time_left()
+        # session_required реально разлогинивает по истечении тайм-аута
+        # (в т.ч. в debug-режиме), поэтому таймер в шапке всегда должен
+        # перезагружать страницу по нулю.
+        session_enforced = True
+        if info is None:
+            return dict(session_seconds_left=None, session_timeout_seconds=None, session_enforced=session_enforced)
+        seconds_left, timeout_seconds = info
+        return dict(session_seconds_left=seconds_left, session_timeout_seconds=timeout_seconds, session_enforced=session_enforced)
+
     @app.template_filter('ru_date')
     def ru_date(date):
         months = {

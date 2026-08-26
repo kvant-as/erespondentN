@@ -826,6 +826,31 @@ header nav ul {
     cursor: pointer;
 }
 
+.session-timer {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-right: 16px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    background: rgba(0, 39, 98, 0.06);
+    color: #002762;
+    font-size: 14px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.session-timer svg {
+    width: 16px;
+    height: 16px;
+}
+
+.session-timer.session-timer-warning {
+    background: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+}
+
 
 .header-center {
     flex: 2;
@@ -11859,6 +11884,7 @@ th.resizable .resizer {
 
     .name_app a{
         font-size: 15px !important;
+        display: none;
     }    
 
     /*header end*/

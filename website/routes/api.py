@@ -6,7 +6,7 @@ from flask_login import current_user, login_required
 
 from website.export import create_archive_async
 from website.models import Organization
-from website.sessions import session_required
+from website.sessions import session_required, get_session_time_left
 from common_models.src import current_utc_time
 
 from .. import db
@@ -17,6 +17,21 @@ from ..models import (
 from website.export import export_tasks
 
 api = Blueprint('api', __name__)
+
+@api.route('/session-status', methods=['GET'])
+@login_required
+def session_status():
+    info = get_session_time_left()
+    if info is None:
+        return jsonify({'active': False})
+
+    seconds_left, timeout_seconds = info
+    return jsonify({
+        'active': True,
+        'seconds_left': seconds_left,
+        'timeout_seconds': timeout_seconds,
+        'enforced': True
+    })
 
 @api.route('/organizations', methods=['GET'])
 @login_required
