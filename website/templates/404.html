@@ -1,195 +1,53 @@
-{% extends "base.html" %}
-{% block title %}404 - Страница не найдена{% endblock %}
-{% block content %}
-
-<style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-
-    .error-page {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        min-height: 100vh;
-        text-align: center;
-        font-family: 'Inter', sans-serif;
-        position: relative;
-        overflow: hidden;
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>404 — Страница не найдена</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; }
+    body {
+      display: flex; align-items: center; justify-content: center;
+      background: #f5f7fa; color: #313131;
+      font-family: 'Inter', -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      padding: 24px;
     }
-
-
-    @keyframes rotate {
-        from {
-            transform: rotate(0deg);
-        }
-        to {
-            transform: rotate(360deg);
-        }
+    .wrap { max-width: 560px; text-align: center; animation: up .5s ease-out; }
+    @keyframes up { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+    .code {
+      font-size: 6rem; font-weight: 600; line-height: 1; margin: 0; letter-spacing: -4px;
+      background: linear-gradient(135deg, #0073c0, #005fa3);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
     }
-
-    @keyframes float {
-        0%, 100% {
-            transform: translateY(0) rotate(0deg);
-        }
-        50% {
-            transform: translateY(-20px) rotate(10deg);
-        }
+    .msg { font-size: 1.6rem; font-weight: 600; color: #444; margin: .25rem 0 .75rem; }
+    .desc { font-size: 1rem; color: rgba(49,49,49,.75); line-height: 1.6; margin: 0 0 1.75rem; }
+    .btns { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+    .btn {
+      display: inline-flex; align-items: center; gap: .5rem;
+      padding: .7rem 1.5rem; border-radius: 8px; border: 1px solid transparent;
+      font: inherit; font-weight: 500; cursor: pointer; text-decoration: none;
     }
-
-    .content-wrapper {
-        position: relative;
-        max-width: 600px;
-        padding: 3rem;
-        animation: slideUp 0.6s ease-out;
-    }
-
-    @keyframes slideUp {
-        from {
-            opacity: 0;
-            transform: translateY(30px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    .error-code {
-        font-size: 3rem;
-        font-weight: 800;
-        background: linear-gradient(135deg, #414141, #6b5252);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        text-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-        line-height: 1;
-        margin: 0;
-        letter-spacing: -5px;
-        animation: glitch 3s infinite;
-    }
-
-    @keyframes glitch {
-        0%, 100% {
-            transform: skew(0deg);
-        }
-        95% {
-            transform: skew(0deg);
-        }
-        96% {
-            transform: skew(5deg);
-        }
-        97% {
-            transform: skew(-5deg);
-        }
-        98% {
-            transform: skew(3deg);
-        }
-    }
-
-    .error-message {
-        font-size: 2rem;
-        font-weight: 600;
-        color: #444444;
-        margin: 0.5rem 0 1rem;
-        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-        position: relative;
-        display: inline-block;
-    }
-
-    .error-message::after {
-        content: '';
-        position: absolute;
-        bottom: -10px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 60px;
-        height: 4px;
-        background: linear-gradient(90deg, transparent, #000000, transparent);
-        border-radius: 2px;
-    }
-
-    .error-description {
-        font-size: 1.1rem;
-        color: rgba(49, 49, 49, 0.8);
-        margin: 1.5rem 0 2rem;
-        line-height: 1.6;
-    }
-
-    .button-group {
-        display: flex;
-        gap: 1rem;
-        justify-content: center;
-        flex-wrap: wrap;
-    }
-
-    .floating-icon {
-        position: absolute;
-        opacity: 0.1;
-        pointer-events: none;
-    }
-
-    .icon-1 {
-        top: 20%;
-        left: 15%;
-        animation: floatIcon 8s ease-in-out infinite;
-    }
-
-    .icon-2 {
-        bottom: 25%;
-        right: 10%;
-        animation: floatIcon 10s ease-in-out infinite reverse;
-    }
-
-    @keyframes floatIcon {
-        0%, 100% {
-            transform: translateY(0) rotate(0deg);
-        }
-        50% {
-            transform: translateY(-30px) rotate(10deg);
-        }
-    }
-
-    @media (max-width: 768px) {
-        .content-wrapper {
-            margin: 1rem;
-            padding: 2rem;
-        }
-
-        .error-message {
-            font-size: 1.5rem;
-        }
-
-        .button-group {
-            flex-direction: column;
-        }
-    }
-</style>
-{{ content.blurback() }}
-<div class="error-page">
-    <svg class="floating-icon icon-1" width="120" height="120" viewBox="0 0 24 24" fill="white" stroke="black" stroke-width="1">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-    </svg>
-    
-    <svg class="floating-icon icon-2" width="100" height="100" viewBox="0 0 24 24" fill="white" stroke="black" stroke-width="1">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-
-    <div class="content-wrapper">
-        <h1 class="error-code">404</h1>
-        <p class="error-message">Страница не найдена</p>
-        <p class="error-description">
-            Возможно, она была удалена или вы перешли по неверной ссылке.<br>
-            Проверьте адрес или вернитесь на главную.
-        </p>
-        <div class="button-group">
-            <button type="button" class="blue_btn transp" onclick="window.history.back()">
-              
-                <span>Назад</span>
-            </button>
-            <button type="button" class="blue_btn" onclick="window.location.href='/'">
-                {{ icons.icon_main() }}
-                <span>На главную</span>
-            </button>
-        </div>
+    .btn-transp { background: transparent; border-color: #0073c0; color: #0073c0; }
+    .btn-transp:hover { background: #0073c0; color: #fff; }
+    .btn-solid { background: #0073c0; color: #fff; }
+    .btn-solid:hover { background: #005fa3; }
+    @media (max-width: 560px) { .code { font-size: 4.5rem; } .btns { flex-direction: column; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1 class="code">404</h1>
+    <p class="msg">Страница не найдена</p>
+    <p class="desc">
+      Возможно, она была удалена или вы перешли по неверной ссылке.<br>
+      Проверьте адрес или вернитесь на главную.
+    </p>
+    <div class="btns">
+      <button type="button" class="btn btn-transp" onclick="window.history.back()">Назад</button>
+      <a href="/" class="btn btn-solid">На главную</a>
     </div>
-</div>
-{% endblock %}
+  </div>
+</body>
+</html>

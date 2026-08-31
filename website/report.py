@@ -13,7 +13,7 @@ from sqlalchemy import and_, or_
 from sqlalchemy.sql import func, or_
 import math
 
-from common_models.src import current_utc_time
+from common_models import current_utc_time
 from .models import Organization, Report, Sections, Version_report
 from . import db
 

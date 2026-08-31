@@ -1580,6 +1580,11 @@ main {
     width: 100%;
 }
 
+.float-label-container .show-icon, .float-label-container .show-icon1, 
+.float-label-container .hide-icon, .float-label-container .hide-icon1 {
+    top: 40%;
+}
+
 .float-label-container .float-input {
     width: 100%;
     padding: 20px 35px 6px 15px;

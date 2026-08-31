@@ -26,7 +26,6 @@ et_xmlfile==2.0.0
 eventlet==0.40.4
 exceptiongroup==1.3.1
 Flask==3.1.0
-Flask-Admin==1.6.1
 flask-babel==4.0.0
 Flask-Bcrypt==1.0.1
 Flask-HTTPAuth==4.8.0
@@ -79,3 +78,5 @@ Werkzeug==3.1.3
 wsproto==1.3.2
 WTForms==3.1.2
 WTForms-SQLAlchemy==0.4.2
+# shared models package (checked out alongside this repo: ../common-models)
+-e ../common-models

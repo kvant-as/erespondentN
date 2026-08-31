@@ -7,7 +7,7 @@ from flask_login import current_user, login_required
 from website.export import create_archive_async
 from website.models import Organization
 from website.sessions import session_required, get_session_time_left
-from common_models.src import current_utc_time
+from common_models import current_utc_time
 
 from .. import db
 from ..models import (

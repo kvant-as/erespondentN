@@ -26,7 +26,7 @@ from flask_login import (
 
 from sqlalchemy import func
 from sqlalchemy.orm import joinedload
-from common_models.src.all_models import Plan
+from common_models.models import Plan
 from website.report import check_version_editable, control_func, create_section, get_organizations_with_reports_excel_xlsx, process_section_calculations, redirect_back, subtract_from_aggregated_sections, to_decimal, update_aggregated_sections, update_section_fields, update_version_status
 from ..export import create_archive_async, generate_excel_report, create_xml_for_version, export_tasks
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -44,7 +44,7 @@ from ..models import (
 
 from website.ecp import check_certificate_expiry
 from website.sessions import clear_session_cookie, create_login_response, session_required
-from common_models.src import current_utc_time
+from common_models import current_utc_time
 from ..email import send_email
 
 auth = Blueprint('auth', __name__)
@@ -112,9 +112,11 @@ def sign():
                 flash('Пользователь с таким email уже существует', 'error')
             elif not re.match(r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$', email):
                 flash('Некорректный адрес электронной почты', 'error') 
+            elif len(password1) < 5:
+                flash('Пароль должен содержать не менее 5 символов', 'error')
             elif password1 != password2:
-                flash('Ошибка в подтверждении пароля', 'error') 
-            else:      
+                flash('Ошибка в подтверждении пароля', 'error')
+            else:
                 session['temp_user'] = {
                     'email': email,
                     'password': generate_password_hash(password1)

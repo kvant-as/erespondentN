@@ -1,6 +1,6 @@
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
-from common_models.src.time import current_utc_time
+from common_models.timeutils import current_utc_time
 
 def check_certificate_expiry(cert_file):
     try:

@@ -19,36 +19,8 @@
     <div class="contener_row">
         {{ content.left_menu(active_tab) }}
         <div class="personal-info_area">
-            <a class="session-name-card">Это устройство</a>
-            <div class="session-this-device">
-                <div class="first-floor">
-                    
-                    {{ icons.icon_mobile_phone() }}
-                    <div class="session-text-area">
-                        <a class="session-this-device-name">Неизвестное устройство</a>
-                        <a class="session-this-device_app">Браузер</a>
-                        <a class="session-this-device_last_active">Последняя активность: {{ current_user.last_active.strftime('%d.%m.%Y %H:%M') }}</a> 
-                        <a class="session-this-device_ip">IP: xxx.xx.x.xxx</a> 
-                        <hr class="border: none; border-bottom: 1px solid rgb(56, 56, 56); border-top: none">
-                    </div>
-                </div>
-                <form action="/sessions/clear-others" method="POST" style="display: inline; padding-bottom: 0;">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button type="submit" class="delete-scale-btn" disabled>
-                        <img src="{{ url_for('static', filename='img/stop.png')}}" alt="">
-                        <div class="end_all_sessions">Завершить другие сеансы</div>
-                    </button>
-                </form>
-            </div>
-            <a class="session-name-card" style="margin-top: 50px;">Автоматически завершать сеансы</a>
-            <div class="session-this-device">
-                <div class="first-floor">
-                    <div class="session-text-area">
-                        <a class="session-this-device-name">Если сеанс не активен</a>
-                        <a class="session-this-device_app">{%if current_user.is_auditor or current_user.is_admin%}9 часов {%else%}60 мин. {%endif%}</a>
-                    </div>
-                </div>
-            </div>
+            {% include 'cm_session/section.html' %}
+
             <a class="session-name-card" style="margin-top: 50px;">Автоматически удалять аккаунт</a>
             <div class="session-this-device">
                 <div class="first-floor">

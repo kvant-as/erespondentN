@@ -32,7 +32,7 @@ from sqlalchemy import asc, case, desc
 from functools import wraps
 
 from datetime import datetime, timedelta
-from common_models.src.time import current_utc_time, get_previous_quarter, get_report_year
+from common_models.timeutils import current_utc_time, get_previous_quarter, get_report_year
 
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfbase.ttfonts import TTFont

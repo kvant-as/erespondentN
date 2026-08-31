@@ -1,3 +1,0 @@
-[submodule "common_models"]
-	path = common_models
-	url = https://github.com/kvant-as/common-models.git

@@ -80,12 +80,6 @@
                     <span class="online-count">{{ online_users_count }}</span>
                 </div>
             {% endif %}#}
-            {% if current_user.is_authenticated and session_seconds_left is not none %}
-                <div class="session-timer" id="session-timer" data-seconds-left="{{ session_seconds_left }}" data-enforced="{{ session_enforced|lower }}" title="Время до автоматического завершения сеанса при бездействии">
-                    {{ icons.icon_clock() }}
-                    <span id="session-timer-value"></span>
-                </div>
-            {% endif %}
             <div class="user-container">
                 <div class="avatar-wrapper">
                     <div class="avatar-circle">
@@ -623,5 +617,6 @@
           </div>
       </div>
   </footer>
-  </body> 
+  {{ cm_session_guard() }}
+  </body>
 </html>

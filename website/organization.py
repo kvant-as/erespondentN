@@ -43,7 +43,7 @@ from .models import (
 
 from website.ecp import check_certificate_expiry
 from website.sessions import clear_session_cookie, create_login_response, session_required
-from common_models.src import current_utc_time
+from common_models import current_utc_time
 from .email import send_email
 
 
