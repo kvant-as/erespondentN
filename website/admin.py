@@ -4,6 +4,7 @@ from werkzeug.security import generate_password_hash
 
 from common_models.admin import AdminSite, Field as F
 from common_models import (
+    count_online,
     User, UserAppActivity, Organization, Region, News,
     Report, Version_report, Ticket, DirUnit, DirProduct, Sections, Message,
 )
@@ -17,20 +18,30 @@ site = AdminSite(
     logout_endpoint="auth.logout",
 )
 
+
+def _news_on_save(obj, creating):
+    """Держим published_at в синхроне с галочкой «Опубликовано»."""
+    from common_models import current_utc_time
+    if getattr(obj, "is_published", False):
+        if not obj.published_at:
+            obj.published_at = current_utc_time()
+    else:
+        obj.published_at = None
+
 # --------------------------------------------------------------------------- #
 #  Основные
 # --------------------------------------------------------------------------- #
 
 site.register(
     User, name="Пользователи", group="Основные", stat_label="Пользователей",
-    list_display=["id", "email", "fio", "organization", "last_active"],
+    list_display=["id", "email", "fio", "organization", "begin_time"],
     list_badges=["is_admin", "is_auditor", "is_approver", "is_reader"],
     search=["email", "fio", "last_name", "first_name", "telephone"],
     fields=[
         F("email", "Email", type="email", required=True),
         F("fio", "ФИО"),
         F("last_name", "Фамилия"), F("first_name", "Имя"), F("patronymic_name", "Отчество"),
-        F("telephone", "Телефон"), F("post", "Должность"), F("type", "Тип"),
+        F("telephone", "Телефон"), F("post", "Должность"),
         F("is_admin", "Администратор", type="bool"),
         F("is_auditor", "Аудитор", type="bool"),
         F("is_approver", "Утверждающий", type="bool"),
@@ -69,14 +80,16 @@ site.register(
     list_display=["id", "title", "created_time", "views_count"],
     list_badges=["is_published", "is_enplans", "is_erespondentn"],
     search=["title", "text"],
+    on_save=_news_on_save,
     fields=[
         F("title", "Заголовок", required=True),
         F("text", "Текст", type="text", rows=8),
-        F("img_name", "Обложка (имя файла)"),
-        F("is_published", "Опубликовано", type="bool"),
-        F("published_at", "Дата публикации", type="datetime"),
+        F("img_name", "Картинка (обложка)", type="file",
+          upload_to="static/img/news", accept="image/*"),
+        F("is_published", "Опубликовано", type="bool", default=True,
+          help="Снимите галочку, чтобы скрыть новость с сайта"),
+        F("is_erespondentn", "Показывать в ErespondentN", type="bool", default=True),
         F("is_enplans", "Показывать в EnPlans", type="bool"),
-        F("is_erespondentn", "Показывать в ErespondentN", type="bool"),
         F("views_count", "Просмотры", type="int"),
     ],
 )
@@ -201,8 +214,7 @@ site.register(
 site.dashboard(
     greeting_attr="first_name",
     stats=["news", "report", "organization", "message"],
-    recent="message",
-    recent_display=["create_time", "text"],
+    online_count=lambda: count_online("erespondentn"),
 )
 
 

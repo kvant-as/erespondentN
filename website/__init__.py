@@ -45,6 +45,8 @@ def create_app():
 
     # common_models.sessions
     app.config['SESSION_TOKEN_COOKIE'] = 'erespondent_session'
+    app.config['SESSION_TOKEN_COOKIE_SECURE'] = os.getenv('SESSION_COOKIE_SECURE', '').lower() in ('1', 'true', 'yes')
+    app.config['SESSION_TIMEOUT_PRIVILEGED'] = timedelta(hours=9)
     app.config['SESSION_TIMEOUT_DEFAULT'] = timedelta(minutes=30)
     app.config['SESSION_PRIVILEGED_ATTRS'] = ('is_admin', 'is_auditor')
     app.config['SESSION_DEFAULT_REDIRECT'] = 'views.profile'
@@ -86,6 +88,9 @@ def create_app():
     login_manager.init_app(app)
     login_manager.login_message = "Пожалуйста, авторизуйтесь для доступа к этой странице."
     login_manager.login_view = "views.login"
+
+    from common_models.sessions import enforce_idle_timeout
+    enforce_idle_timeout(app)
     
     @app.errorhandler(404)
     def page_not_found(e):

@@ -42,14 +42,8 @@ views = Blueprint('views', __name__)
 
 @views.context_processor
 def inject_online_users():
-    def get_online_count():
-        try:
-            five_minutes_ago = current_utc_time() - timedelta(minutes=5)
-            return User.query.filter(User.last_active >= five_minutes_ago).count()
-        except:
-            return 0
-    
-    return dict(online_users_count=get_online_count())
+    from common_models import count_online
+    return dict(online_users_count=count_online(current_app.config.get('APP_NAME')))
 
 def owner_only(f):
     @wraps(f)

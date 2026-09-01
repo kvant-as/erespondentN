@@ -77,10 +77,8 @@ def login():
             if user:
                 if check_password_hash(user.password, password):
                     login_user(user, remember=remember)
-                    
-                    user.last_active = current_utc_time()
-                    db.session.commit()
-
+                    # активность фиксируется в UserAppActivity через сигнал
+                    # user_logged_in (common_models.sessions.enforce_idle_timeout)
                     response = create_login_response(user)
                     flash('Авторизация прошла успешно', 'success')
                     return response
@@ -147,11 +145,8 @@ def code():
             )
             db.session.add(new_user)
             db.session.commit()
-            
+
             remember = True
-            new_user.last_active = current_utc_time()
-            db.session.commit()
-            
             session.pop('temp_user', None)
             session.pop('activation_code', None)
             
