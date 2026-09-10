@@ -337,15 +337,24 @@
             <div class="content-pod-menu">
                 <nav>
                     <ul>
-                        <section>    
-                            <div class="functions_menu {% if current_version.status in ['Отправлен', 'Одобрен'] or section_number == 4 %}disabled{% endif %}">
+                        {% set report_locked = current_version.status in ['Отправлен', 'Одобрен'] %}
+                        <section>
+                            <div class="functions_menu {% if report_locked or section_number == 4 %}disabled{% endif %}">
                                 <li data-action="link_addSection_modal">
                                     <img src="{{ url_for('static', filename='img/icon_new_file.svg')}}" alt="">
                                     <a class="li-title"><span>Добавить</span></a>
                                 </li>
+                                <li id="pod-edit-section-btn" class="pod-row-action disabled">
+                                    <img src="{{ url_for('static', filename='img/icon-edit.svg')}}" alt="">
+                                    <a class="li-title"><span title="Редактировать">Редакт.</span></a>
+                                </li>
+                                <li id="pod-remove-section-btn" class="pod-row-action disabled">
+                                    <img src="{{ url_for('static', filename='img/icon-del.svg')}}" alt="">
+                                    <a class="li-title"><span>Удалить</span></a>
+                                </li>
                             </div>
                             <a class="functions_menu_name">Продукция</a>
-                        </section>           
+                        </section>
 
                         <section>
                             <div class="functions_menu">

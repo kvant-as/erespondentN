@@ -1,7 +1,7 @@
 from decimal import Decimal
 from io import BytesIO
 import os
-from flask import Blueprint, current_app, make_response, render_template, redirect, url_for, flash, request, jsonify, session
+from flask import Blueprint, current_app, make_response, render_template, redirect, url_for, flash, request, jsonify, session, get_flashed_messages
 from flask_login import current_user, login_required
 
 from website.ecp import check_certificate_expiry
@@ -86,7 +86,33 @@ def auditors_only(f):
             return redirect(url_for('views.profile_common'))
         return f(*args, **kwargs)
     return decorated_function
-    
+
+
+def _wants_json():
+    """AJAX-запросы от таблиц (report.js / base.js) присылают этот заголовок.
+    В этом случае действие Добавить/Изменить/Удалить/Копировать отвечает JSON,
+    а не redirect — чтобы страница целиком не перезагружалась, а обновлялась
+    только сама таблица с сохранением позиции прокрутки (как в enPlans)."""
+    return request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
+
+def ajax_aware(f):
+    """Для обычной отправки формы поведение маршрута прежнее (flash + redirect).
+    Для AJAX (заголовок X-Requested-With) redirect отбрасывается, а последнее
+    flash-сообщение возвращается как JSON {success, message} — страница не
+    перезагружается, таблицу обновляет уже сам JS."""
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        resp = f(*args, **kwargs)
+        if not _wants_json():
+            return resp
+        msgs = get_flashed_messages(with_categories=True)
+        category, message = (msgs[-1] if msgs else ('success', 'Готово'))
+        ok = category != 'error'
+        return jsonify({'success': ok, 'message': message}), (200 if ok else 400)
+    return wrapper
+
+
 @views.route('/', methods=['GET'])
 def beginPage():
     user_data = User.query.filter_by().count()
@@ -137,11 +163,10 @@ def test():
 @login_required
 @session_required
 def profile():
-    return render_template('profile.html', 
+    return render_template('profile.html',
                            previous_quarter = get_previous_quarter(),
                            previous_year=get_report_year(),
-                           current_user=current_user, 
-                           accwelcomeModal = True)
+                           current_user=current_user)
 
 
 # @views.route('/delete_message/<int:message_id>', methods=['DELETE'])
@@ -344,9 +369,25 @@ def report_area():
                            user=current_user,
                            organization=organization,
                            version=version,
-                           SentModal = True,
-                           reportAreaInfoModal = True
+                           SentModal = True
                            )
+
+
+@views.route('/reports/partial/rows', methods=['GET'])
+@profile_complete
+@login_required
+@session_required
+def report_area_rows():
+    """Только строки таблицы отчётов — для обновления таблицы без полной
+    перезагрузки страницы после Добавить/Изменить период/Копировать/Удалить."""
+    report = Report.query.filter_by(user_id=current_user.id).order_by(
+        Report.year.desc(),
+        Report.quarter.desc()
+    ).all()
+    for rep in report:
+        rep.versions = Version_report.query.filter_by(report_id=rep.id).all()
+    return render_template('partials/_report_rows.html', report=report)
+
 
 def get_auditor_info_by_user(current_user):
     if not current_user.organization or not current_user.organization.region:
@@ -425,10 +466,40 @@ def report_section(report_type, id):
         current_report=current_report,
         current_version=current_version,
         SentModal = True,
-        reportAreaReportInfoModal = True,
         auditor_info=auditor_info,
         report_type=report_type
     )
+
+
+@views.route('/reports/<string:report_type>/<int:id>/partial/rows', methods=['GET'])
+@profile_complete
+@login_required
+@session_required
+@owner_only
+def report_section_rows(report_type, id):
+    """Только строки таблицы раздела — для обновления таблицы без полной
+    перезагрузки страницы после Добавить/Редактировать/Удалить продукцию."""
+    report_config = {'fuel': 1, 'heat': 2, 'electro': 3}
+    if report_type not in report_config:
+        return render_template('404.html'), 404
+
+    section_number = report_config[report_type]
+    current_version = Version_report.query.filter_by(id=id).first()
+
+    sections = Sections.query.filter_by(
+        id_version=current_version.id,
+        section_number=section_number
+    ).order_by(
+        case(
+            (Sections.code_product.in_(['9001', '9010', '9100']), 1),
+            else_=0
+        ).asc(),
+        desc(Sections.id)
+    ).all()
+    return render_template('partials/_section_rows.html',
+                           sections=sections,
+                           section_number=section_number)
+
 
 @views.route('/reports/report-info/<int:id>', methods=['GET'])
 @profile_complete
@@ -446,7 +517,6 @@ def report_info(id):
         current_report=current_report,
         current_version=current_version,
         SentModal = True,
-        reportAreaReportInfoModal = True,
         auditor_info=auditor_info,
         section_number = 4
     )
@@ -469,8 +539,7 @@ def audit_area(status):
                            region_filter=region_filter,
                            previous_quarter=get_previous_quarter(),
                            previous_year=get_report_year(),
-                           status_reports=status,
-                           auditAreaInfoModal=True)
+                           status_reports=status)
 
 @views.route('/api/audit-data', methods=['GET'])
 @login_required
@@ -571,8 +640,7 @@ def audit_report(id):
         current_user=current_user, 
         current_report=current_report,
         current_version=current_version,
-        tickets=tickets,
-        auditAreaReportInfoModal = True
+        tickets=tickets
     )
 
 
@@ -590,12 +658,47 @@ def news_post(id):
         post=post
     )
 
+NEWS_PER_PAGE = 10
+
+
+def _pager_range(page, total_pages, edge=1, around=1):
+    """Номера страниц для пейджера, None — многоточие."""
+    if total_pages <= 1:
+        return []
+    keep = set(range(1, edge + 1))
+    keep.update(range(total_pages - edge + 1, total_pages + 1))
+    keep.update(range(page - around, page + around + 1))
+    ordered = sorted(p for p in keep if 1 <= p <= total_pages)
+    result, prev = [], 0
+    for p in ordered:
+        if p - prev > 1:
+            result.append(None)
+        result.append(p)
+        prev = p
+    return result
+
+
 @views.route('/news', methods=['GET'])
 def news():
-    all_news = News.query.filter(News.is_erespondentn == True).order_by(News.created_time.desc()).all()
-    return render_template('news.html', 
+    page = request.args.get('page', 1, type=int) or 1
+    if page < 1:
+        page = 1
+
+    base_query = News.query.filter(News.is_erespondentn == True).order_by(News.created_time.desc())
+    total = base_query.count()
+    total_pages = max(1, (total + NEWS_PER_PAGE - 1) // NEWS_PER_PAGE)
+    if page > total_pages:
+        page = total_pages
+
+    all_news = base_query.offset((page - 1) * NEWS_PER_PAGE).limit(NEWS_PER_PAGE).all()
+
+    return render_template('news.html',
         current_user=current_user,
-        all_news=all_news
+        all_news=all_news,
+        page=page,
+        total_pages=total_pages,
+        total_news=total,
+        pager_pages=_pager_range(page, total_pages),
     )
 
 @views.route('/contacts', methods=['GET'])
@@ -607,6 +710,7 @@ def contacts():
 @views.route('/create-report', methods=['POST'])
 @login_required 
 @session_required
+@ajax_aware
 def create_report():
     if request.method == 'POST': 
         year =  parse_int(request.form.get('modal_add_year'))
@@ -683,6 +787,7 @@ def create_report():
 @views.route('/change-period-report', methods=['POST'])
 @login_required 
 @session_required
+@ajax_aware
 def change_period_report():
     if request.method == 'POST':
         id = int(request.form.get('modal_change_report_id'))
@@ -725,6 +830,7 @@ def change_period_report():
 @views.route('/copy-report', methods=['POST'])
 @login_required 
 @session_required
+@ajax_aware
 def copy_report():
     if request.method == 'POST':
         try:
@@ -882,6 +988,7 @@ def copy_report():
 @views.route('/delete-report/<report_id>', methods=['POST'])
 @login_required 
 @session_required
+@ajax_aware
 def delete_report(report_id):
     if request.method == 'POST':
         try:
@@ -927,6 +1034,7 @@ def delete_report(report_id):
 @views.route('/add-section', methods=['POST'])
 @login_required 
 @session_required
+@ajax_aware
 def add_section():
     if request.method == 'POST':
         try:
@@ -995,6 +1103,7 @@ def add_section():
 @views.route('/change-section', methods=['POST'])
 @login_required 
 @session_required
+@ajax_aware
 def change_section():
     if request.method == 'POST':
         try:
@@ -1036,6 +1145,7 @@ def change_section():
 @views.route('/remove_section/<id>', methods=['POST'])
 @login_required 
 @session_required
+@ajax_aware
 def remove_section(id):
     if request.method == 'POST':
         try:

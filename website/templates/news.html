@@ -3,12 +3,12 @@
 {% block content %}
 {{ content.blurback() }}
 <div class="info_page">
-    <div class = "rotation-fromareas">
-        <div class = "rotation-fromareas_info"> 
+    <div class="rotation-fromareas">
+        <div class="rotation-fromareas_info">
             <span>
-                <a class = "back_orbital" href="/">ErespondentN</a>
+                <a class="back_orbital" href="/">ErespondentN</a>
             </span>
-            <span class = "svg-arr"> 
+            <span class="svg-arr">
                 {{ icons.icon_arrow_right() }}
             </span>
             <span>
@@ -16,28 +16,108 @@
             </span>
         </div>
     </div>
+
     <div class="news_cont">
-        <div class="news_grid">
-            {% if all_news %}
-            {% for all_news in all_news %}
-            <a href="/news/{{ all_news.id }}">
-                <div class="latest_news news_item">
-                    <img class="news_img" src="{{ url_for('static', filename='img/news/' + all_news.img_name) }}" alt="news image">
-                    <div class="news_content">
-                        <h3 class="news_title">{{ all_news.title[:65] }}{% if all_news.title|length > 65 %}...{% endif %}</h3>
-                        <p class="news_text">{{ all_news.text[:50] }}{% if all_news.text|length > 50 %}...{% endif %}</p>
+        <header class="news_head">
+            <h1>Новости</h1>
+            <p class="news_head_sub">
+                {% if total_news %}
+                    Всего материалов: {{ total_news }}{% if total_pages > 1 %} · страница {{ page }} из {{ total_pages }}{% endif %}
+                {% else %}
+                    Пока нет опубликованных новостей
+                {% endif %}
+            </p>
+        </header>
+
+        {% if all_news %}
+            {% if page == 1 %}
+                {% set feature = all_news[0] %}
+                {% set rows = all_news[1:] %}
+                <a class="news_feature" href="/news/{{ feature.id }}">
+                    <div class="news_feature_img">
+                        {% if feature.img_name %}
+                            <img src="{{ url_for('static', filename='img/news/' + feature.img_name) }}" alt="{{ feature.title }}" loading="lazy">
+                        {% else %}
+                            {{ icons.icon_news() }}
+                        {% endif %}
                     </div>
-                    {#
-                    <div class = "news_time">
-                        {{ all_news.created_time.strftime('%d-%m-%Y') }}
-                    </div>#}
-                </div>
-            </a>
-            {% endfor %}
+                    <div class="news_feature_body">
+                        <h2 class="news_feature_title">{{ feature.title }}</h2>
+                        <p class="news_feature_sub">{{ feature.text | striptags | truncate(140, True, '…') }}</p>
+                        <div class="news_feature_meta">
+                            {{ feature.created_time | ru_timeago }}{% if feature.views_count %} · {{ feature.views_count }} просм.{% endif %}
+                        </div>
+                    </div>
+                </a>
             {% else %}
-                
+                {% set rows = all_news %}
             {% endif %}
+
+            {% if rows %}
+            <div class="news_list_hl">
+                {% for item in rows %}
+                <a class="news_row" href="/news/{{ item.id }}">
+                    <span class="news_row_title">{{ item.title }}</span>
+                    <span class="news_row_meta">
+                        <span class="news_row_time">{{ item.created_time | ru_timeago }}</span>
+                        {% if item.views_count %}
+                            <span class="news_row_views">{{ item.views_count }} просм.</span>
+                        {% endif %}
+                    </span>
+                </a>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {% if total_pages > 1 %}
+            <nav class="news_pager" aria-label="Навигация по страницам новостей">
+                {% if page > 1 %}
+                    <a class="news_pager_btn news_pager_nav" href="{{ url_for('views.news', page=page-1) }}" aria-label="Предыдущая страница">
+                        <svg viewBox="0 0 16 16" width="15" height="15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M10 4L6 8l4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </a>
+                {% else %}
+                    <span class="news_pager_btn news_pager_nav is-disabled" aria-hidden="true">
+                        <svg viewBox="0 0 16 16" width="15" height="15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M10 4L6 8l4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </span>
+                {% endif %}
+
+                {% for p in pager_pages %}
+                    {% if p is none %}
+                        <span class="news_pager_gap">…</span>
+                    {% elif p == page %}
+                        <span class="news_pager_btn is-current" aria-current="page">{{ p }}</span>
+                    {% else %}
+                        <a class="news_pager_btn" href="{{ url_for('views.news', page=p) }}">{{ p }}</a>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page < total_pages %}
+                    <a class="news_pager_btn news_pager_nav" href="{{ url_for('views.news', page=page+1) }}" aria-label="Следующая страница">
+                        <svg viewBox="0 0 16 16" width="15" height="15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </a>
+                {% else %}
+                    <span class="news_pager_btn news_pager_nav is-disabled" aria-hidden="true">
+                        <svg viewBox="0 0 16 16" width="15" height="15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </span>
+                {% endif %}
+            </nav>
+            {% endif %}
+
+        {% else %}
+        <div class="news_empty">
+            {{ icons.icon_no_file() }}
+            <h3>Новостей пока нет</h3>
+            <p>Здесь будут появляться обновления и объявления системы.</p>
         </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

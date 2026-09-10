@@ -1,0 +1,60 @@
+{# Строки таблицы раздела отчёта. Рендерятся и внутри report_table.html, и
+   отдельно маршрутом /reports/<type>/<id>/partial/rows — для обновления
+   таблицы без полной перезагрузки страницы (см. report.js). #}
+{% for row in sections %}
+<tr class = "section_row" data-id="{{ row.id }}" >
+    <td>
+        <input type = "hidden" name = "id_section" value = "{{ row.id }}" readonly>
+    </td>
+    <td>
+        <input class = "product-name_fuel" type = "text" value = "{{ row.product.NameProduct }}" readonly>
+    </td>
+    <td>
+        <input type = "text" class = "product-cod_fuel" name = "product-cod_fuel" value = "{{ row.product.CodeProduct }}" readonly>
+    </td>
+    <td>
+        <input type = "text" name = "Oked_fuel" value = "{{ row.Oked }}" readonly>
+    </td>
+    <td>
+        <input type = "text" style = "white-space: nowrap; text-align: left;" value = "{{ row.product.unit.NameUnit }}" readonly>
+    </td>
+    <td>
+        <input type = "text" name = "produced_fuel" value = "{{ row.produced }}" readonly>
+    </td>
+    <td>
+        <input type = "text" name = "Consumed_Quota_fuel" value = "{{ row.Consumed_Quota }}" readonly>
+    </td>
+    <td>
+        <input type = "text" name = "Consumed_Fact_fuel" value = "{{ row.Consumed_Fact }}" readonly>
+    </td>
+    <td>
+        <input type = "text" name = "Consumed_Total_Quota_fuel" value = "{{ row.Consumed_Total_Quota }}" readonly>
+    </td>
+    <td>
+        <input type = "text" name = "Consumed_Total_Fact_fuel" value = "{{ row.Consumed_Total_Fact }}" readonly>
+    </td>
+    {% if row.total_differents is not none %}
+        {% if row.total_differents <= 0.0 %}
+            <td class="difference-cell difference-negative">
+                {% if row.total_differents < 0.0 %}
+                    <span class="difference-arrow">↓</span>
+                {% endif %}
+                <span class="difference-value">{{ row.total_differents }}</span>
+            </td>
+        {% else %}
+            <td class="difference-cell difference-positive">
+                <span class="difference-arrow">↑</span>
+                <span class="difference-value">{{ row.total_differents }}</span>
+            </td>
+        {% endif %}
+    {% else %}
+        <td class="difference-cell difference-empty">
+            <span class="difference-value">—</span>
+        </td>
+    {% endif %}
+    <td>
+        <input type = "text" name = "note_fuel" value = "{{ row.note }}" readonly>
+    </td>
+    <td colspan="2"></td>
+</tr>
+{% endfor %}

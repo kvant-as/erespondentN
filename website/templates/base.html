@@ -267,14 +267,25 @@
     {% endblock %}
 
     </main>
-    {% if reportAreaInfoModal %}
-    <div id="system-update-modal-reportArea" class="modal" style="display: none;">
+
+    {# Единое информационное окно. Раньше было пять отдельных info-modal-content
+       (по страницам), теперь один набор слайдов, который показывается один раз
+       на пользователя. Какие слайды видны — зависит от роли:
+         respondent  → слайды для заполняющих отчёты (data-role="respondent")
+         auditor     → слайды для проверяющих (data-role="auditor")
+         admin       → все слайды
+       Показ больше не привязан к незаполненному профилю (см. cookie.js). #}
+    {% if current_user.is_authenticated %}
+    {% set _info_role = 'admin' if current_user.is_admin else ('auditor' if (current_user.is_auditor or current_user.is_reader) else 'respondent') %}
+    <div id="system-info-modal" class="modal" style="display: none;" data-user-role="{{ _info_role }}">
         <div class="info-modal-content">
             {{ icons.icon_close() }}
             <div class="info-modal-content">
                 <div class="modal-slides-container">
-                    <div class="modal-slide active">
-                        <div class="slide-counter">1/2</div>
+
+                    {# ---------- Слайды для респондентов ---------- #}
+                    <div class="modal-slide active" data-role="respondent">
+                        <div class="slide-counter"></div>
                         <div class="slide-layout">
                             <div class="slide-info">
                                 <h3>Работать с отчетами теперь удобнее</h3>
@@ -287,8 +298,8 @@
                             </div>
                         </div>
                     </div>
-                    <div class="modal-slide">
-                        <div class="slide-counter">2/2</div>
+                    <div class="modal-slide" data-role="respondent">
+                        <div class="slide-counter"></div>
                         <div class="slide-layout">
                             <div class="slide-info">
                                 <h3>Видео и новые возможности</h3>
@@ -306,27 +317,8 @@
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
-            <div class="slides-navigation-vertical">
-              <button class="slide-prev-vertical" aria-label="Предыдущий слайд">
-                  {{ icons.icon_prev_slide() }}
-              </button>
-              <button class="slide-next-vertical" aria-label="Следующий слайд">
-                  {{ icons.icon_next_slide() }}
-              </button>
-          </div>
-        </div>
-    </div>
-    {% endif %}
-    {% if reportAreaReportInfoModal %}
-    <div id="system-update-modal-reportArea-report" class="modal" style="display: none;">
-        <div class="info-modal-content">
-            {{ icons.icon_close() }}
-            <div class="info-modal-content">
-                <div class="modal-slides-container">
-                    <div class="modal-slide active">
-                        <div class="slide-counter">1/3</div>
+                    <div class="modal-slide" data-role="respondent">
+                        <div class="slide-counter"></div>
                         <div class="slide-layout">
                             <div class="slide-info">
                                 <h3>Квитанции отчета</h3>
@@ -340,18 +332,16 @@
                             </div>
                         </div>
                     </div>
-                    <div class="modal-slide">
-                        <div class="slide-counter">2/3</div>
+                    <div class="modal-slide" data-role="respondent">
+                        <div class="slide-counter"></div>
                         <div class="slide-layout">
                             <div class="slide-info">
                                 <h3>Новая форма</h3>
                                 <p>С 1-го квартала 2026 года вводится в действие обновленная форма «Сведения о нормах расхода и (или) предельных уровнях потребления топливно-энергетических ресурсов».</p>
                                 <p>Что изменилось:</p>
-                                
                                 <ul>
-                                    <li>Удален код строки 9100 «Всего потребление (сумма строк 9001, 9010)»;</ol>
-                                    <li>Добавлен расширенный перечень видов продукции.</ol>
-                                
+                                    <li>Удален код строки 9100 «Всего потребление (сумма строк 9001, 9010)»;</li>
+                                    <li>Добавлен расширенный перечень видов продукции.</li>
                                 </ul>
                             </div>
                             <div class="slide-image">
@@ -361,43 +351,69 @@
                             </div>
                         </div>
                     </div>
-                    <div class="modal-slide">
-                        <div class="slide-counter">3/3</div>
+                    <div class="modal-slide" data-role="respondent">
+                        <div class="slide-counter"></div>
                         <div class="slide-layout">
                             <div class="slide-info">
                                 <h3>Обновленная документация</h3>
-                                <p>В обновленной <a class = "instruction-link" href="/FAQ#faq8">документации</a> детально рассмотрены все аспекты заполнения таблиц, а материал изложен в понятной для пользователей форме.</p>
+                                <p>В обновленной <a class="instruction-link" href="/FAQ#faq8">документации</a> детально рассмотрены все аспекты заполнения таблиц, а материал изложен в понятной для пользователей форме.</p>
                             </div>
                             <div class="slide-image">
                                 <div class="image-placeholder">
-                                   <a href="/FAQ#faq8">
-                                        <img style = "transform: scale(1.2);" src="{{ url_for('static', filename='img/info-news/info-report-2.png') }}" alt="Новые функции">
+                                    <a href="/FAQ#faq8">
+                                        <img style="transform: scale(1.2);" src="{{ url_for('static', filename='img/info-news/info-report-2.png') }}" alt="Новые функции">
                                     </a>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
-            <div class="slides-navigation-vertical">
-              <button class="slide-prev-vertical" aria-label="Предыдущий слайд">
-                  {{ icons.icon_prev_slide() }}
-              </button>
-              <button class="slide-next-vertical" aria-label="Следующий слайд">
-                  {{ icons.icon_next_slide() }}
-              </button>
-          </div>
-        </div>
-    </div>
-    {% endif %}
-    {% if auditAreaInfoModal %}
-    <div id="system-update-modal-auditArea" class="modal" style="display: none;">
-        <div class="info-modal-content">
-            {{ icons.icon_close() }}
-            <div class="info-modal-content">
-                <div class="modal-slides-container">
-                    <div class="modal-slide active">
-                        <div class="slide-counter">1/2</div>
+                    <div class="modal-slide" data-role="respondent">
+                        <div class="slide-counter"></div>
+                        <div class="slide-layout">
+                            <div class="slide-info">
+                                <h3>Добро пожаловать</h3>
+                                <p>Для доступа к заполнению отчетов, пожалуйста, заполните свой профиль: укажите персональные данные и выберите организацию. Для этого нажмите кнопку <strong>«Параметры профиля»</strong>.</p>
+                            </div>
+                            <div class="slide-image">
+                                <div class="image-placeholder">
+                                    <img src="{{ url_for('static', filename='img/info-news/welcome-slide.png')}}" alt="welcome">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-slide" data-role="respondent">
+                        <div class="slide-counter"></div>
+                        <div class="slide-layout">
+                            <div class="slide-info">
+                                <h3>Заполните свой профиль</h3>
+                                <p>Укажите персональные данные респондента заполняющего отчеты.</p>
+                            </div>
+                            <div class="slide-image">
+                                <div class="image-placeholder">
+                                    <img src="{{ url_for('static', filename='img/info-news/profile-slide-1.png')}}" alt="welcome">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-slide" data-role="respondent">
+                        <div class="slide-counter"></div>
+                        <div class="slide-layout">
+                            <div class="slide-info">
+                                <h3>Выберите организацию</h3>
+                                <p>Нажмите на иконку "🔎" и в открывшемся окне найдите свою организацию через поиск, кликните по ней.</p>
+                                <p>Не забудьте сохранить данные кликнув на <strong>«Применить изменения»</strong>.</p>
+                            </div>
+                            <div class="slide-image">
+                                <div class="image-placeholder">
+                                    <img style="transform: scale(1.3);" src="{{ url_for('static', filename='img/info-news/profile-slide-2.png')}}" alt="welcome">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {# ---------- Слайды для проверяющих (аудитор / читатель) ---------- #}
+                    <div class="modal-slide" data-role="auditor">
+                        <div class="slide-counter"></div>
                         <div class="slide-layout">
                             <div class="slide-info">
                                 <h3>Работать с отчетами теперь удобнее</h3>
@@ -410,12 +426,12 @@
                             </div>
                         </div>
                     </div>
-                    <div class="modal-slide">
-                        <div class="slide-counter">2/2</div>
+                    <div class="modal-slide" data-role="auditor">
+                        <div class="slide-counter"></div>
                         <div class="slide-layout">
                             <div class="slide-info">
                                 <h3>Новые возможности</h3>
-                                <p>Мы обновили <a class = "instruction-link" href = '/FAQ#faq10'>документацию</a>, чтобы вы быстрее освоились в программе, подробно разобрали каждый этап работы, добавили наглядные примеры и пояснения, которые помогут вам уверенно пользоваться всеми функциями.</p>
+                                <p>Мы обновили <a class="instruction-link" href="/FAQ#faq10">документацию</a>, чтобы вы быстрее освоились в программе, подробно разобрали каждый этап работы, добавили наглядные примеры и пояснения, которые помогут вам уверенно пользоваться всеми функциями.</p>
                             </div>
                             <div class="slide-image">
                                 <div class="image-placeholder">
@@ -424,37 +440,16 @@
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
-            <div class="slides-navigation-vertical">
-              <button class="slide-prev-vertical" aria-label="Предыдущий слайд">
-                  {{ icons.icon_prev_slide() }}
-              </button>
-              <button class="slide-next-vertical" aria-label="Следующий слайд">
-                  {{ icons.icon_next_slide() }}
-              </button>
-          </div>
-        </div>
-    </div>
-    {% endif %}
-    {% if auditAreaReportInfoModal %}
-    <div id="system-update-modal-auditArea-report" class="modal" style="display: none;">
-        <div class="info-modal-content">
-            {{ icons.icon_close() }}
-            <div class="info-modal-content">
-                <div class="modal-slides-container">
-                    <div class="modal-slide active">
-                        <div class="slide-counter">1/2</div>
+                    <div class="modal-slide" data-role="auditor">
+                        <div class="slide-counter"></div>
                         <div class="slide-layout">
                             <div class="slide-info">
                                 <h3>Новая форма</h3>
                                 <p>С 1-го квартала 2026 года вводится в действие обновленная форма «Сведения о нормах расхода и (или) предельных уровнях потребления топливно-энергетических ресурсов».</p>
                                 <p>Что изменилось:</p>
-                                
                                 <ul>
-                                    <li>Удален код строки 9100 «Всего потребление (сумма строк 9001, 9010)»;</ol>
-                                    <li>Добавлен расширенный перечень видов продукции.</ol>
-                                
+                                    <li>Удален код строки 9100 «Всего потребление (сумма строк 9001, 9010)»;</li>
+                                    <li>Добавлен расширенный перечень видов продукции.</li>
                                 </ul>
                             </div>
                             <div class="slide-image">
@@ -464,12 +459,12 @@
                             </div>
                         </div>
                     </div>
-                    <div class="modal-slide">
-                        <div class="slide-counter">2/2</div>
+                    <div class="modal-slide" data-role="auditor">
+                        <div class="slide-counter"></div>
                         <div class="slide-layout">
                             <div class="slide-info">
                                 <h3>Обновленная работа с квитанциями</h3>
-                                <p>Улучшенная навигация: квитанции перенесены вниз отчета, а сводка по отчету вынесена в отдельный информационный блок.</p>   
+                                <p>Улучшенная навигация: квитанции перенесены вниз отчета, а сводка по отчету вынесена в отдельный информационный блок.</p>
                             </div>
                             <div class="slide-image">
                                 <div class="image-placeholder">
@@ -478,83 +473,21 @@
                             </div>
                         </div>
                     </div>
+
                 </div>
             </div>
             <div class="slides-navigation-vertical">
-              <button class="slide-prev-vertical" aria-label="Предыдущий слайд">
-                  {{ icons.icon_prev_slide() }}
-              </button>
-              <button class="slide-next-vertical" aria-label="Следующий слайд">
-                {{ icons.icon_next_slide() }}
-              </button>
-          </div>
-        </div>
-    </div>
-    {% endif %}
-    {% if accwelcomeModal and current_user.organization_id == None %}
-    <div id="system-welcome-modal-acc" class="modal" style="display: none;">
-        <div class="info-modal-content">
-            {{ icons.icon_close() }}
-            <div class="info-modal-content">
-                <div class="modal-slides-container">
-                    <div class="modal-slide active">
-                        <div class="slide-counter">1/3</div>
-                        <div class="slide-layout">
-                            <div class="slide-info">
-                                <h3>Добро пожаловать</h3>
-                                <p>Для доступа к заполнению отчетов, пожалуйста, заполните свой профиль: укажите персональные данные и выберите организацию. Для этого нажмите кнопку <strong>«Параметры профиля»</strong>.</p>
-                            </div>
-                            <div class="slide-image">
-                                <div class="image-placeholder">
-                                    <img src="{{ url_for('static', filename='img/info-news/welcome-slide.png')}}" alt="welcome">
-                                </div>
-                            </div>
-                        </div>
-                    </div>  
-
-                    <div class="modal-slide">
-                        <div class="slide-counter">2/3</div>
-                        <div class="slide-layout">
-                            <div class="slide-info">
-                                <h3>Заполните свой профиль</h3>
-                                <p>Укажите персональные данные респондента заполняющего отчеты.</p>
-                            </div>
-                            <div class="slide-image">
-                                <div class="image-placeholder">
-                                    <img src="{{ url_for('static', filename='img/info-news/profile-slide-1.png')}}" alt="welcome">
-                                </div>
-                            </div>
-                        </div>
-                    </div>  
-                    <div class="modal-slide">
-                        <div class="slide-counter">3/3</div>
-                        <div class="slide-layout">
-                            <div class="slide-info">
-                                <h3>Выберите организацию</h3>
-                                <p>Нажмите на иконку "🔎" и в открывшемся окне найдите свою организацию через поиск, кликните по ней. </p> 
-                                <p>Не забудьте сохранить данные кликнув на <strong>«Применить изменения»</strong>.</p>
-                            </div>
-                            <div class="slide-image">
-                                <div class="image-placeholder">
-                                    <img  style = "transform: scale(1.3);" src="{{ url_for('static', filename='img/info-news/profile-slide-2.png')}}" alt="welcome">
-                                </div>
-                            </div>
-                        </div>
-                    </div>  
-
-                    <div class="slides-navigation-vertical">
-                        <button class="slide-prev-vertical" aria-label="Предыдущий слайд">
-                            {{ icons.icon_prev_slide() }}
-                        </button>
-                        <button class="slide-next-vertical" aria-label="Следующий слайд">
-                            {{ icons.icon_next_slide() }}
-                        </button>
-                    </div>
-                </div>
+                <button class="slide-prev-vertical" aria-label="Предыдущий слайд">
+                    {{ icons.icon_prev_slide() }}
+                </button>
+                <button class="slide-next-vertical" aria-label="Следующий слайд">
+                    {{ icons.icon_next_slide() }}
+                </button>
             </div>
         </div>
     </div>
     {% endif %}
+
     <div id="cookie-consent-banner" class="cookie-banner" style="display: none;">
         <div class="cookie-banner-content">
             <div class="cookie-banner-text">

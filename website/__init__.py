@@ -1,5 +1,5 @@
 import os
-from datetime import timedelta
+from datetime import datetime, timedelta
 from importlib.resources import files
 
 from flask import Flask, redirect, render_template, request, url_for
@@ -109,6 +109,42 @@ def create_app():
             10: 'Октября', 11: 'Ноября', 12: 'Декабря'
         }
         return f"{date.day} {months[date.month]} {date.year}"
+
+    @app.template_filter('ru_timeago')
+    def ru_timeago(date):
+        """Относительное время по-русски: «3 часа назад», «2 дня назад».
+        Старше недели — обычная дата."""
+        if not date:
+            return ''
+
+        def plural(n, one, few, many):
+            n = abs(n) % 100
+            if 11 <= n <= 14:
+                return many
+            n %= 10
+            if n == 1:
+                return one
+            if 2 <= n <= 4:
+                return few
+            return many
+
+        delta = datetime.utcnow() - date
+        seconds = delta.total_seconds()
+        if seconds < 0:
+            seconds = 0
+
+        if seconds < 60:
+            return 'только что'
+        minutes = int(seconds // 60)
+        if minutes < 60:
+            return f"{minutes} {plural(minutes, 'минуту', 'минуты', 'минут')} назад"
+        hours = int(seconds // 3600)
+        if hours < 24:
+            return f"{hours} {plural(hours, 'час', 'часа', 'часов')} назад"
+        days = int(seconds // 86400)
+        if days < 7:
+            return f"{days} {plural(days, 'день', 'дня', 'дней')} назад"
+        return ru_date(date)
  
     common_templates = str(files('common_models') / 'templates')
 
