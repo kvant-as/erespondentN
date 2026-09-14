@@ -66,11 +66,13 @@ def create_app():
     from .routes.auth import auth
     from .routes.dbs import dbs
     from .routes.api import api
+    from .routes.admin_messages import admin_messages_bp
 
     app.register_blueprint(views, url_prefix='/')
     app.register_blueprint(auth, url_prefix='/')
     app.register_blueprint(dbs, url_prefix='/')
     app.register_blueprint(api, url_prefix='/api')
+    app.register_blueprint(admin_messages_bp, url_prefix='/admin/messages')
 
     # schema is managed by Alembic (common_models/migrations); run `flask db upgrade`
 

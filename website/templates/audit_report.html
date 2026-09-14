@@ -180,15 +180,15 @@
                             {% if row.total_differents is not none %}
                                 {% if row.total_differents <= 0.0 %}
                                     <td class="difference-cell difference-negative">
+                                        <span class="difference-value">{{ row.total_differents }}</span>
                                         {% if row.total_differents < 0.0 %}
                                             <span class="difference-arrow">↓</span>
                                         {% endif %}
-                                        <span class="difference-value">{{ row.total_differents }}</span>
                                     </td>
                                 {% else %}
                                     <td class="difference-cell difference-positive">
-                                        <span class="difference-arrow">↑</span>
                                         <span class="difference-value">{{ row.total_differents }}</span>
+                                        <span class="difference-arrow">↑</span>
                                     </td>
                                 {% endif %}
                             {% else %}
@@ -303,15 +303,15 @@
                             {% if row.total_differents is not none %}
                                 {% if row.total_differents <= 0.0 %}
                                     <td class="difference-cell difference-negative">
+                                        <span class="difference-value">{{ row.total_differents }}</span>
                                         {% if row.total_differents < 0.0 %}
                                             <span class="difference-arrow">↓</span>
                                         {% endif %}
-                                        <span class="difference-value">{{ row.total_differents }}</span>
                                     </td>
                                 {% else %}
                                     <td class="difference-cell difference-positive">
-                                        <span class="difference-arrow">↑</span>
                                         <span class="difference-value">{{ row.total_differents }}</span>
+                                        <span class="difference-arrow">↑</span>
                                     </td>
                                 {% endif %}
                             {% else %}
@@ -386,15 +386,15 @@
                             {% if row.total_differents is not none %}
                                 {% if row.total_differents <= 0.0 %}
                                     <td class="difference-cell difference-negative">
+                                        <span class="difference-value">{{ row.total_differents }}</span>
                                         {% if row.total_differents < 0.0 %}
                                             <span class="difference-arrow">↓</span>
                                         {% endif %}
-                                        <span class="difference-value">{{ row.total_differents }}</span>
                                     </td>
                                 {% else %}
                                     <td class="difference-cell difference-positive">
-                                        <span class="difference-arrow">↑</span>
                                         <span class="difference-value">{{ row.total_differents }}</span>
+                                        <span class="difference-arrow">↑</span>
                                     </td>
                                 {% endif %}
                             {% else %}

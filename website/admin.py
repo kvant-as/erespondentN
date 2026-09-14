@@ -28,6 +28,62 @@ def _news_on_save(obj, creating):
     else:
         obj.published_at = None
 
+
+def _admin_message_rows():
+    """Пользователи, писавшие администратору (Message.to_admin=True) —
+    сгруппированы в «диалоги» для панели на главной странице админки.
+    Сама переписка/ответ — на отдельной странице (routes/admin_messages.py),
+    здесь только сводка: последнее сообщение + количество непрочитанных."""
+    from flask import url_for
+    from common_models import db
+
+    sender_ids = [
+        row[0] for row in
+        db.session.query(Message.sender_id).filter(Message.to_admin == True).distinct().all()
+        if row[0]
+    ]
+
+    entries = []
+    for uid in sender_ids:
+        user = User.query.get(uid)
+        if not user:
+            continue
+        last = (
+            Message.query.filter(
+                db.or_(
+                    db.and_(Message.sender_id == uid, Message.to_admin == True),
+                    db.and_(Message.recipient_id == uid, Message.sender_id.isnot(None)),
+                )
+            )
+            .order_by(Message.create_time.desc())
+            .first()
+        )
+        if not last:
+            continue
+        unread = Message.query.filter_by(sender_id=uid, to_admin=True, is_read=False).count()
+        entries.append((user, last, unread))
+
+    from datetime import datetime
+    entries.sort(key=lambda e: e[1].create_time or datetime.min, reverse=True)
+
+    rows = []
+    for user, last, unread in entries[:12]:
+        preview = last.text or ''
+        if len(preview) > 90:
+            preview = preview[:90].rstrip() + '…'
+        full = f"{user.last_name or ''} {user.first_name or ''}".strip()
+        name = user.fio or full or user.email or f"Пользователь №{user.id}"
+        meta = f"{unread} новых" if unread else (
+            last.create_time.strftime("%d.%m %H:%M") if last.create_time else ""
+        )
+        rows.append({
+            "title": name,
+            "subtitle": preview,
+            "meta": meta,
+            "url": url_for("admin_messages.thread", user_id=user.id),
+        })
+    return rows
+
 # --------------------------------------------------------------------------- #
 #  Основные
 # --------------------------------------------------------------------------- #
@@ -215,6 +271,13 @@ site.dashboard(
     greeting_attr="first_name",
     stats=["news", "report", "organization", "message"],
     online_count=lambda: count_online("erespondentn"),
+    panels=[
+        {
+            "title": "Сообщения администратору",
+            "rows": _admin_message_rows,
+            "empty": "Открытых обращений нет",
+        },
+    ],
 )
 
 

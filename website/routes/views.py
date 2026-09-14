@@ -235,72 +235,9 @@ def profile():
 #     count = Message.query.filter_by(recipient_id=current_user.id).count()
 #     return jsonify({'count': count})
 
-@views.route('/reply_to_message/<int:message_id>', methods=['POST'])
-@login_required
-def reply_to_message(message_id):
-    try:
-        if current_user.is_admin == False:
-            return jsonify({
-                'success': False, 
-                'error': 'Только администраторы могут отвечать на сообщения'
-            }), 403
-        
-        original_message = Message.query.get_or_404(message_id)
-        
-        if original_message.sender_id == current_user.id:
-            return jsonify({
-                'success': False, 
-                'error': 'Нельзя отвечать на собственное сообщение'
-            }), 400
-        
-        data = request.get_json()
-        reply_text = data.get('text', '').strip()
-        
-        if not reply_text:
-            return jsonify({
-                'success': False, 
-                'error': 'Текст ответа не может быть пустым'
-            }), 400
-        
-        recipient_id = None
-        
-        if original_message.sender_id:
-            recipient = User.query.get(original_message.sender_id)
-        elif original_message.recipient_id and original_message.recipient_id != current_user.id:
-            recipient = User.query.get(original_message.recipient_id)
-        
-        if not recipient:
-            return jsonify({
-                'success': False, 
-                'error': 'Не удалось определить получателя ответа'
-            }), 400
-        
-        reply_message = Message(
-            sender_id=current_user.id,
-            recipient_id=recipient.id,
-            text=reply_text
-        )
-        
-        db.session.add(reply_message)
-        db.session.commit()
-        try:
-            send_email(reply_text, recipient.email, 'notification')
-        except Exception as e:
-            views.logger.error(f"Ошибка отправки email: {str(e)}")
-        
-        return jsonify({
-            'success': True,
-            'message': 'Ответ успешно отправлен',
-            'refresh': False
-        })
-        
-    except Exception as e:
-        db.session.rollback()
-        views.logger.error(f'Error replying to message: {str(e)}')
-        return jsonify({
-            'success': False, 
-            'error': 'Произошла ошибка при отправке ответа'
-        }), 500
+# /reply_to_message — старый способ ответа администратора на обращения
+# (форма прямо на /profile) удалён: переписка с пользователями теперь
+# ведётся в админ-панели, см. routes/admin_messages.py.
 
 @views.route('/profile/common', methods=['GET'])
 @login_required

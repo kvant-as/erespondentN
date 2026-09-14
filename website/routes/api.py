@@ -169,21 +169,15 @@ def download_export(task_id):
 @login_required
 def get_messages_api():
     try:
-        if current_user.is_admin:
-            messages = Message.query.filter(
-                (Message.to_admin == True) | (Message.recipient_id == current_user.id)
-            ).order_by(Message.id.desc()).all()
-        else:
-            messages = Message.query.filter_by(recipient_id=current_user.id).order_by(Message.id.desc()).all()
+        # Общий поток обращений к администратору (to_admin=True) сюда больше
+        # не попадает — переписка с пользователями ведётся в админ-панели
+        # (см. routes/admin_messages.py). Здесь, как и для обычных
+        # пользователей, только личный "почтовый ящик" — сообщения,
+        # адресованные лично этому пользователю.
+        messages = Message.query.filter_by(recipient_id=current_user.id).order_by(Message.id.desc()).all()
         
         messages_data = []
         for msg in messages:
-            can_reply = False
-            if current_user.is_admin and msg.sender_id != current_user.id and msg.sender_id is not None:
-                can_reply = True
-            elif current_user.is_admin and msg.sender_id == current_user.id and msg.recipient_id is not None:
-                can_reply = True
-            
             sender_info = {}
             if msg.sender:
                 sender_info = {
@@ -192,7 +186,7 @@ def get_messages_api():
                     'telephone': msg.sender.telephone,
                     'is_admin': msg.sender.is_admin
                 }
-            
+
             messages_data.append({
                 'id': msg.id,
                 'create_time': msg.create_time.strftime('%d.%m.%Y %H:%M'),
@@ -203,7 +197,6 @@ def get_messages_api():
                 'is_read': msg.is_read,
                 'read_time': msg.read_time.strftime('%d.%m.%Y %H:%M') if msg.read_time else None,
                 'to_admin': msg.to_admin,
-                'can_reply': can_reply
             })
         
         return jsonify({
@@ -250,31 +243,7 @@ def mark_all_read_api():
             'error': 'Ошибка при отметке сообщений как прочитанных'
         }), 500
         
-@api.route('/mark_read/<int:message_id>', methods=['POST'])
-@login_required
-def mark_read_api(message_id):
-    try:
-        if current_user.is_admin == False:
-            return jsonify({
-                'success': False,
-                'error': 'Только администратор может отмечать сообщения как прочитанные'
-            }), 403
-        
-        msg = Message.query.get_or_404(message_id)
-        
-        msg.is_read = True
-        msg.read_time = current_utc_time()
-        db.session.commit()
-        
-        return jsonify({
-            'success': True,
-            'message': 'Сообщение отмечено как прочитанное'
-        })
-        
-    except Exception as e:
-        db.session.rollback()
-        current_app.logger.error(f"Ошибка при отметке сообщения как прочитанного: {str(e)}")
-        return jsonify({
-            'success': False,
-            'error': 'Ошибка при отметке сообщения как прочитанного'
-        }), 500
+# /api/mark_read/<id> — старая отметка "прочитано" для админа (кнопка на
+# /profile) удалена вместе с формой ответа: непрочитанные обращения к
+# администратору теперь отмечаются прочитанными при открытии переписки в
+# админ-панели, см. routes/admin_messages.py.
