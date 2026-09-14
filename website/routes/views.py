@@ -1,7 +1,7 @@
 from decimal import Decimal
 from io import BytesIO
 import os
-from flask import Blueprint, current_app, make_response, render_template, redirect, url_for, flash, request, jsonify, session
+from flask import Blueprint, current_app, make_response, render_template, redirect, url_for, flash, request, jsonify, session, get_flashed_messages
 from flask_login import current_user, login_required
 
 from website.ecp import check_certificate_expiry
@@ -32,7 +32,7 @@ from sqlalchemy import asc, case, desc
 from functools import wraps
 
 from datetime import datetime, timedelta
-from ..time import current_utc_time, get_previous_quarter, get_report_year
+from common_models.timeutils import current_utc_time, get_previous_quarter, get_report_year
 
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfbase.ttfonts import TTFont
@@ -42,14 +42,8 @@ views = Blueprint('views', __name__)
 
 @views.context_processor
 def inject_online_users():
-    def get_online_count():
-        try:
-            five_minutes_ago = current_utc_time() - timedelta(minutes=5)
-            return User.query.filter(User.last_active >= five_minutes_ago).count()
-        except:
-            return 0
-    
-    return dict(online_users_count=get_online_count())
+    from common_models import count_online
+    return dict(online_users_count=count_online(current_app.config.get('APP_NAME')))
 
 def owner_only(f):
     @wraps(f)
@@ -60,7 +54,7 @@ def owner_only(f):
             flash('Версия отчета не найдена', 'error')
             return redirect(url_for('views.report_area', user=current_user))
         report = version.report
-        if report.user_id != current_user.id and current_user.type != 'Администратор' and current_user.type != 'Аудитор':
+        if report.user_id != current_user.id and current_user.is_admin == False and current_user.is_auditor == False:
             flash('Недостаточно прав для доступа к этому отчёту', 'error')
             return redirect(url_for('views.report_area', user=current_user))
         return f(*args, **kwargs)
@@ -73,10 +67,10 @@ def profile_complete(f):
             flash('Требуется авторизация', 'error')
             return redirect(url_for('views.login'))  
           
-        if not current_user.fio or not current_user.telephone or not current_user.organization_id:
+        if not current_user.last_name or not current_user.first_name or not current_user.telephone or not current_user.organization_id:
             flash('Пожалуйста, заполните полностью свой профиль', 'error')
             return redirect(url_for('views.profile_common'))
-        
+                
         return f(*args, **kwargs)
     
     return decorated_function
@@ -84,42 +78,48 @@ def profile_complete(f):
 def auditors_only(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if current_user.type not in ['Аудитор', 'Администратор', 'Смотрящий' ]:
-            flash('У вас нет прав доступа', 'error')
+        if not (current_user.is_admin or current_user.is_auditor or current_user.is_reader):
+            flash('Недостаточно прав для доступа', 'error')
             return redirect(url_for('views.profile_common'))
-        if not current_user.fio or not current_user.telephone:
+        if not current_user.last_name or not current_user.first_name or not current_user.telephone:
             flash('Пожалуйста, заполните ФИО и номер телефона в профиле', 'error')
             return redirect(url_for('views.profile_common'))
         return f(*args, **kwargs)
     return decorated_function
 
-def respondent_only(f):
+
+def _wants_json():
+    """AJAX-запросы от таблиц (report.js / base.js) присылают этот заголовок.
+    В этом случае действие Добавить/Изменить/Удалить/Копировать отвечает JSON,
+    а не redirect — чтобы страница целиком не перезагружалась, а обновлялась
+    только сама таблица с сохранением позиции прокрутки (как в enPlans)."""
+    return request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
+
+def ajax_aware(f):
+    """Для обычной отправки формы поведение маршрута прежнее (flash + redirect).
+    Для AJAX (заголовок X-Requested-With) redirect отбрасывается, а последнее
+    flash-сообщение возвращается как JSON {success, message} — страница не
+    перезагружается, таблицу обновляет уже сам JS."""
     @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if current_user.type not in ['Респондент', 'Администратор' ]:
-            flash('У вас нет прав доступа', 'error')
-            return redirect(url_for('views.profile_common'))
-        if not current_user.fio or not current_user.telephone:
-            flash('Пожалуйста, заполните ФИО и номер телефона в профиле', 'error')
-            return redirect(url_for('views.profile_common'))
-        return f(*args, **kwargs)
-    return decorated_function
+    def wrapper(*args, **kwargs):
+        resp = f(*args, **kwargs)
+        if not _wants_json():
+            return resp
+        msgs = get_flashed_messages(with_categories=True)
+        category, message = (msgs[-1] if msgs else ('success', 'Готово'))
+        ok = category != 'error'
+        return jsonify({'success': ok, 'message': message}), (200 if ok else 400)
+    return wrapper
 
-def get_online_users_count():
-    try:
-        five_minutes_ago = current_utc_time() - timedelta(minutes=5)
-        count = User.query.filter(User.last_active >= five_minutes_ago).count()
-        return count
-    except Exception as e:
-        current_app.logger.error(f"Error counting online users: {e}")
-        return 0
-    
+
 @views.route('/', methods=['GET'])
 def beginPage():
-    user_data = User.query.filter_by(type="Респондент").count()
+    user_data = User.query.filter_by().count()
     organization_data = Organization.query.count()
     report_data = Report.query.count()
-    latest_news = News.query.order_by(desc(News.id)).first()
+    latest_news = News.query.filter(News.is_erespondentn == True).order_by(desc(News.id)).first()  
+    
     regions = Region.query.order_by(Region.number).all()
     return render_template('begin_page.html', 
                            latest_news=latest_news,
@@ -163,11 +163,10 @@ def test():
 @login_required
 @session_required
 def profile():
-    return render_template('profile.html', 
+    return render_template('profile.html',
                            previous_quarter = get_previous_quarter(),
                            previous_year=get_report_year(),
-                           current_user=current_user, 
-                           accwelcomeModal = True)
+                           current_user=current_user)
 
 
 # @views.route('/delete_message/<int:message_id>', methods=['DELETE'])
@@ -236,72 +235,9 @@ def profile():
 #     count = Message.query.filter_by(recipient_id=current_user.id).count()
 #     return jsonify({'count': count})
 
-@views.route('/reply_to_message/<int:message_id>', methods=['POST'])
-@login_required
-def reply_to_message(message_id):
-    try:
-        if current_user.type != "Администратор":
-            return jsonify({
-                'success': False, 
-                'error': 'Только администраторы могут отвечать на сообщения'
-            }), 403
-        
-        original_message = Message.query.get_or_404(message_id)
-        
-        if original_message.sender_id == current_user.id:
-            return jsonify({
-                'success': False, 
-                'error': 'Нельзя отвечать на собственное сообщение'
-            }), 400
-        
-        data = request.get_json()
-        reply_text = data.get('text', '').strip()
-        
-        if not reply_text:
-            return jsonify({
-                'success': False, 
-                'error': 'Текст ответа не может быть пустым'
-            }), 400
-        
-        recipient_id = None
-        
-        if original_message.sender_id:
-            recipient = User.query.get(original_message.sender_id)
-        elif original_message.recipient_id and original_message.recipient_id != current_user.id:
-            recipient = User.query.get(original_message.recipient_id)
-        
-        if not recipient:
-            return jsonify({
-                'success': False, 
-                'error': 'Не удалось определить получателя ответа'
-            }), 400
-        
-        reply_message = Message(
-            sender_id=current_user.id,
-            recipient_id=recipient.id,
-            text=reply_text
-        )
-        
-        db.session.add(reply_message)
-        db.session.commit()
-        try:
-            send_email(reply_text, recipient.email, 'notification')
-        except Exception as e:
-            views.logger.error(f"Ошибка отправки email: {str(e)}")
-        
-        return jsonify({
-            'success': True,
-            'message': 'Ответ успешно отправлен',
-            'refresh': False
-        })
-        
-    except Exception as e:
-        db.session.rollback()
-        views.logger.error(f'Error replying to message: {str(e)}')
-        return jsonify({
-            'success': False, 
-            'error': 'Произошла ошибка при отправке ответа'
-        }), 500
+# /reply_to_message — старый способ ответа администратора на обращения
+# (форма прямо на /profile) удалён: переписка с пользователями теперь
+# ведётся в админ-панели, см. routes/admin_messages.py.
 
 @views.route('/profile/common', methods=['GET'])
 @login_required
@@ -348,7 +284,6 @@ def profile_password():
 @views.route('/reports', methods=['GET'])
 @profile_complete
 @login_required
-@respondent_only
 @session_required
 def report_area():
     report = Report.query.filter_by(user_id=current_user.id).order_by(
@@ -371,9 +306,25 @@ def report_area():
                            user=current_user,
                            organization=organization,
                            version=version,
-                           SentModal = True,
-                           reportAreaInfoModal = True
+                           SentModal = True
                            )
+
+
+@views.route('/reports/partial/rows', methods=['GET'])
+@profile_complete
+@login_required
+@session_required
+def report_area_rows():
+    """Только строки таблицы отчётов — для обновления таблицы без полной
+    перезагрузки страницы после Добавить/Изменить период/Копировать/Удалить."""
+    report = Report.query.filter_by(user_id=current_user.id).order_by(
+        Report.year.desc(),
+        Report.quarter.desc()
+    ).all()
+    for rep in report:
+        rep.versions = Version_report.query.filter_by(report_id=rep.id).all()
+    return render_template('partials/_report_rows.html', report=report)
+
 
 def get_auditor_info_by_user(current_user):
     if not current_user.organization or not current_user.organization.region:
@@ -390,7 +341,7 @@ def get_auditor_info_by_user(current_user):
         return None
     
     auditor = User.query.filter(
-        User.type == 'Аудитор',
+        User.is_auditor,
         User.organization_id == region_management_org.id
     ).first()
     
@@ -398,7 +349,7 @@ def get_auditor_info_by_user(current_user):
         return None
     
     return {
-        'fio': auditor.fio or 'Не указано',
+        'fio': f"{auditor.last_name or ''} {auditor.first_name or ''} {auditor.patronymic_name or ''}".strip() or 'Не указано',
         'telephone': auditor.telephone or 'Не указан',
         'organization': region_management_org.full_name or 'Не указано',
     }
@@ -408,7 +359,6 @@ def get_auditor_info_by_user(current_user):
 @login_required
 @session_required
 @owner_only
-@respondent_only
 def report_section(report_type, id):
     current_version = Version_report.query.filter_by(id=id).first()
     current_report = Report.query.filter_by(id=current_version.report_id).first()
@@ -453,17 +403,46 @@ def report_section(report_type, id):
         current_report=current_report,
         current_version=current_version,
         SentModal = True,
-        reportAreaReportInfoModal = True,
         auditor_info=auditor_info,
         report_type=report_type
     )
+
+
+@views.route('/reports/<string:report_type>/<int:id>/partial/rows', methods=['GET'])
+@profile_complete
+@login_required
+@session_required
+@owner_only
+def report_section_rows(report_type, id):
+    """Только строки таблицы раздела — для обновления таблицы без полной
+    перезагрузки страницы после Добавить/Редактировать/Удалить продукцию."""
+    report_config = {'fuel': 1, 'heat': 2, 'electro': 3}
+    if report_type not in report_config:
+        return render_template('404.html'), 404
+
+    section_number = report_config[report_type]
+    current_version = Version_report.query.filter_by(id=id).first()
+
+    sections = Sections.query.filter_by(
+        id_version=current_version.id,
+        section_number=section_number
+    ).order_by(
+        case(
+            (Sections.code_product.in_(['9001', '9010', '9100']), 1),
+            else_=0
+        ).asc(),
+        desc(Sections.id)
+    ).all()
+    return render_template('partials/_section_rows.html',
+                           sections=sections,
+                           section_number=section_number)
+
 
 @views.route('/reports/report-info/<int:id>', methods=['GET'])
 @profile_complete
 @login_required
 @session_required
 @owner_only
-@respondent_only
 def report_info(id):
     current_version = Version_report.query.filter_by(id=id).first()
     current_report = Report.query.filter_by(id=current_version.report_id).first()
@@ -475,7 +454,6 @@ def report_info(id):
         current_report=current_report,
         current_version=current_version,
         SentModal = True,
-        reportAreaReportInfoModal = True,
         auditor_info=auditor_info,
         section_number = 4
     )
@@ -498,8 +476,7 @@ def audit_area(status):
                            region_filter=region_filter,
                            previous_quarter=get_previous_quarter(),
                            previous_year=get_report_year(),
-                           status_reports=status,
-                           auditAreaInfoModal=True)
+                           status_reports=status)
 
 @views.route('/api/audit-data', methods=['GET'])
 @login_required
@@ -600,8 +577,7 @@ def audit_report(id):
         current_user=current_user, 
         current_report=current_report,
         current_version=current_version,
-        tickets=tickets,
-        auditAreaReportInfoModal = True
+        tickets=tickets
     )
 
 
@@ -619,12 +595,47 @@ def news_post(id):
         post=post
     )
 
+NEWS_PER_PAGE = 10
+
+
+def _pager_range(page, total_pages, edge=1, around=1):
+    """Номера страниц для пейджера, None — многоточие."""
+    if total_pages <= 1:
+        return []
+    keep = set(range(1, edge + 1))
+    keep.update(range(total_pages - edge + 1, total_pages + 1))
+    keep.update(range(page - around, page + around + 1))
+    ordered = sorted(p for p in keep if 1 <= p <= total_pages)
+    result, prev = [], 0
+    for p in ordered:
+        if p - prev > 1:
+            result.append(None)
+        result.append(p)
+        prev = p
+    return result
+
+
 @views.route('/news', methods=['GET'])
 def news():
-    all_news = News.query.order_by(News.created_time.desc()).all()
-    return render_template('news.html', 
+    page = request.args.get('page', 1, type=int) or 1
+    if page < 1:
+        page = 1
+
+    base_query = News.query.filter(News.is_erespondentn == True).order_by(News.created_time.desc())
+    total = base_query.count()
+    total_pages = max(1, (total + NEWS_PER_PAGE - 1) // NEWS_PER_PAGE)
+    if page > total_pages:
+        page = total_pages
+
+    all_news = base_query.offset((page - 1) * NEWS_PER_PAGE).limit(NEWS_PER_PAGE).all()
+
+    return render_template('news.html',
         current_user=current_user,
-        all_news=all_news
+        all_news=all_news,
+        page=page,
+        total_pages=total_pages,
+        total_news=total,
+        pager_pages=_pager_range(page, total_pages),
     )
 
 @views.route('/contacts', methods=['GET'])
@@ -636,6 +647,7 @@ def contacts():
 @views.route('/create-report', methods=['POST'])
 @login_required 
 @session_required
+@ajax_aware
 def create_report():
     if request.method == 'POST': 
         year =  parse_int(request.form.get('modal_add_year'))
@@ -712,6 +724,7 @@ def create_report():
 @views.route('/change-period-report', methods=['POST'])
 @login_required 
 @session_required
+@ajax_aware
 def change_period_report():
     if request.method == 'POST':
         id = int(request.form.get('modal_change_report_id'))
@@ -754,6 +767,7 @@ def change_period_report():
 @views.route('/copy-report', methods=['POST'])
 @login_required 
 @session_required
+@ajax_aware
 def copy_report():
     if request.method == 'POST':
         try:
@@ -911,6 +925,7 @@ def copy_report():
 @views.route('/delete-report/<report_id>', methods=['POST'])
 @login_required 
 @session_required
+@ajax_aware
 def delete_report(report_id):
     if request.method == 'POST':
         try:
@@ -956,6 +971,7 @@ def delete_report(report_id):
 @views.route('/add-section', methods=['POST'])
 @login_required 
 @session_required
+@ajax_aware
 def add_section():
     if request.method == 'POST':
         try:
@@ -1024,6 +1040,7 @@ def add_section():
 @views.route('/change-section', methods=['POST'])
 @login_required 
 @session_required
+@ajax_aware
 def change_section():
     if request.method == 'POST':
         try:
@@ -1065,6 +1082,7 @@ def change_section():
 @views.route('/remove_section/<id>', methods=['POST'])
 @login_required 
 @session_required
+@ajax_aware
 def remove_section(id):
     if request.method == 'POST':
         try:
@@ -1172,25 +1190,25 @@ def cancle_sent_version(id):
 @session_required
 def change_category_report():
     try:
-        if current_user.type == "Смотрящий":
+        if current_user.is_reader:
             flash('У вас нет доступа к этому действию', 'error')
-            return redirect(request.referrer or url_for('views.index'))
+            return redirect(request.referrer)
         
         action = request.form.get('action')
         report_id = request.form.get('reportId')
         
         if not action or not report_id:
             flash('Недостаточно данных для выполнения операции', 'error')
-            return redirect(request.referrer or url_for('views.index'))
+            return redirect(request.referrer)
         
         try:
             current_version = Version_report.query.filter_by(report_id=report_id).first()
             if current_version is None:
                 flash(f'Версия отчета с ID {report_id} не найдена', 'error')
-                return redirect(request.referrer or url_for('views.index'))
+                return redirect(request.referrer)
         except Exception as e:
             flash(f'Ошибка при поиске версии отчета: {str(e)}', 'error')
-            return redirect(request.referrer or url_for('views.index'))
+            return redirect(request.referrer)
         
         try:
             recipient_user = User.query.filter_by(email=current_version.report.user.email).first()
@@ -1285,7 +1303,7 @@ def change_category_report():
 @session_required
 def rollbackreport(id):
     if request.method == 'POST':        
-        if current_user.type == "Смотрящий":
+        if current_user.is_reader:
             flash('У вас нет доступа к этому действию', 'error')
             return redirect(request.referrer)
         
@@ -1332,7 +1350,7 @@ def rollbackreport(id):
 @session_required
 def send_comment():
     if request.method == 'POST':        
-        if current_user.type == "Смотрящий":
+        if current_user.is_reader:
             flash('У вас нет доступа к этому действию', 'error')
             return redirect(request.referrer)
         
@@ -1665,7 +1683,7 @@ def send_for_admin():
         
     return redirect(url_for('views.profile'))
 
-@views.route('/load_org_stat', methods=['POST'])
+@views.route('/load-respondent-stats', methods=['POST'])
 @login_required 
 @session_required
 def load_org_stat():
@@ -1676,7 +1694,7 @@ def load_org_stat():
         flash('Не указан год или квартал', 'error')
         return redirect(request.referrer)
 
-    if current_user.type not in ["Администратор", "Аудитор"]:
+    if not (current_user.is_admin or current_user.is_auditor):
         flash('У вас нет доступа к отчетам', 'error')
         return redirect(request.referrer)
 

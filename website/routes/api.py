@@ -1,4 +1,3 @@
-from datetime import timedelta
 import threading
 import uuid
 
@@ -7,18 +6,32 @@ from flask_login import current_user, login_required
 
 from website.export import create_archive_async
 from website.models import Organization
-from website.sessions import session_required
-from website.time import current_utc_time
+from website.sessions import session_required, get_session_time_left
+from common_models import current_utc_time
 
 from .. import db
 from ..models import (
-    User, Organization, Report, Version_report, DirUnit,
-    DirProduct, Sections, Ticket, Message
+    Organization, Message
 )
 
 from website.export import export_tasks
 
 api = Blueprint('api', __name__)
+
+@api.route('/session-status', methods=['GET'])
+@login_required
+def session_status():
+    info = get_session_time_left()
+    if info is None:
+        return jsonify({'active': False})
+
+    seconds_left, timeout_seconds = info
+    return jsonify({
+        'active': True,
+        'seconds_left': seconds_left,
+        'timeout_seconds': timeout_seconds,
+        'enforced': True
+    })
 
 @api.route('/organizations', methods=['GET'])
 @login_required
@@ -79,8 +92,6 @@ def start_export():
         task_id = str(uuid.uuid4())
         user_id = current_user.id
         
-        current_user_type = current_user.type
-        
         region_value = None
         region_number = None
         
@@ -88,7 +99,7 @@ def start_export():
             region_number = current_user.organization.region.number
             region_value = str(region_number)
         
-        if current_user_type == "Администратор" or current_user_type == "Смотрящий":
+        if current_user.is_admin or current_user.is_reader:
             if export_region and export_region.isdigit():
                 region_value = export_region
             else:
@@ -153,51 +164,29 @@ def download_export(task_id):
         download_name=download_name,
         mimetype='application/zip'
     )
-    
-# @api.route('/online-count', methods=['GET'])
-# def api_online_count():
-#     try:
-#         five_minutes_ago = current_utc_time() - timedelta(minutes=5)
-#         count = User.query.filter(User.last_active >= five_minutes_ago).count()
-#         return jsonify({
-#             'success': True,
-#             'count': count
-#         })
-#     except Exception as e:
-#         current_app.logger.error(f"Error in online count API: {e}")
-#         return jsonify({
-#             'success': False,
-#             'count': 0
-#         }), 500
 
 @api.route('/messages', methods=['GET'])
 @login_required
 def get_messages_api():
     try:
-        if current_user.type == "Администратор":
-            messages = Message.query.filter(
-                (Message.to_admin == True) | (Message.recipient_id == current_user.id)
-            ).order_by(Message.id.desc()).all()
-        else:
-            messages = Message.query.filter_by(recipient_id=current_user.id).order_by(Message.id.desc()).all()
+        # Общий поток обращений к администратору (to_admin=True) сюда больше
+        # не попадает — переписка с пользователями ведётся в админ-панели
+        # (см. routes/admin_messages.py). Здесь, как и для обычных
+        # пользователей, только личный "почтовый ящик" — сообщения,
+        # адресованные лично этому пользователю.
+        messages = Message.query.filter_by(recipient_id=current_user.id).order_by(Message.id.desc()).all()
         
         messages_data = []
         for msg in messages:
-            can_reply = False
-            if current_user.type == "Администратор" and msg.sender_id != current_user.id and msg.sender_id is not None:
-                can_reply = True
-            elif current_user.type != "Администратор" and msg.sender_id == current_user.id and msg.recipient_id is not None:
-                can_reply = True
-            
             sender_info = {}
             if msg.sender:
                 sender_info = {
                     'email': msg.sender.email,
-                    'fio': msg.sender.fio,
+                    'fio': f"{msg.sender.last_name or ''} {msg.sender.first_name or ''} {msg.sender.patronymic_name or ''}".strip(),
                     'telephone': msg.sender.telephone,
-                    'type': msg.sender.type
+                    'is_admin': msg.sender.is_admin
                 }
-            
+
             messages_data.append({
                 'id': msg.id,
                 'create_time': msg.create_time.strftime('%d.%m.%Y %H:%M'),
@@ -208,7 +197,6 @@ def get_messages_api():
                 'is_read': msg.is_read,
                 'read_time': msg.read_time.strftime('%d.%m.%Y %H:%M') if msg.read_time else None,
                 'to_admin': msg.to_admin,
-                'can_reply': can_reply
             })
         
         return jsonify({
@@ -255,31 +243,7 @@ def mark_all_read_api():
             'error': 'Ошибка при отметке сообщений как прочитанных'
         }), 500
         
-@api.route('/mark_read/<int:message_id>', methods=['POST'])
-@login_required
-def mark_read_api(message_id):
-    try:
-        if current_user.type != "Администратор":
-            return jsonify({
-                'success': False,
-                'error': 'Только администратор может отмечать сообщения как прочитанные'
-            }), 403
-        
-        msg = Message.query.get_or_404(message_id)
-        
-        msg.is_read = True
-        msg.read_time = current_utc_time()
-        db.session.commit()
-        
-        return jsonify({
-            'success': True,
-            'message': 'Сообщение отмечено как прочитанное'
-        })
-        
-    except Exception as e:
-        db.session.rollback()
-        current_app.logger.error(f"Ошибка при отметке сообщения как прочитанного: {str(e)}")
-        return jsonify({
-            'success': False,
-            'error': 'Ошибка при отметке сообщения как прочитанного'
-        }), 500
+# /api/mark_read/<id> — старая отметка "прочитано" для админа (кнопка на
+# /profile) удалена вместе с формой ответа: непрочитанные обращения к
+# администратору теперь отмечаются прочитанными при открытии переписки в
+# админ-панели, см. routes/admin_messages.py.

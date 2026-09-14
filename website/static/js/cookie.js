@@ -2,46 +2,11 @@
 window.initCookieBanner = function() {
     const COOKIE_NAME = 'eresespondentN-access';
     const COOKIE_DAYS = 365;
-    
-    const MODAL_CONFIG = {
-        'system-update-modal-reportArea': {
-            cookieName: 'update-reportArea',
-            pages: ['/reports'],
-            hasSlides: true,
-            delay: 500
-        },
-        'system-update-modal-reportArea-report': { 
-            cookieName: 'update-reportArea-report',
-            pages: ['/reports/fuel/', '/reports/heat/', '/reports/electro/'],
-            hasSlides: true,
-            delay: 300
-        },
-        'system-update-modal-auditArea': {
-            cookieName: 'update-auditArea',
-            pages: ['/audit-area'],
-            hasSlides: true,
-            delay: 500
-        },
-        'system-update-modal-auditArea-report': { 
-            cookieName: 'update-auditArea-report',
-            pages: ['/audit-area/report/'],
-            hasSlides: true,
-            delay: 300
-        },
-        'system-welcome-modal-acc': { 
-            cookieName: 'welcome-modal-account',
-            pages: ['/profile'],
-            hasSlides: true,
-            delay: 300
-        },
-        // 'system-modal-profile': { 
-        //     cookieName: 'system-modal-profile',
-        //     pages: ['/profile/common'],
-        //     hasSlides: true,
-        //     delay: 300
-        // }
-    };
-    
+
+    // Одно информационное окно на пользователя. Бампните версию в имени куки,
+    // если поменяли набор слайдов и окно нужно показать снова.
+    const INFO_MODAL_COOKIE = 'info-modal-2026-1';
+
     function setCookie(name, value, days) {
         let expires = '';
         if (days) {
@@ -51,11 +16,11 @@ window.initCookieBanner = function() {
         }
         document.cookie = name + '=' + (value || '') + expires + '; path=/; SameSite=Lax';
     }
-    
+
     function getCookie(name) {
         const nameEQ = name + '=';
         const ca = document.cookie.split(';');
-        for(let i = 0; i < ca.length; i++) {
+        for (let i = 0; i < ca.length; i++) {
             let c = ca[i];
             while (c.charAt(0) === ' ') c = c.substring(1, c.length);
             if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
@@ -63,132 +28,91 @@ window.initCookieBanner = function() {
         return null;
     }
 
-    function checkCurrentPage(pages) {
-        const currentPath = window.location.pathname;
-        return pages.some(page => {
-            if (page === '/') {
-                return currentPath === '/' || currentPath === '';
-            }
-            return currentPath.startsWith(page);
-        });
-    }
-
-    function initModal(modalId, config) {
-        const modal = document.getElementById(modalId);
-        if (!modal) return;
-        
-        const shouldShowOnPage = checkCurrentPage(config.pages);
-        
-        if (shouldShowOnPage && !getCookie(config.cookieName)) {
-            setTimeout(() => {
-                modal.style.display = 'flex';
-                setTimeout(() => {
-                    modal.classList.add('active');
-                    
-                    if (config.hasSlides) {
-                        initSlides();
-                    }
-                    
-                    // if (modalId === 'fuel-modal') {
-                    //     initFuelModal(modal);
-                    // }
-                    
-                }, 10);
-            }, config.delay || 500);
-            
-            const closeBtn = modal.querySelector('.close');
-            if (closeBtn) {
-                closeBtn.addEventListener('click', function() {
-                    closeModal(modal);
-                });
-            }
-            
-            
-
-            const dontShowAgainBtn = modal.querySelector('.close');
-            if (dontShowAgainBtn) {
-                dontShowAgainBtn.addEventListener('click', function() {
-                    setCookie(config.cookieName, 'shown', COOKIE_DAYS);
-                    closeModal(modal);
-                });
-            }
-        }
-    }
-    
     function closeModal(modal) {
         modal.classList.remove('active');
         setTimeout(() => {
             modal.style.display = 'none';
         }, 400);
     }
-    
-    // Специальная функция для топливного модального окна
-    function initFuelModal(modal) {
-        console.log('Fuel modal initialized');
-        
-        // Здесь можно добавить специфическую логику для топливного окна
-        // Например, загрузка данных о топливе, инициализация графиков и т.д.
-        
-        // Пример: обновление контента
-        const fuelDataElement = modal.querySelector('.fuel-data');
-        if (fuelDataElement) {
-            // Загрузить актуальные данные о топливе
-            fuelDataElement.textContent = 'Данные загружены: ' + new Date().toLocaleString();
-        }
-    }
 
-    // Инициализация слайдов (обновленная для работы с конкретным модальным окном)
+    // Навигация по слайдам внутри уже отфильтрованного окна.
     function initSlides(modalId = null) {
         const container = modalId ? document.getElementById(modalId) : document;
+        if (!container) return;
         const slides = container.querySelectorAll('.modal-slide');
         const prevBtn = container.querySelector('.slide-prev-vertical');
         const nextBtn = container.querySelector('.slide-next-vertical');
-        
+
         if (!slides.length) return;
-        
+
         let currentSlide = 0;
-        
+
         function showSlide(index) {
             slides.forEach(slide => slide.classList.remove('active'));
             slides[index].classList.add('active');
-            
-            updateSlideCounter(index + 1, slides.length);
-            
+
+            const counter = slides[index].querySelector('.slide-counter');
+            if (counter) counter.textContent = `${index + 1}/${slides.length}`;
+
             currentSlide = index;
         }
-        
-        function updateSlideCounter(current, total) {
-            const activeSlide = slides[current - 1];
-            if (activeSlide) {
-                const counter = activeSlide.querySelector('.slide-counter');
-                if (counter) {
-                    counter.textContent = `${current}/${total}`;
-                }
-            }
-        }
-        
+
         function nextSlide() {
-            currentSlide = (currentSlide + 1) % slides.length;
-            showSlide(currentSlide);
+            showSlide((currentSlide + 1) % slides.length);
         }
-        
+
         function prevSlide() {
-            currentSlide = (currentSlide - 1 + slides.length) % slides.length;
-            showSlide(currentSlide);
+            showSlide((currentSlide - 1 + slides.length) % slides.length);
         }
-        
-        if (prevBtn) {
-            prevBtn.addEventListener('click', prevSlide);
+
+        if (prevBtn) prevBtn.addEventListener('click', prevSlide);
+        if (nextBtn) nextBtn.addEventListener('click', nextSlide);
+
+        // единственный слайд — навигация не нужна
+        if (slides.length < 2) {
+            if (prevBtn) prevBtn.style.display = 'none';
+            if (nextBtn) nextBtn.style.display = 'none';
         }
-        
-        if (nextBtn) {
-            nextBtn.addEventListener('click', nextSlide);
-        }
-        
+
         showSlide(0);
     }
-    
-    // Инициализация баннера cookies
+
+    // Информационное окно: оставляем только слайды роли пользователя
+    // (admin — все) и показываем один раз. К заполненности профиля не привязано.
+    function initInfoModal() {
+        const modal = document.getElementById('system-info-modal');
+        if (!modal) return;
+
+        const role = modal.getAttribute('data-user-role') || 'respondent';
+
+        modal.querySelectorAll('.modal-slide').forEach(slide => {
+            const slideRole = slide.getAttribute('data-role');
+            if (role !== 'admin' && slideRole && slideRole !== role) {
+                slide.remove();
+            }
+        });
+
+        if (!modal.querySelector('.modal-slide')) return;
+        if (getCookie(INFO_MODAL_COOKIE)) return;
+
+        setTimeout(() => {
+            modal.style.display = 'flex';
+            setTimeout(() => {
+                modal.classList.add('active');
+                initSlides('system-info-modal');
+            }, 10);
+        }, 500);
+
+        const closeBtn = modal.querySelector('.close');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', function() {
+                setCookie(INFO_MODAL_COOKIE, 'shown', COOKIE_DAYS);
+                closeModal(modal);
+            });
+        }
+    }
+
+    // Баннер cookies
     if (!getCookie(COOKIE_NAME)) {
         const banner = document.getElementById('cookie-consent-banner');
         if (banner) {
@@ -198,10 +122,10 @@ window.initCookieBanner = function() {
                     banner.classList.add('show');
                 }, 10);
             }, 500);
-            
+
             const acceptBtn = document.getElementById('accept-cookies');
             const declineBtn = document.getElementById('decline-cookies');
-            
+
             if (acceptBtn) {
                 acceptBtn.addEventListener('click', function() {
                     setCookie(COOKIE_NAME, 'accepted', COOKIE_DAYS);
@@ -211,7 +135,7 @@ window.initCookieBanner = function() {
                     }, 400);
                 });
             }
-            
+
             if (declineBtn) {
                 declineBtn.addEventListener('click', function() {
                     banner.classList.remove('show');
@@ -222,11 +146,8 @@ window.initCookieBanner = function() {
             }
         }
     }
-    
-    // Инициализация всех модальных окон из конфигурации
-    for (const [modalId, config] of Object.entries(MODAL_CONFIG)) {
-        initModal(modalId, config);
-    }
+
+    initInfoModal();
 };
 
 document.addEventListener('DOMContentLoaded', function() {

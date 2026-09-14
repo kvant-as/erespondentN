@@ -13,7 +13,7 @@ from sqlalchemy import and_, or_
 from sqlalchemy.sql import func, or_
 import math
 
-from website.time import current_utc_time
+from common_models import current_utc_time
 from .models import Organization, Report, Sections, Version_report
 from . import db
 
@@ -332,13 +332,11 @@ def get_reports_by_status(status, year=None, quarter=None, region=None):
     if quarter:
         filters.append(Report.quarter == quarter)
     
-    user_type = current_user.type
-    
     region_filter = None
     if region and region.isdigit():
         region_filter = int(region)
 
-    if user_type == "Администратор" or user_type == "Смотрящий":
+    if current_user.is_admin or current_user.is_reader:
         base_query = Report.query.join(Version_report).join(Organization)
         
         if region_filter:

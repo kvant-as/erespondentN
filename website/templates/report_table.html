@@ -13,7 +13,7 @@
 <div class = "report-area_page">
     {{ content.report_menu(current_version, section_number) }}
     <div class = "report-area">
-        <table class = "table-report-area" id = "fuel-table-report">
+        <table class = "table-report-area" id = "fuel-table-report" data-report-type="{{ report_type }}" data-version-id="{{ current_version.id }}">
             <thead class="table-title">
                 <tr>
                     <th class="resizable" rowspan="2"></th>
@@ -152,120 +152,8 @@
                     <th rowspan="2"></th>
                 </tr>
             </thead>
-            <tbody>
-                {% for row in sections %}
-                <tr class = "section_row" data-id="{{ row.id }}" >
-                    <td>
-                        <input 
-                            type = "hidden" 
-                            name = "id_section" 
-                            value = "{{ row.id }}" 
-                            readonly
-                        >
-                    </td>
-                    <td>
-                        <input 
-                            class = "product-name_fuel" 
-                            type = "text" 
-                            value = "{{ row.product.NameProduct }}" 
-                            readonly
-                        >
-                    </td>
-                    <td>
-                        <input  
-                            type = "text"
-                            class = "product-cod_fuel" 
-                            name = "product-cod_fuel"
-                            value = "{{ row.product.CodeProduct }}" 
-                            readonly
-                        >
-                    </td>
-                    <td>
-                        <input  
-                            type = "text"
-                            name = "Oked_fuel" 
-                            value = "{{ row.Oked }}" 
-                            readonly
-                        >
-                    </td>
-                    <td> 
-                        <input  
-                            type = "text"
-                            style = "white-space: nowrap; text-align: left;" 
-                            value = "{{ row.product.unit.NameUnit }}" 
-                            readonly
-                        >
-                    </td> 
-                    <td>
-                        <input  
-                            type = "text"
-                            name = "produced_fuel"
-                            value = "{{ row.produced }}" 
-                            readonly
-                        >
-                    </td>
-                    <td>
-                        <input  
-                            type = "text"
-                            name = "Consumed_Quota_fuel" 
-                            value = "{{ row.Consumed_Quota }}" 
-                            readonly
-                        >
-                    </td>
-                    <td>
-                        <input  
-                            type = "text"
-                            name = "Consumed_Fact_fuel" 
-                            value = "{{ row.Consumed_Fact }}" 
-                            readonly
-                        >
-                    </td>
-                    <td>
-                        <input  
-                            type = "text"
-                            name = "Consumed_Total_Quota_fuel" 
-                            value = "{{ row.Consumed_Total_Quota }}" 
-                            readonly
-                        >
-                    </td>
-                    <td>     
-                        <input  
-                            type = "text"
-                            name = "Consumed_Total_Fact_fuel" 
-                            value = "{{ row.Consumed_Total_Fact }}" 
-                            readonly
-                        >
-                    </td>
-                    {% if row.total_differents is not none %}
-                        {% if row.total_differents <= 0.0 %}
-                            <td class="difference-cell difference-negative">
-                                {% if row.total_differents < 0.0 %}
-                                    <span class="difference-arrow">↓</span>
-                                {% endif %}
-                                <span class="difference-value">{{ row.total_differents }}</span>
-                            </td>
-                        {% else %}
-                            <td class="difference-cell difference-positive">
-                                <span class="difference-arrow">↑</span>
-                                <span class="difference-value">{{ row.total_differents }}</span>
-                            </td>
-                        {% endif %}
-                    {% else %}
-                        <td class="difference-cell difference-empty">
-                            <span class="difference-value">—</span>
-                        </td>
-                    {% endif %}
-                    <td> 
-                        <input  
-                            type = "text"
-                            name = "note_fuel" 
-                            value = "{{ row.note }}" 
-                            readonly
-                        >
-                    </td>     
-                    <td colspan="2"></td>      
-                </tr>   
-                {%endfor%}
+            <tbody id="sections-tbody">
+                {% include 'partials/_section_rows.html' %}
             </tbody>
         </table>  
     </div>
@@ -279,164 +167,135 @@
         </div>
         <div class="answer-highlight-second">
             <div class="highlight-icon">💡</div>
-            <p><strong>Выберите</strong> необходимую продукцию и заполните <strong>активные</strong> парамметры. Если у вас возникнут вопросы, пожалуйста, ознакомьтесь с <a href="/FAQ#faq8" class="instruction-link">инструкцией</a> по работе.</p>
+            <p>Выберите необходимую продукцию и нажмите <strong>Далее</strong>, а затем заполните активные парамметры. Если у вас возникнут вопросы, пожалуйста, ознакомьтесь с <a href="/FAQ#faq8" class="instruction-link">инструкцией</a> по работе.</p>
         </div>
-        <form method="POST" action="/add-section">
-            <div class="choose-product-area">
-                <div class = "serchProduct_cont">
-                    <a>Поиск</a>
-                    <input type="text" name = "search_product" >
+        <form method="POST" action="/add-section" id="addSectionForm">
+            <div class="add-progress-bar-container">
+                <div class="add-progress-bar" id="addSectionProgressBar" style="width: 50%;"></div>
+            </div>
+
+            {# --- Шаг 1: выбор продукции --- #}
+            <div id="addSectionStep1" class="add-section-step">
+                <div class="add-search-group">
+                    <label>Поиск продукции</label>
+                    <div class="add-search-field">
+                        {{ icons.icon_search() }}
+                        <input type="text" name="search_product" autocomplete="off" placeholder="Код или наименование">
+                    </div>
                 </div>
-                <table class="table-report-area">
-                    <thead class = "table-title">
-                        <tr>
-                            <th>Код продукта</th>
-                            <th>Наименование продукта</th>
-                            <th>Ед. изм.</th>
-                            <th style="display:none;">id</th>
-                        </tr>
-                    </thead>
-                    <tbody id="chooseProdTableBody">
-                        {% for row in dirProduct %}
-                            <tr data-id="{{ row.id }}">
-                                <td>{{row.CodeProduct}}</td>
-                                <td style=" white-space: wrap; text-align: left;">{{row.NameProduct}}</td>
-                                <td>{{row.unit.NameUnit}}</td>
-                                <td style="display: none;">{{row.id}}</td>
+                <div class="add-section-picker">
+                    <table class="add-picker-table">
+                        <thead>
+                            <tr>
+                                <th>Код</th>
+                                <th>Наименование</th>
+                                <th>Ед. изм.</th>
+                                <th style="display:none;">id</th>
                             </tr>
-                        {% endfor %}
-                        <tr id="noResultsRow" style="display: none;">
-                            <td colspan="3">Нет результатов</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            <table class = "modal_table">
-                <tr>
-                    <td>[A] Наименование вида продукции (работ, услуг)</td>
-                    <td>
-                        <div> 
-                        <div style="position: relative;">
-                            <input type="text" name="name_of_product" style="width: 250px; text-align: left;" readonly required>
-                            <a id="nameOfProductButton">+</a>
-                        </div>
-                    </td>
-                </tr>
-                <tr>
-                    <td>[B] ОКЭД</td>
-                    <td>
-                        <input                 
-                            type="text"
-                            name="oked_add"
-                            maxlength="5" 
-                            autocomplete="off"
-                            class="numericInput"
-                            required
-                        >
-                    </td>
-                </tr>
-                <tr>
-                    <td>[1] Произведено продукции (выполнено работ, услуг) за отчетный период</td>
-                    <td>
-                        <input                 
-                            type="text"
-                            name="produced_add"
-                            value = "0,00"
-                            autocomplete="off"
-                            class = "numeric_dotInput"
-                        >
-                    </td>
-                </tr>
-                <tr>
-                    <td>[2] Утвержденная норма на единицу продукции</td>
-                    <td>
-                        <input                 
-                            type="text"
-                            name="Consumed_Quota_add"
-                            value = "0,00"
-                            autocomplete="off"
-                            class = "numeric_dotInput"
-                        >
-                    </td>
-                </tr>
-                <tr>
-                    <td>[3] Израсходовано на единицу продукции фактически</td>
-                    <td>
-                        <input                 
-                            type="text"
-                            name="Consumed_Fact_add"
-                            value = "0,00"
-                            style = "color: rgb(132, 132, 132);"
-                            readonly
-                        >
-                    </td>
-                </tr>
-                <tr>
-                    <td>[4] Израсходовано на всю производственную продукцию по действующей норме</td>
-                    <td>
-                        <input                 
-                            type="text"
-                            name="Consumed_Total_Quota_add"
-                            value = "0,00"
-                            style = "color: rgb(132, 132, 132);"
-                            class = "numeric_dotInput"
-                            readonly
-                        >
-                    </td>
-                </tr>
-                <tr>
-                    <td>[5] Израсходовано на всю производственную продукцию фактически</td>
-                    <td>
-                        <input                 
-                            type="text"
-                            name="Consumed_Total_Fact_add"
-                            value = "0,00"
-                            autocomplete="off"
-                            class = "numeric_dotInput"
-                        >
-                    </td>
-                </tr>
-                <tr>
-                    <td>Примечание</td>
-                    <td>
-                        <input
-                            style = "width: 250px; text-align: left;"          
-                            type="text"
-                            name="note_add"
-                            autocomplete="off"
-                            maxlength="200"
-                        >
-                        <input                 
-                            type="hidden"
-                            value = "{{current_version.id}}"
-                            name="current_version"
-                            readonly
-                        >
-                        <input                 
-                            type="hidden"
-                            id = "add_id_product"
-                            name="add_id_product"
-                            readonly
-                        >
-                        <input type="hidden" value="{{section_number}}" name="section_number" id="section_number" readonly>
-                    </td>
-                </tr>
-            </table>
-            <div class="dop-info-cont" style = "margin: 5px 0;">
-                <div class="dop-cont-note">
-                    <span>
-                        <span class="gray-field-note">Серый текст</span> — только для просмотра
-                    </span>
+                        </thead>
+                        <tbody id="chooseProdTableBody">
+                            {% for row in dirProduct %}
+                                <tr data-id="{{ row.id }}" data-code="{{ row.CodeProduct }}" data-unit="{{ row.unit.NameUnit }}">
+                                    <td>{{row.CodeProduct}}</td>
+                                    <td class="add-picker-name">{{row.NameProduct}}</td>
+                                    <td>{{row.unit.NameUnit}}</td>
+                                    <td style="display: none;">{{row.id}}</td>
+                                </tr>
+                            {% endfor %}
+                            <tr id="noResultsRow" style="display: none;">
+                                <td colspan="3">Нет результатов</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="add-section-chosen" id="addSectionChosen">Продукция не выбрана</div>
+                <div class="add-step-actions">
+                    <button type="button" class="add-step-btn" id="addSectionNextBtn" disabled>
+                        <span>Далее</span>
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
                 </div>
             </div>
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <div class="model_but_area right">
-                <button type="submit" class="blue_btn">
-                    {{ icons.icon_add() }}
-                    <span>Добавить продукцию</span>
-                </button>
+
+            {# --- Шаг 2: параметры (серые поля считаются в реальном времени, как в бэкенде) --- #}
+            <div id="addSectionStep2" class="add-section-step" style="display: none;">
+                <div class="add-step-title">Шаг 2 из 2 · Заполните параметры</div>
+                <table class = "modal_table">
+                    <tr>
+                        <td>[A] Наименование вида продукции (работ, услуг)</td>
+                        <td>
+                            <input type="text" name="name_of_product" style="width: 250px; text-align: left; color: rgb(132, 132, 132);" readonly required>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>[B] ОКЭД</td>
+                        <td>
+                            <input type="text" name="oked_add" maxlength="5" autocomplete="off" class="numericInput" required>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>[1] Произведено продукции (выполнено работ, услуг) за отчетный период</td>
+                        <td>
+                            <input type="text" name="produced_add" value = "0,00" autocomplete="off" class = "numeric_dotInput">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>[2] Утвержденная норма на единицу продукции</td>
+                        <td>
+                            <input type="text" name="Consumed_Quota_add" value = "0,00" autocomplete="off" class = "numeric_dotInput">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>[3] Израсходовано на единицу продукции фактически</td>
+                        <td>
+                            <input type="text" name="Consumed_Fact_add" value = "0,00" style = "color: rgb(132, 132, 132);" readonly>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>[4] Израсходовано на всю производственную продукцию по действующей норме</td>
+                        <td>
+                            <input type="text" name="Consumed_Total_Quota_add" value = "0,00" style = "color: rgb(132, 132, 132);" class = "numeric_dotInput" readonly>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>[5] Израсходовано на всю производственную продукцию фактически</td>
+                        <td>
+                            <input type="text" name="Consumed_Total_Fact_add" value = "0,00" autocomplete="off" class = "numeric_dotInput">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Примечание</td>
+                        <td>
+                            <input style = "width: 250px; text-align: left;" type="text" name="note_add" autocomplete="off" maxlength="200">
+                            <input type="hidden" value = "{{current_version.id}}" name="current_version" readonly>
+                            <input type="hidden" id = "add_id_product" name="add_id_product" readonly>
+                            <input type="hidden" value="{{section_number}}" name="section_number" id="section_number" readonly>
+                            <input type="hidden" id="add_unit_name" readonly>
+                            <input type="hidden" id="add_product_code" readonly>
+                        </td>
+                    </tr>
+                </table>
+                <div class="dop-info-cont" style = "margin: 5px 0;">
+                    <div class="dop-cont-note">
+                        <span>
+                            <span class="gray-field-note">Серый текст</span> — считается автоматически, только для просмотра
+                        </span>
+                    </div>
+                </div>
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="model_but_area between">
+                    <button type="button" class="add-step-btn" id="addSectionBackBtn">
+                        <span>Назад</span>
+                    </button>
+                    <button type="submit" class="blue_btn">
+                        {{ icons.icon_add() }}
+                        <span>Добавить продукцию</span>
+                    </button>
+                </div>
             </div>
-        </form>   
+        </form>
     </div>
 </div>
 
@@ -450,7 +309,7 @@
             <div class="highlight-icon">💡</div>
             <p><strong>Отредактируйте активные</strong> параметры. Если у вас возникнут вопросы, пожалуйста, ознакомьтесь с <a href="/FAQ#faq8" class="instruction-link">инструкцией</a> по работе.</p>
         </div>
-        <form method="POST" action="/change-section">
+        <form method="POST" action="/change-section" id="changeSectionForm">
             <table class="modal_table">
                 <tr>
                     <td>[A] Наименование вида продукции (работ, услуг)</td>

@@ -16,6 +16,24 @@
                                         <span>Добавить</span>
                                     </a>
                                 </li>
+                                <li id="pod-edit-period-btn" class="pod-row-action disabled">
+                                    <img src="{{ url_for('static', filename='img/icon-edit.svg') }}" alt="Редактировать">
+                                    <a class="li-title">
+                                        <span title="Редактировать">Редакт.</span>
+                                    </a>
+                                </li>
+                                <li id="pod-copy-report-btn" class="pod-row-action disabled">
+                                    <img src="{{ url_for('static', filename='img/icon-coppy.svg') }}" alt="Скопировать">
+                                    <a class="li-title">
+                                        <span title="Скопировать">Скоп.</span>
+                                    </a>
+                                </li>
+                                <li id="pod-delete-report-btn" class="pod-row-action disabled">
+                                    <img src="{{ url_for('static', filename='img/icon-del.svg') }}" alt="Удалить">
+                                    <a class="li-title">
+                                        <span>Удалить</span>
+                                    </a>
+                                </li>
                             </div>
                             <a class="functions_menu_name">Отчет</a>
                         </section>
@@ -71,8 +89,7 @@
     </div>
 
     <div class="report-area">
-        {%if report%}
-        <table class="table-report-area" id="report-table">
+        <table class="table-report-area" id="report-table"{% if not report %} style="display: none;"{% endif %}>
             <thead class="table-title">
                 <tr>
                     <th class="resizable" rowspan="2"></th>
@@ -134,57 +151,17 @@
                     <th data-sortable="false" style="cursor: default;"></th>
                 </tr>
             </thead>
-            <tbody>
-                {% for row in report %}
-                <tr class="report_row" data-id="{{ row.id }}" data-version-id="{{ row.versions[0].id }}">
-                    <td></td>
-                    <td style="padding: 4px;">
-                        <button class="open-report-btn" onclick="window.location.href='/reports/fuel/{{row.versions[0].id}}'">  
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                            </svg>
-                            <span>Просмотр</span>
-                        </button>
-                    </td>
-                    <td style="display: none;">
-                        <input type="text" id="report_id" value="{{ row.id }}" readonly>
-                    </td>
-                    <td>
-                        <input type="text" id="report_organization_name" value="{{ row.organization.full_name }}" readonly>
-                    </td>
-                    <td>
-                        <input type="text" id="report_okpo" value="{{ row.organization.okpo }}" readonly>
-                    </td>
-                    <td>
-                        <input type="text" id="report_year" value="{{ row.year }}" readonly>
-                    </td>
-                    <td>
-                        <input type="text" id="report_quarter" value="{{ row.quarter }}" readonly>
-                    </td>
-                    {% set version = row.versions[0] if row.versions else None %}
-                    {% if version %}
-                        <td>
-                            <input type="text" id="report_begin_time" value="{{ version.begin_time.strftime('%d-%m-%Y') }}" readonly>
-                        </td>
-                        <td>
-                            {{ content.status_report(version) }}
-                        </td>
-                    {% else %}
-                        <td></td>
-                    {% endif %}
-                    <td></td>
-                </tr>
-                {% endfor %}
+            <tbody id="reports-tbody">
+                {% include 'partials/_report_rows.html' %}
             </tbody>
         </table>
-        {%else%}
-        <div class="empty-state">
+        {# empty-state и таблица теперь всегда в DOM, JS переключает их
+           видимость после AJAX-обновления (см. refreshReportsTable в base.js) #}
+        <div class="empty-state" id="reports-empty-state"{% if report %} style="display: none;"{% endif %}>
             {{ icons.icon_no_file() }}
             <h3>Нет доступных отчетов</h3>
             <p>У вас пока что нет отчетов. Чтобы начать работу, создайте новый отчет.</p>
         </div>
-        {%endif%}
     </div>
 </div>
 

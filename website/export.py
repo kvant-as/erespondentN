@@ -415,7 +415,7 @@ def generate_excel_report(version_id):
         ws["J25"].alignment = left
         
         ws.merge_cells("J26:M26")    
-        ws["J26"].value = f"{report.user.fio}"
+        ws["J26"].value = f"{report.user.last_name} {report.user.first_name} {report.user.patronymic_name}"
         ws["J26"].font = bold_font_11
         ws["J26"].alignment = left    
         
@@ -757,7 +757,7 @@ def create_xml_for_version(version):
         "ISYEAR": "false",
         "TYPE": "2",
         "ISREADONLY": "false",
-        "FIO": version.fio or "",
+        "FIO": (version.last_name or "") + " " + (version.first_name or "") + " " + (version.patronymic_name or ""),
         "PHONE": version.telephone or "",
         "EMAIL": version.email or "",
         "SV": "1.2.7.2"

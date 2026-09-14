@@ -843,10 +843,10 @@ class AuditModule {
         
         if (!dropdown || !trigger || !menu) return;
         
-        const userType = menu.dataset.userType;
+        const isAuditor = menu.dataset.isAuditor === 'true';
         const userRegionDigit = menu.dataset.userRegionDigit;
-        
-        if (userType === 'Аудитор' && userRegionDigit) {
+
+        if (isAuditor && userRegionDigit) {
             const items = menu.querySelectorAll('.dropdown-item');
             items.forEach(item => {
                 if (item.dataset.value !== '' && item.dataset.value !== userRegionDigit) {
@@ -872,7 +872,7 @@ class AuditModule {
         }
         
         trigger.addEventListener('click', (e) => {
-            if (userType === 'Аудитор') {
+            if (isAuditor) {
                 e.preventDefault();
                 e.stopPropagation();
                 return;
@@ -880,10 +880,10 @@ class AuditModule {
             e.stopPropagation();
             dropdown.classList.toggle('open');
         });
-        
+
         menu.querySelectorAll('.dropdown-item').forEach(item => {
             item.addEventListener('click', (e) => {
-                if (userType === 'Аудитор') {
+                if (isAuditor) {
                     e.preventDefault();
                     e.stopPropagation();
                     return;
@@ -910,12 +910,12 @@ class AuditModule {
         const urlParams = new URLSearchParams(window.location.search);
         const regionFromUrl = urlParams.get('region');
         const regionMenu = document.getElementById('region-menu');
-        const userType = regionMenu?.dataset?.userType;
+        const isAuditor = regionMenu?.dataset?.isAuditor === 'true';
         const userRegionDigit = regionMenu?.dataset?.userRegionDigit;
-        
+
         document.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('selected'));
-        
-        if (userType === 'Аудитор' && userRegionDigit) {
+
+        if (isAuditor && userRegionDigit) {
             const targetItem = document.querySelector(`.dropdown-item[data-value="${userRegionDigit}"]`);
             const dropdownText = document.querySelector('#region-dropdown .dropdown-text');
             if (targetItem && dropdownText) {
@@ -924,7 +924,7 @@ class AuditModule {
             }
             return true;
         }
-        
+
         if (regionFromUrl && regionFromUrl !== '' && regionFromUrl !== 'all') {
             const targetItem = document.querySelector(`.dropdown-item[data-value="${regionFromUrl}"]`);
             if (targetItem) {
@@ -952,15 +952,15 @@ class AuditModule {
         const regionMenu = document.getElementById('region-menu');
         if (!regionMenu) return;
         
-        const userType = regionMenu.dataset.userType;
+        const isAuditor = regionMenu.dataset.isAuditor === 'true';
         const userRegionDigit = regionMenu.dataset.userRegionDigit;
-        
+
         const urlParams = new URLSearchParams(window.location.search);
         const regionFromUrl = urlParams.get('region');
-        
+
         document.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('selected'));
-        
-        if (userType === 'Аудитор' && userRegionDigit) {
+
+        if (isAuditor && userRegionDigit) {
             const targetItem = document.querySelector(`.dropdown-item[data-value="${userRegionDigit}"]`);
             const dropdownText = document.querySelector('#region-dropdown .dropdown-text');
             

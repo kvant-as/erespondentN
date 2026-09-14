@@ -7,14 +7,6 @@
         <h1>{{post.title}}</h1>
     </div>
     <article class="article_crystal">
-        <nav class="nav_flow">
-            <a href="/news" class="back_orbital">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M10 4L6 8L10 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-                Назад к новостям
-            </a>
-        </nav>
         <div class="content_hologram">
             {% if post.img_name %}
             <div class="media_illuminate">
@@ -31,6 +23,13 @@
         </div>
         <div class="article_footer">
             <div class="meta_tags">
+                <a href="/news" class="back_orbital">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M10 4L6 8L10 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Назад к новостям
+                </a>
+
                 {% if post.created_time %}
                 <time class="time_pulse">
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -38,7 +37,6 @@
                         <path d="M8 4V8L10 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
                     </svg>
                     {{ (post.created_time) | ru_date }}
-             
                 </time>
                 {% endif %}
                 {% if post.category %}
