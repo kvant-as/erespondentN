@@ -1319,22 +1319,33 @@ document.addEventListener('DOMContentLoaded', function () {
     var LONG_PRESS_DELAY = 500;
     var isLongPress = false;
 
+    // Дублирует контекстное меню строки на кнопки в под-меню (content-pod-menu):
+    // доступно, только когда в таблице выбрана строка отчёта.
+    function syncReportPodActions() {
+        var hasRow = !!document.querySelector('.report_row.active-report');
+        ['pod-edit-period-btn', 'pod-copy-report-btn', 'pod-delete-report-btn'].forEach(function(id) {
+            var btn = document.getElementById(id);
+            if (btn) btn.classList.toggle('disabled', !hasRow);
+        });
+    }
+
     function showContextMenu(event, row) {
         event.preventDefault();
-        
+
         if (row.dataset.id) {
             selectedReportId = row.dataset.id;
-            
+
             if (previousReportRow !== null) {
                 previousReportRow.classList.remove('active-report');
             }
             row.classList.add('active-report');
-            
+
             updateHeaderButtonStyle(true, true, true, true, true);
             previousReportRow = row;
+            syncReportPodActions();
 
             var pageX, pageY;
-            
+
             if (event.touches) {
                 pageX = event.touches[0].pageX;
                 pageY = event.touches[0].pageY;
@@ -1342,75 +1353,77 @@ document.addEventListener('DOMContentLoaded', function () {
                 pageX = event.pageX;
                 pageY = event.pageY;
             }
-            
-            contextMenuReport.style.top = pageY + 'px';
-            contextMenuReport.style.left = pageX + 'px';
-            contextMenuReport.style.display = 'flex';
+
+            if (contextMenuReport) {
+                contextMenuReport.style.top = pageY + 'px';
+                contextMenuReport.style.left = pageX + 'px';
+                contextMenuReport.style.display = 'flex';
+            }
         }
     }
 
-    reportRows.forEach(function(row) {
-        row.addEventListener('click', function(event) {
-            if (isLongPress) {
-                isLongPress = false;
-                return;
-            }
-            
-            activeRow = null;
-            updateHeaderButtonStyle(true, true, true, true, true);
-            if (this.dataset.id) {
-                selectedReportId = this.dataset.id;
-                if (this.classList.contains('active-report')) {
-                    this.classList.remove('active-report');
-                    previousReportRow = null;
-                    updateHeaderButtonStyle(false, false, false, false, false);
-                } else {
-                    if (previousReportRow !== null) {
-                        previousReportRow.classList.remove('active-report');
+    function bindReportRows() {
+        document.querySelectorAll('.report_row').forEach(function(row) {
+            if (row.dataset.bound === '1') return;
+            row.dataset.bound = '1';
+
+            row.addEventListener('click', function(event) {
+                if (isLongPress) {
+                    isLongPress = false;
+                    return;
+                }
+
+                activeRow = null;
+                updateHeaderButtonStyle(true, true, true, true, true);
+                if (this.dataset.id) {
+                    selectedReportId = this.dataset.id;
+                    if (this.classList.contains('active-report')) {
+                        this.classList.remove('active-report');
+                        previousReportRow = null;
+                        updateHeaderButtonStyle(false, false, false, false, false);
+                    } else {
+                        if (previousReportRow !== null) {
+                            previousReportRow.classList.remove('active-report');
+                        }
+                        this.classList.add('active-report');
+                        previousReportRow = this;
                     }
-                    this.classList.add('active-report');
-                    previousReportRow = this;
                 }
-            }
-        });
-        
-        row.addEventListener('contextmenu', function(event) {
-            event.preventDefault();
-            showContextMenu(event, this);
-        });
-        
-        row.addEventListener('touchstart', function(event) {
-            isLongPress = false;
-            longPressTimer = setTimeout(() => {
-                isLongPress = true;
+                syncReportPodActions();
+            });
+
+            row.addEventListener('contextmenu', function(event) {
+                event.preventDefault();
                 showContextMenu(event, this);
-                if (navigator.vibrate) {
-                    navigator.vibrate(50);
-                }
-            }, LONG_PRESS_DELAY);
+            });
+
+            row.addEventListener('touchstart', function(event) {
+                isLongPress = false;
+                longPressTimer = setTimeout(() => {
+                    isLongPress = true;
+                    showContextMenu(event, row);
+                    if (navigator.vibrate) {
+                        navigator.vibrate(50);
+                    }
+                }, LONG_PRESS_DELAY);
+            });
+
+            row.addEventListener('touchmove', function() { clearTimeout(longPressTimer); });
+            row.addEventListener('touchend', function() { clearTimeout(longPressTimer); });
+            row.addEventListener('touchcancel', function() { clearTimeout(longPressTimer); });
         });
-        
-        row.addEventListener('touchmove', function(event) {
-            clearTimeout(longPressTimer);
-        });
-        
-        row.addEventListener('touchend', function(event) {
-            clearTimeout(longPressTimer);
-        });
-        
-        row.addEventListener('touchcancel', function(event) {
-            clearTimeout(longPressTimer);
-        });
-    });
+    }
+
+    bindReportRows();
 
     document.addEventListener('click', function(event) {
-        if (!contextMenuReport.contains(event.target)) {
+        if (contextMenuReport && !contextMenuReport.contains(event.target)) {
             contextMenuReport.style.display = 'none';
         }
     });
 
     document.addEventListener('touchstart', function(event) {
-        if (!contextMenuReport.contains(event.target)) {
+        if (contextMenuReport && !contextMenuReport.contains(event.target)) {
             contextMenuReport.style.display = 'none';
         }
     });
@@ -1564,6 +1577,103 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     }
+
+    // ===== /reports: пункты под-меню Редактировать период / Скопировать /
+    //       Удалить — просто перенаправляют клик на кнопки контекстного меню
+    //       строки (вся логика заполнения модалок уже там). =====
+    (function() {
+        var map = {
+            'pod-edit-period-btn': 'link_change_report',
+            'pod-copy-report-btn': 'link_coppy_report',
+            'pod-delete-report-btn': 'del_reportButton'
+        };
+        Object.keys(map).forEach(function(podId) {
+            var pod = document.getElementById(podId);
+            var target = document.getElementById(map[podId]);
+            if (!pod || !target) return;
+            pod.addEventListener('click', function() {
+                if (pod.classList.contains('disabled')) return;
+                target.click();
+            });
+        });
+        syncReportPodActions();
+    })();
+
+    // ===== /reports: Добавить / Изменить период / Копировать / Удалить —
+    //       через AJAX, без полной перезагрузки: обновляется только таблица
+    //       отчётов, позиция прокрутки сохраняется (как в enPlans). =====
+    (function() {
+        var tbody = document.getElementById('reports-tbody');
+        if (!tbody) return;
+
+        function refreshReportsTable() {
+            return fetch('/reports/partial/rows', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                .then(function(r) { return r.ok ? r.text() : null; })
+                .then(function(html) {
+                    if (html == null) return;
+                    tbody.innerHTML = html;
+
+                    // После удаления последнего отчёта строк не остаётся —
+                    // показываем заглушку "Нет доступных отчетов" и прячем
+                    // таблицу (и наоборот при появлении первого отчёта).
+                    var hasRows = tbody.querySelector('tr.report_row') != null;
+                    var table = document.getElementById('report-table');
+                    var emptyState = document.getElementById('reports-empty-state');
+                    if (table) table.style.display = hasRows ? '' : 'none';
+                    if (emptyState) emptyState.style.display = hasRows ? 'none' : '';
+
+                    previousReportRow = null;
+                    updateHeaderButtonStyle(false, false, false, false, false);
+                    bindReportRows();
+                    syncReportPodActions();
+                });
+        }
+
+        function ajaxReportForm(form, closeModalId) {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                var scrollY = window.scrollY;
+                var submitBtn = form.querySelector('button[type="submit"]');
+                var action = (submitBtn && submitBtn.getAttribute('formaction')) || form.getAttribute('action') || form.action;
+                if (submitBtn) submitBtn.disabled = true;
+
+                fetch(action, {
+                    method: 'POST',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    body: new FormData(form)
+                }).then(function(r) {
+                    return r.json().catch(function() { return null; });
+                }).then(function(json) {
+                    if (submitBtn) submitBtn.disabled = false;
+                    if (json && typeof json.success === 'boolean') {
+                        if (json.message) messageFlash.addMessage(json.message, json.success ? 'success' : 'error');
+                        if (json.success) {
+                            if (closeModalId) {
+                                var m = document.getElementById(closeModalId);
+                                if (m) m.classList.remove('active');
+                            }
+                            refreshReportsTable().then(function() { window.scrollTo(0, scrollY); });
+                        }
+                    } else {
+                        window.location.reload();
+                    }
+                }).catch(function(err) {
+                    if (submitBtn) submitBtn.disabled = false;
+                    console.error('[reports] ajax form error', err);
+                    messageFlash.addMessage('Не удалось выполнить операцию', 'error');
+                });
+            });
+        }
+
+        var addForm = document.querySelector('#add_report_modal form');
+        var changeForm = document.querySelector('#change_period_report_modal form');
+        var copyForm = document.getElementById('copy-report-form');
+        var deleteForm = document.getElementById('deleteReport');
+        if (addForm) ajaxReportForm(addForm, 'add_report_modal');
+        if (changeForm) ajaxReportForm(changeForm, 'change_period_report_modal');
+        if (copyForm) ajaxReportForm(copyForm, 'copy_report_modal');
+        if (deleteForm) ajaxReportForm(deleteForm, null);
+    })();
 });
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -1838,3 +1948,4 @@ document.addEventListener('DOMContentLoaded', function() {
     const statsRow = document.querySelector('.statistics-row');
     statsRow ? observer.observe(statsRow) : startAnimation();
 })();
+

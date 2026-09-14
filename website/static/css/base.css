@@ -593,7 +593,7 @@ input[type="checkbox"]:checked::before {
     --default-border-radius: 0px;
     --default-top: 8px;
     
-    --bubble-padding-x: 30px;
+    --bubble-padding-x: 10px;
     --bubble-width: calc(100% - 20%);
     --bubble-border-radius: 30px;
     --bubble-top: 8px;
@@ -631,7 +631,7 @@ input[type="checkbox"]:checked::before {
     border-bottom: var(--bubble-border);
     box-shadow: var(--bubble-shadow);
     padding: 0 var(--bubble-padding-x);
-    width: var(--bubble-width);
+    /* width: var(--bubble-width); */
     border-radius: var(--bubble-border-radius);
     animation: bubbleAppear var(--animation-speed) var(--animation-easing) forwards;
 }
@@ -643,7 +643,7 @@ input[type="checkbox"]:checked::before {
         -webkit-backdrop-filter: blur(var(--default-blur));
         border-bottom-color: transparent;
         padding: 0 var(--default-padding-x);
-        width: var(--default-width);
+        /* width: var(--default-width); */
         border-radius: var(--default-border-radius);
         box-shadow: var(--default-shadow);
         top: var(--default-top);
@@ -654,7 +654,7 @@ input[type="checkbox"]:checked::before {
         -webkit-backdrop-filter: blur(var(--bubble-blur-amount));
         border-bottom: var(--bubble-border);
         padding: 0 var(--bubble-padding-x);
-        width: var(--bubble-width);
+        /* width: var(--bubble-width); */
         border-radius: var(--bubble-border-radius);
         box-shadow: var(--bubble-shadow);
         top: var(--bubble-top);
@@ -672,7 +672,7 @@ input[type="checkbox"]:checked::before {
         -webkit-backdrop-filter: blur(var(--bubble-blur-amount));
         border-bottom: var(--bubble-border);
         padding: 0 var(--bubble-padding-x);
-        width: var(--bubble-width);
+        /* width: var(--bubble-width); */
         border-radius: var(--bubble-border-radius);
         box-shadow: var(--bubble-shadow);
         top: var(--bubble-top);
@@ -683,7 +683,7 @@ input[type="checkbox"]:checked::before {
         -webkit-backdrop-filter: blur(var(--default-blur));
         border-bottom-color: transparent;
         padding: 0 var(--default-padding-x);
-        width: var(--default-width);
+        /* width: var(--default-width); */
         border-radius: var(--default-border-radius);
         box-shadow: var(--default-shadow);
         top: var(--default-top);
@@ -702,12 +702,12 @@ input[type="checkbox"]:checked::before {
     
     .fixed-header {
         padding: 0 var(--default-padding-x);
-        width: var(--default-width);
+        /* width: var(--default-width); */
     }
     
     .fixed-header.bubble {
 
-        width: var(--bubble-width);
+        /* width: var(--bubble-width); */
         border-radius: var(--bubble-border-radius);
     }
     
@@ -779,6 +779,7 @@ header nav ul {
     text-align: center;
     align-items: center;
     gap: 15px;
+    padding-left: 10px;
 }
 
 .name_app img{
@@ -824,6 +825,31 @@ header nav ul {
 
 .header-right li{
     cursor: pointer;
+}
+
+.session-timer {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-right: 16px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    background: rgba(0, 39, 98, 0.06);
+    color: #002762;
+    font-size: 14px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.session-timer svg {
+    width: 16px;
+    height: 16px;
+}
+
+.session-timer.session-timer-warning {
+    background: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
 }
 
 
@@ -1364,7 +1390,7 @@ main {
 /* MESSAGE FLASH */
 #flash-container {
   position: fixed;
-  bottom: 70px;
+  bottom: 10px;
   right: 30px;
   display: flex;
   flex-direction: column;
@@ -1553,6 +1579,11 @@ main {
 .float-label-container {
     position: relative;
     width: 100%;
+}
+
+.float-label-container .show-icon, .float-label-container .show-icon1, 
+.float-label-container .hide-icon, .float-label-container .hide-icon1 {
+    top: 40%;
 }
 
 .float-label-container .float-input {
@@ -4440,6 +4471,11 @@ main {
     color: black;
 }
 
+.personal-info_area .cm-session{
+    border-radius: 5px;
+
+}
+
 .profile_page .contener_row .personal-info_area .content p{
     margin-bottom: 20px;
     cursor: pointer;
@@ -4654,19 +4690,22 @@ main {
     position: sticky;
     top: 0;
     z-index: 10;
-    background: #f8f9fa;
 }
 
 .organizations-table th {
-    padding: 16px;
-    text-align: left;
-    font-weight: 600;
-    color: #424242;
-    border-bottom: 1px solid #e0e0e0;
-    font-size: 13px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    white-space: nowrap;
+position: sticky;
+top: 0;
+z-index: 2;
+padding: 12px 16px;
+font-size: 11px;
+font-weight: 700;
+text-transform: uppercase;
+letter-spacing: 0.03em;
+color: #64748b;
+background: #f4f7fb;
+text-align: left;
+white-space: nowrap;
+border-bottom: 1px solid #e2e6ea;
 }
 
 .organizations-table th:first-child {
@@ -4924,12 +4963,7 @@ main {
         justify-content: center;
     }
 
-    .dop-info-cont {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 10px;
-        margin: 20px 0;
-    }
+
     
     .blue_btn {
         width: 100%;
@@ -5010,7 +5044,7 @@ main {
     display: flex;
     flex-direction: column;
     gap: 8px;
-    align-items: end;
+    align-items: start;
 }
 
 .dop-cont-note {
@@ -6018,6 +6052,31 @@ main {
 .content-pod-menu nav ul li img{
     height: 40px;
     width: auto;
+}
+
+/* Иконки-действия над строкой таблицы (Редактировать / Удалить и т.п.) в
+   под-меню отчёта. SVG нужен явный размер, как у img. */
+.content-pod-menu nav ul li.pod-row-action svg{
+    height: 40px;
+    width: 40px;
+}
+
+/* Пустой <img> без src — резервируем под него место 40×40, картинку
+   подставят позже. */
+.content-pod-menu nav ul li.pod-row-action img:not([src]),
+.content-pod-menu nav ul li.pod-row-action img[src=""]{
+    display: inline-block;
+    width: 40px;
+    height: 40px;
+}
+
+/* Кнопка действия заблокирована, пока в таблице не выбрана строка
+   (или строка не поддерживает это действие) — состоянием управляет report.js. */
+.content-pod-menu nav ul li.pod-row-action.disabled{
+    opacity: 0.4;
+    pointer-events: none;
+    cursor: not-allowed;
+    filter: grayscale(0.9);
 }
 
 .content-pod-menu nav ul li a{
@@ -7484,7 +7543,7 @@ th.resizable .resizer {
 }
 
 .model_but_area.between{
-
+    justify-content: space-between;
     flex-direction: row;
     gap: 10px;
 }
@@ -8311,6 +8370,198 @@ th.resizable .resizer {
     font-weight: 500;
 }
 
+/* --- Модалка «Добавить продукцию»: оформление как в enPlans,
+       цвета — синие erespondentN (--blue-back) --- */
+.add-progress-bar-container {
+    width: 100%;
+    height: 6px;
+    background-color: #eef1f4;
+    border-radius: 3px;
+    margin: 18px 0 20px;
+    overflow: hidden;
+}
+
+.add-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #ffffff, var(--blue-back, #0073c0));
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}
+
+.add-search-group {
+    margin-bottom: 12px;
+}
+
+.add-search-group label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: #334155;
+    margin-bottom: 6px;
+}
+
+.add-search-field {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.add-search-field svg {
+    position: absolute;
+    left: 12px;
+    width: 16px;
+    height: 16px;
+    color: #94a3b8;
+    pointer-events: none;
+}
+
+.add-search-field input {
+    width: 100%;
+    padding: 10px 14px 10px 36px;
+    border: 1px solid #d9dee3;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    background-color: #fbfcfd;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.add-search-field input:focus {
+    outline: none;
+    border-color: var(--blue-back, #0073c0);
+    background-color: #fff;
+    box-shadow: 0 0 0 3px rgba(0, 115, 192, 0.12);
+}
+
+.add-section-picker {
+    border: 1px solid #e2e6ea;
+    border-radius: 12px;
+    max-height: 320px;
+    overflow: auto;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.add-section-picker::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.add-section-picker::-webkit-scrollbar-thumb {
+    background: #c1c7cf;
+    border-radius: 3px;
+}
+
+.add-picker-table {
+    width: 100%;
+    border-spacing: 0;
+    border-collapse: separate;
+    background: #fff;
+}
+
+.add-picker-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    padding: 12px 16px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #64748b;
+    background: #f4f7fb;
+    text-align: left;
+    white-space: nowrap;
+    border-bottom: 1px solid #e2e6ea;
+}
+
+.add-picker-table tbody td {
+    padding: 10px 16px;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: #1f2937;
+    vertical-align: top;
+    border-bottom: 1px solid #eef2f6;
+}
+
+.add-picker-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.add-picker-table .add-picker-name {
+    white-space: normal;
+    word-break: break-word;
+    line-height: 1.4;
+}
+
+#chooseProdTableBody tr {
+    cursor: pointer;
+    transition: background-color 0.15s ease-out;
+}
+
+#chooseProdTableBody tr:hover {
+    background-color: #f5f8fc;
+}
+
+#chooseProdTableBody tr.chosen-product,
+#chooseProdTableBody tr.chosen-product:hover {
+    background-color: #e6f2fb;
+}
+
+#chooseProdTableBody tr.chosen-product td {
+    color: #0f172a;
+}
+
+.add-section-chosen {
+    margin: 12px 0 4px;
+    font-size: 13px;
+    color: #64748b;
+}
+
+.add-section-chosen.is-set {
+    color: #0f172a;
+    font-weight: 600;
+}
+
+.add-step-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 16px;
+}
+
+.add-step-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 14px;
+    border: 1px solid #d9dee3;
+    border-radius: 8px;
+    background: #fff;
+    color: black;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.1s ease, opacity 0.2s ease;
+}
+
+.add-step-btn:hover:not(:disabled) {
+    border-color: var(--blue-back, #0073c0);
+    box-shadow: 0 2px 12px rgba(0, 115, 192, 0.2);
+}
+
+.add-step-btn:active:not(:disabled) {
+    transform: translateY(1px);
+}
+
+.add-step-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    color: #9ca3af;
+}
+
+.add-step-btn svg {
+    display: block;
+}
+
 #nameOfProductButton {
     height: calc(100% - 6px);
     display: flex;
@@ -8330,6 +8581,13 @@ th.resizable .resizer {
     border: 1px solid rgb(217, 217, 217);
     border-top-right-radius: 5px;
     border-bottom-right-radius: 5px;
+}
+
+.add-section-step .add-step-title {
+    font-weight: 600;
+    font-size: 14px;
+    color: #334155;
+    margin: 0 0 12px;
 }
 
 .choose-product-area button {
@@ -10692,6 +10950,7 @@ th.resizable .resizer {
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 20px;
     margin: 20px 0;
+    color: var(--blue-back) !important;
 }
 
 .card-FAQ {
@@ -10706,6 +10965,10 @@ th.resizable .resizer {
     transform: translateY(-4px);
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
     border-color: #d1d5db;
+}
+
+.card-FAQ .icon-FAQ{
+    color: var(--blue-back) !important;
 }
 
 .icon-FAQ {
@@ -10910,14 +11173,7 @@ th.resizable .resizer {
 }
 
 .article_crystal {
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    border-radius: 24px;
-    padding: 48px;
-    box-shadow: 
-        0 8px 32px rgba(0, 39, 98, 0.12),
-        inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    padding: 20px 0;
 }
 
 .nav_flow {
@@ -10941,24 +11197,29 @@ th.resizable .resizer {
 .back_orbital {
     display: inline-flex;
     align-items: center;
-    gap: 12px;
-    color: #002762;
-    text-decoration: none;
-    font-weight: 600;
-    font-size: 15px;
-    letter-spacing: 0.5px;
-    padding: 12px 24px;
-    border-radius: 50px;
-    background: rgba(0, 39, 98, 0.05);
-    border: 1px solid rgba(0, 39, 98, 0.1);
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    gap: 8px;
+    color: #5a6c87;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 8px 16px;
+
+    color: black;
+    background-color: transparent;
+
+    border: none;
 }
 
 .back_orbital:hover {
-    background: rgba(0, 39, 98, 0.1);
-    transform: translateX(-8px);
-    border-color: rgba(0, 39, 98, 0.2);
-    gap: 16px;
+    transition: scale 0.3s ease;
+    scale: 1.05;
+}
+
+.report-area_page .rotation-fromareas_info .back_orbital,
+.meta_tags .back_orbital{
+    background: rgba(0, 39, 98, 0.04);
+    border-radius: 50px;
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--border-color);
 }
 
 .headline_aurora h1 {
@@ -11312,10 +11573,28 @@ th.resizable .resizer {
 /* begin news*/
 .news_cont {
     width: calc(100% - 40px);
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 2% 5%;
-    margin-bottom: 40px;
+    max-width: 780px;
+    margin: 0 auto 56px;
+    padding: 0 20px;
+    box-sizing: border-box;
+}
+
+.news_head {
+    margin: 8px 0 20px;
+}
+
+.news_head h1 {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 700;
+    color: #0f172a;
+    letter-spacing: -0.01em;
+}
+
+.news_head_sub {
+    margin: 6px 0 0;
+    font-size: 13.5px;
+    color: #64748b;
 }
 
 .news_cont_title {
@@ -11325,55 +11604,258 @@ th.resizable .resizer {
     font-weight: 600;
 }
 
-.news_grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 20px;
+/* --- прозрачный список в стиле новостной ленты --- */
+.news_feature {
+    display: flex;
+    gap: 16px;
+    text-decoration: none;
+    padding: 14px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.26);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
 }
 
-.news_item {
-    cursor: pointer;
-    background-color: #ffffff49;
+.news_feature:hover {
+    background: rgba(255, 255, 255, 0.42);
+    border-color: rgba(0, 115, 192, 0.35);
+}
+
+.news_feature_img {
+    flex-shrink: 0;
+    width: 168px;
+    height: 104px;
     border-radius: 10px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s ease;
     overflow: hidden;
-    max-width: 350px;
+    background: #dde5ec;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #94a3b8;
 }
 
-.news_item:hover {
-    background-color: #ffffff93;
-    transform: translateY(-10px);
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-}
-
-.news_img {
+.news_feature_img img {
     width: 100%;
-    height: 200px;
+    height: 100%;
     object-fit: cover;
+    display: block;
 }
 
-.news_content {
-    padding: 15px;
+.news_feature_img svg {
+    width: 34px;
+    height: 34px;
 }
 
-.news_title {
-    font-size: 20px;
-    font-weight: bold;
-    margin-bottom: 10px;
-    color: black;
+.news_feature_body {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    gap: 5px;
 }
 
-.news_text {
+.news_feature_title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.3;
+    color: #0f172a;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.news_feature_sub {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.45;
+    color: #475569;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.news_feature_meta {
+    margin-top: auto;
+    padding-top: 4px;
+    font-size: 12px;
+    color: #64748b;
+}
+
+.news_list_hl {
+    margin-top: 14px;
+    border-radius: 14px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.2);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.45);
+}
+
+.news_row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 12px 16px;
+    text-decoration: none;
+    border-top: 1px solid rgba(15, 23, 42, 0.08);
+    transition: background 0.15s ease;
+}
+
+.news_row:first-child {
+    border-top: none;
+}
+
+.news_row:hover {
+    background: rgba(255, 255, 255, 0.4);
+}
+
+.news_row_title {
+    flex: 1;
+    min-width: 0;
+    font-size: 14.5px;
+    font-weight: 600;
+    line-height: 1.35;
+    color: #1f2937;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    transition: color 0.15s ease;
+}
+
+.news_row:hover .news_row_title {
+    color: var(--blue-back, #0073c0);
+}
+
+.news_row_meta {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.news_row_time {
+    font-size: 12px;
+    color: #64748b;
+}
+
+.news_row_views {
+    font-size: 11.5px;
+    color: #94a3b8;
+}
+
+@media (max-width: 560px) {
+    .news_feature { flex-direction: column; }
+    .news_feature_img { width: 100%; height: 150px; }
+    .news_row { padding: 11px 13px; }
+    .news_row_title { font-size: 13.5px; }
+}
+
+/* --- пейджер (стиль кнопок — как .pagination-btn / .next-btn) --- */
+.news_pager {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    margin-top: 34px;
+    padding: 4px;
+    border-radius: 12px;
+    width: max-content;
+    max-width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.news_pager_btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+    height: 40px;
+    padding: 0 8px;
+    border: none;
+    background: #f8f9fa;
+    border-radius: 10px;
+    color: #0088cc;
+    font-size: 15px;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+a.news_pager_btn:hover {
+    background: #e3f2fd;
+    transform: scale(1.05);
+}
+
+a.news_pager_btn:active {
+    transform: scale(0.95);
+}
+
+.news_pager_btn.is-current {
+    background: #e3f2fd;
+    color: #0088cc;
+    font-weight: 600;
+    cursor: default;
+}
+
+.news_pager_btn.is-disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    color: #9e9e9e;
+    pointer-events: none;
+}
+
+.news_pager_nav svg {
+    display: block;
+}
+
+.news_pager_gap {
+    min-width: 24px;
+    text-align: center;
+    color: #9e9e9e;
+    font-weight: 500;
+}
+
+/* --- пусто --- */
+.news_empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: #64748b;
+}
+
+.news_empty svg {
+    width: 56px;
+    height: 56px;
+    opacity: 0.7;
+    margin-bottom: 12px;
+}
+
+.news_empty h3 {
+    margin: 0 0 6px;
+    color: #334155;
+    font-size: 18px;
+}
+
+.news_empty p {
+    margin: 0;
     font-size: 14px;
-    color: #000000;
 }
 
-.news_time {
-    font-size: 13.5px;
-    color: #3d3d3d;
-    text-align: end;
-    padding: 8px;
+@media (max-width: 600px) {
+    .news_cont { padding: 0 14px; }
+    .news_grid { grid-template-columns: 1fr; gap: 16px; }
+    .news_head h1 { font-size: 24px; }
 }
 
 .news_list {
@@ -11856,6 +12338,7 @@ th.resizable .resizer {
 
     .name_app a{
         font-size: 15px !important;
+        display: none;
     }    
 
     /*header end*/

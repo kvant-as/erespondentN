@@ -1,0 +1,46 @@
+{# Строки таблицы отчётов. Рендерятся и внутри report_area.html, и отдельно
+   маршрутом /reports/partial/rows — для обновления таблицы без полной
+   перезагрузки страницы после Добавить/Изменить период/Копировать/Удалить
+   (см. base.js). #}
+{% import 'macros/content.html' as content %}
+{% for row in report %}
+<tr class="report_row" data-id="{{ row.id }}" data-version-id="{{ row.versions[0].id }}">
+    <td></td>
+    <td style="padding: 4px;">
+        <button class="open-report-btn" onclick="window.location.href='/reports/fuel/{{row.versions[0].id}}'">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            </svg>
+            <span>Просмотр</span>
+        </button>
+    </td>
+    <td style="display: none;">
+        <input type="text" id="report_id" value="{{ row.id }}" readonly>
+    </td>
+    <td>
+        <input type="text" id="report_organization_name" value="{{ row.organization.full_name }}" readonly>
+    </td>
+    <td>
+        <input type="text" id="report_okpo" value="{{ row.organization.okpo }}" readonly>
+    </td>
+    <td>
+        <input type="text" id="report_year" value="{{ row.year }}" readonly>
+    </td>
+    <td>
+        <input type="text" id="report_quarter" value="{{ row.quarter }}" readonly>
+    </td>
+    {% set version = row.versions[0] if row.versions else None %}
+    {% if version %}
+        <td>
+            <input type="text" id="report_begin_time" value="{{ version.begin_time.strftime('%d-%m-%Y') }}" readonly>
+        </td>
+        <td>
+            {{ content.status_report(version) }}
+        </td>
+    {% else %}
+        <td></td>
+    {% endif %}
+    <td></td>
+</tr>
+{% endfor %}

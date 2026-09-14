@@ -26,6 +26,7 @@ from flask_login import (
 
 from sqlalchemy import func
 from sqlalchemy.orm import joinedload
+from common_models.models import Plan
 from website.report import check_version_editable, control_func, create_section, get_organizations_with_reports_excel_xlsx, process_section_calculations, redirect_back, subtract_from_aggregated_sections, to_decimal, update_aggregated_sections, update_section_fields, update_version_status
 from ..export import create_archive_async, generate_excel_report, create_xml_for_version, export_tasks
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -43,7 +44,7 @@ from ..models import (
 
 from website.ecp import check_certificate_expiry
 from website.sessions import clear_session_cookie, create_login_response, session_required
-from ..time import current_utc_time
+from common_models import current_utc_time
 from ..email import send_email
 
 auth = Blueprint('auth', __name__)
@@ -76,10 +77,8 @@ def login():
             if user:
                 if check_password_hash(user.password, password):
                     login_user(user, remember=remember)
-                    
-                    user.last_active = current_utc_time()
-                    db.session.commit()
-
+                    # активность фиксируется в UserAppActivity через сигнал
+                    # user_logged_in (common_models.sessions.enforce_idle_timeout)
                     response = create_login_response(user)
                     flash('Авторизация прошла успешно', 'success')
                     return response
@@ -111,9 +110,11 @@ def sign():
                 flash('Пользователь с таким email уже существует', 'error')
             elif not re.match(r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$', email):
                 flash('Некорректный адрес электронной почты', 'error') 
+            elif len(password1) < 5:
+                flash('Пароль должен содержать не менее 5 символов', 'error')
             elif password1 != password2:
-                flash('Ошибка в подтверждении пароля', 'error') 
-            else:      
+                flash('Ошибка в подтверждении пароля', 'error')
+            else:
                 session['temp_user'] = {
                     'email': email,
                     'password': generate_password_hash(password1)
@@ -144,11 +145,8 @@ def code():
             )
             db.session.add(new_user)
             db.session.commit()
-            
+
             remember = True
-            new_user.last_active = current_utc_time()
-            db.session.commit()
-            
             session.pop('temp_user', None)
             session.pop('activation_code', None)
             
@@ -189,8 +187,9 @@ def add_personal_parametrs():
             flash('Заполните все обязательные поля', 'error')
             return redirect(url_for('views.profile_common'))
 
-        fio = f"{second_name} {name} {patronymic}".strip()
-        current_user.fio = fio
+        current_user.first_name = name
+        current_user.last_name = second_name
+        current_user.patronymic_name = patronymic
         db.session.commit()
 
 
@@ -326,8 +325,23 @@ def delete_account():
             flash('Невозможно удалить аккаунт, так как есть отчеты со статусом "Одобрен"', 'error')
             return redirect(url_for('auth.profile_danger'))     
            
-        if current_user.type == 'Администратор':
-            flash('Невозможно удалить аккаунт  администратора', 'error')
+           
+        has_active_plans = Plan.query.filter(
+            Plan.user_id == user.id,
+            (Plan.is_sent == True) | (Plan.is_approved == True) | (Plan.is_error == True)
+        ).first()
+        
+        if has_active_plans:
+            flash('Невозможно удалить аккаунт. У вас есть отправленные, Утвержденные планы или планы с ошибками', 'error')
+            return redirect(url_for('views.profile'))
+           
+           
+        if current_user.is_admin:
+            flash('Невозможно удалить аккаунт администратора', 'error')
+            return redirect(url_for('auth.profile_danger'))
+        
+        if current_user.auditor:
+            flash('Невозможно удалить аккаунт проверяющего отчеты.', 'error')
             return redirect(url_for('auth.profile_danger'))
         
         db.session.delete(user)

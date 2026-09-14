@@ -150,7 +150,7 @@
                                 <polyline points="6 9 12 15 18 9"></polyline>
                             </svg>
                         </div>
-                        <div class="dropdown-menu" id="region-menu" data-user-type="{{ current_user.type }}" data-user-region-digit="{{ current_user.organization.region.number if current_user.organization and current_user.organization.region else '' }}">
+                        <div class="dropdown-menu" id="region-menu" data-is-auditor="{{ current_user.is_auditor|lower }}" data-user-region-digit="{{ current_user.organization.region.number if current_user.organization and current_user.organization.region else '' }}">
                             <div class="dropdown-item" data-value="">Все регионы</div>
                             <div class="dropdown-item" data-value="1">Брестская область</div>
                             <div class="dropdown-item" data-value="2">Витебская область</div>
@@ -370,7 +370,7 @@
             <input type="hidden" name="year_filter" value="{% if year_filter == '' and quarter_filter == '' %}{% else %}{{ year_filter }}{% endif %}">         
             <input type="hidden" name="quarter_filter" value="{% if year_filter == '' and quarter_filter == '' %}{% else %}{{ quarter_filter }}{% endif %}">
             
-            {% if current_user.type == 'Администратор' or current_user.type == 'Смотрящий' %}
+            {% if current_user.is_admin or current_user.is_reader %}
             <div class="export-region-filter">
                 <label class="export-region-label">Фильтр по региону</label>
                 <select name="export_region" id="export_region" class="export-region-select">
