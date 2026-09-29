@@ -109,13 +109,24 @@ function updateMessagesContainer(messages, totalCount) {
         const dateParts = msg.create_time.split(' ');
         const date = dateParts[0] || '';
         const time = dateParts[1] || '';
+
+        // Подпись отправителя показываем, только если сообщение реально от
+        // кого-то (sender_id заполнен — сейчас это только ответ администратора
+        // из админ-панели, см. routes/admin_messages.py). Автоматические
+        // уведомления (статус отчёта, "ваше сообщение отправлено" и т.п.)
+        // отправляются без sender_id и подписи не имеют — это не от админа.
+        let senderLabel = '';
+        if (msg.sender_id && msg.sender) {
+            senderLabel = msg.sender.is_admin ? 'Администратор' : (msg.sender.fio || msg.sender.email || '');
+        }
+
         return `
         <div class="mes ${msg.is_read ? 'read' : 'unread'}" id="message-${msg.id}">
             <div class="message_header">
                 <div class="time_mes">
                     <span class="msg-date">${date}</span>
                     <span class="msg-time">${time}</span>
-                    <span class="sender">Администратор</span>
+                    ${senderLabel ? `<span class="sender">${escapeHtml(senderLabel)}</span>` : ''}
                 </div>
             </div>
             <div class="text_mes">${escapeHtml(msg.text)}</div>

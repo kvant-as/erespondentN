@@ -96,23 +96,27 @@
         <div class="askquestion-row">
             <div class="askquestion_form">
                 <div class="askquestion_name">Форма обратной связи</div>
+                <script id="currentUserOrg" type="application/json">{{ user_org | tojson }}</script>
                 <form action="/send-for-admin" method="POST" id="askquestion-form">
                     <div class="form-group">
                         <select name="askquestion_type" id="questionType" required>
                             <option value="">Выберите тип вопроса</option>
                             <option value="organization-none">Нет организации в списке</option>
-                            <option value="organization-edit">Изменить данные организации</option>
+                            {% if user_org %}
+                                <option value="organization-edit">Изменить данные организации</option>
+                            {% endif %}
                             <option value="other">Другое</option>
                         </select>
                     </div>
 
-                    <div id="organizationSearchBlock" class="search-org-container" style="display: none;">
-                        <div class="form-group">
-                            <label for="organizationSearch">Поиск организации</label>
-                            <textarea type="text" id="organizationSearch" placeholder="Поиск организации по названию или ОКПО" autocomplete="off" maxlength="150"></textarea>
+                    {% if user_org %}
+                        <div id="organizationEditInfo" class="search-org-container" style="display: none;">
+                            <div class="form-group">
+                                <label>Организация</label>
+                                <div class="glass-info-block">{{ user_org.full_name }}</div>
+                            </div>
                         </div>
-                        <div id="searchResults" class="search-results-dropdown"></div>
-                    </div>
+                    {% endif %}
 
                     <div id="newOrgData" style="display: none;">
                         <div class="new-org-data">

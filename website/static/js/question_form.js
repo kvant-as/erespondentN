@@ -18,32 +18,35 @@ document.addEventListener('DOMContentLoaded', function() {
     const newRegionBtns = document.querySelectorAll('#newOrgData .region-btn');
     
     const addOrgFields = document.getElementById('addOrgFields');
-    const organizationSearchBlock = document.getElementById('organizationSearchBlock');
+    const organizationEditInfo = document.getElementById('organizationEditInfo');
     const newOrgData = document.getElementById('newOrgData');
-    
-    const organizationSearch = document.getElementById('organizationSearch');
-    const searchResults = document.getElementById('searchResults');
-    
+
+    // Организация, уже привязанная к профилю пользователя — подставляется
+    // в форму "Изменить данные организации" сразу, без отдельного поиска
+    // (см. beginPage() в routes/views.py, передаёт user_org).
+    const currentUserOrgEl = document.getElementById('currentUserOrg');
+    let currentUserOrg = null;
+    try {
+        currentUserOrg = currentUserOrgEl ? JSON.parse(currentUserOrgEl.textContent) : null;
+    } catch (e) {
+        currentUserOrg = null;
+    }
+
     const selectedOrgId = document.getElementById('selectedOrgId');
     const organizationOldName = document.getElementById('organizationOldName');
     const organizationOldOkpo = document.getElementById('organizationOldOkpo');
     const organizationOldYnp = document.getElementById('organizationOldYnp');
     const organizationOldRegion = document.getElementById('organizationOldRegion');
-    
+
     const oldNameHint = document.getElementById('oldNameHint');
     const oldYnpHint = document.getElementById('oldYnpHint');
     const oldOkpoHint = document.getElementById('oldOkpoHint');
     const oldRegionHint = document.getElementById('oldRegionHint');
-    
+
     const nameStatusInline = document.getElementById('nameStatusInline');
     const ynpStatusInline = document.getElementById('ynpStatusInline');
     const okpoStatusInline = document.getElementById('okpoStatusInline');
     const regionStatusInline = document.getElementById('regionStatusInline');
-    
-    let searchTimeout = null;
-    let currentPage = 1;
-    let isLoading = false;
-    let hasMore = true;
 
     function setupRegionButtons(btns, hiddenInput, statusElement) {
         btns.forEach(function(btn) {
@@ -341,38 +344,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    function clearOrganizationSelection() {
-        selectedOrgId.value = '';
-        organizationOldName.value = '';
-        organizationOldOkpo.value = '';
-        organizationOldYnp.value = '';
-        organizationOldRegion.value = '';
-        
-        if (newNameInput) newNameInput.value = '';
-        if (newOkpoInput) newOkpoInput.value = '';
-        if (newYnpInput) newYnpInput.value = '';
-        if (newRegionHidden) newRegionHidden.value = '';
-        if (newRegionStatus) {
-            newRegionStatus.textContent = 'Регион не выбран';
-            newRegionStatus.classList.remove('selected');
-        }
-        newRegionBtns.forEach(function(b) {
-            b.classList.remove('selected');
-        });
-        if (organizationSearch) organizationSearch.value = '';
-        if (newOrgData) newOrgData.style.display = 'none';
-        
-        updateInlineComparison();
-        validateForm();
-    }
-
     function selectOrganization(org) {
         selectedOrgId.value = org.id;
         organizationOldName.value = org.full_name;
         organizationOldOkpo.value = org.okpo || '';
         organizationOldYnp.value = org.ynp || '';
         organizationOldRegion.value = org.region_id || '';
-        
+
         if (newNameInput) newNameInput.value = org.full_name;
         if (newOkpoInput) newOkpoInput.value = org.okpo || '';
         if (newYnpInput) newYnpInput.value = org.ynp || '';
@@ -392,114 +370,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 newRegionStatus.classList.add('selected');
             }
         }
-        
-        if (organizationSearch) organizationSearch.value = org.full_name;
-        if (searchResults) {
-            searchResults.innerHTML = '';
-            searchResults.classList.remove('show');
-        }
-        
+
         if (newOrgData) newOrgData.style.display = 'block';
-        
+
         updateInlineComparison();
         validateForm();
     }
-
-    async function searchOrganizations(query, page) {
-        page = page || 1;
-        if (!query.trim() || query.length < 2) {
-            if (searchResults) {
-                searchResults.innerHTML = '';
-                searchResults.classList.remove('show');
-            }
-            return;
-        }
-        
-        if (isLoading) return;
-        isLoading = true;
-        
-        if (page === 1 && searchResults) {
-            searchResults.innerHTML = '<div class="search-loading">Поиск...</div>';
-            searchResults.classList.add('show');
-        }
-        
-        try {
-            const response = await fetch('/api/organizations?q=' + encodeURIComponent(query) + '&page=' + page);
-            const data = await response.json();
-            
-            if (page === 1 && searchResults) {
-                searchResults.innerHTML = '';
-            }
-            
-            if (data.organizations.length === 0 && page === 1 && searchResults) {
-                searchResults.innerHTML = '<div class="search-loading">Ничего не найдено</div>';
-                hasMore = false;
-            } else if (searchResults) {
-                data.organizations.forEach(function(org) {
-                    const item = document.createElement('div');
-                    item.className = 'search-result-item';
-                    item.innerHTML = '<div class="search-result-name">' + escapeHtml(org.full_name) + '</div><div class="search-result-details"><span class="search-result-okpo">ОКПО: ' + (org.okpo || '—') + '</span><span class="search-result-ynp">УНП: ' + (org.ynp || '—') + '</span><span class="search-result-region">Регион: ' + (org.region_name || '—') + '</span></div>';
-                    item.addEventListener('click', function() {
-                        selectOrganization(org);
-                    });
-                    searchResults.appendChild(item);
-                });
-                
-                hasMore = data.has_next;
-                currentPage = data.page;
-            }
-            
-            if (searchResults && searchResults.children.length > 0) {
-                searchResults.classList.add('show');
-            }
-            
-        } catch (error) {
-            console.error('Ошибка поиска:', error);
-            if (page === 1 && searchResults) {
-                searchResults.innerHTML = '<div class="search-loading">Ошибка при поиске</div>';
-            }
-        } finally {
-            isLoading = false;
-        }
-    }
-
-    function escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
-
-    if (organizationSearch) {
-        organizationSearch.addEventListener('input', function(e) {
-            clearTimeout(searchTimeout);
-            const query = e.target.value;
-            
-            if (selectedOrgId.value) {
-                clearOrganizationSelection();
-            }
-            
-            searchTimeout = setTimeout(function() {
-                if (query.length >= 2) {
-                    searchOrganizations(query, 1);
-                } else if (searchResults) {
-                    searchResults.innerHTML = '';
-                    searchResults.classList.remove('show');
-                }
-            }, 300);
-        });
-
-        organizationSearch.addEventListener('focus', function() {
-            if (organizationSearch.value.length >= 2 && searchResults && searchResults.children.length > 0) {
-                searchResults.classList.add('show');
-            }
-        });
-    }
-
-    document.addEventListener('click', function(e) {
-        if (organizationSearchBlock && !organizationSearchBlock.contains(e.target)) {
-            if (searchResults) searchResults.classList.remove('show');
-        }
-    });
 
     if (addYnpInput) {
         addYnpInput.addEventListener('input', function(e) {
@@ -556,7 +432,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const selectedValue = questionTypeSelect.value;
         
         if (addOrgFields) addOrgFields.style.display = 'none';
-        if (organizationSearchBlock) organizationSearchBlock.style.display = 'none';
+        if (organizationEditInfo) organizationEditInfo.style.display = 'none';
         if (newOrgData) newOrgData.style.display = 'none';
         if (problemTextarea && problemTextarea.closest) {
             problemTextarea.closest('.form-group').style.display = 'none';
@@ -610,12 +486,12 @@ document.addEventListener('DOMContentLoaded', function() {
             validateForm();
             
         } else if (selectedValue === 'organization-edit') {
-            if (organizationSearchBlock) organizationSearchBlock.style.display = 'block';
+            if (organizationEditInfo) organizationEditInfo.style.display = 'block';
             if (newNameInput) newNameInput.required = false;
             if (newOkpoInput) newOkpoInput.required = false;
             if (newYnpInput) newYnpInput.required = false;
             if (problemTextarea) problemTextarea.required = false;
-            
+
             if (addNameInput) {
                 addNameInput.required = false;
                 addNameInput.removeAttribute('required');
@@ -628,10 +504,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 addYnpInput.required = false;
                 addYnpInput.removeAttribute('required');
             }
-            
+
             submitButton.disabled = false;
             submitButton.style.opacity = '1';
-            if (selectedOrgId && selectedOrgId.value) {
+            // Организация уже известна из профиля — сразу подставляем её
+            // данные в поля редактирования, без отдельного шага поиска.
+            if (currentUserOrg && !selectedOrgId.value) {
+                selectOrganization(currentUserOrg);
+            } else if (selectedOrgId && selectedOrgId.value) {
                 if (newOrgData) newOrgData.style.display = 'block';
             }
             validateForm();

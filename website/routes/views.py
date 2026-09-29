@@ -118,18 +118,34 @@ def beginPage():
     user_data = User.query.filter_by().count()
     organization_data = Organization.query.count()
     report_data = Report.query.count()
-    latest_news = News.query.filter(News.is_erespondentn == True).order_by(desc(News.id)).first()  
-    
+    latest_news = News.query.filter(News.is_erespondentn == True).order_by(desc(News.id)).first()
+
     regions = Region.query.order_by(Region.number).all()
-    return render_template('begin_page.html', 
+
+    # Для формы обратной связи ("Изменить данные организации") — данные
+    # организации, уже привязанной к профилю, чтобы форма сразу показывала
+    # её реквизиты на редактирование, без отдельного шага поиска.
+    user_org = None
+    if current_user.is_authenticated and current_user.organization:
+        org = current_user.organization
+        user_org = {
+            'id': org.id,
+            'full_name': org.full_name,
+            'okpo': org.okpo,
+            'ynp': org.ynp,
+            'region_id': org.region_id,
+        }
+
+    return render_template('begin_page.html',
                            latest_news=latest_news,
-                           user=current_user, 
-                           user_data = user_data, 
-                           organization_data = organization_data, 
+                           user=current_user,
+                           user_data = user_data,
+                           organization_data = organization_data,
                            report_data = report_data,
                            previous_quarter = get_previous_quarter(),
-                           previous_year=get_report_year(), 
-                           regions=regions
+                           previous_year=get_report_year(),
+                           regions=regions,
+                           user_org=user_org
                            )
 
 @views.route('/sign', methods=['GET'])
@@ -1540,8 +1556,7 @@ def send_for_admin():
         new_organization_okpo = request.form.get('new_organization_okpo', '')
         new_organization_ynp = request.form.get('new_organization_ynp', '')
         new_organization_region = request.form.get('new_organization_region', '')
-        selected_org_id = request.form.get('selected_org_id', '')
-        
+
         if not question_type:
             flash('Выберите тип вопроса', 'error')
             return redirect(url_for('views.beginPage'))
@@ -1572,19 +1587,13 @@ def send_for_admin():
             flash('Ваш запрос на добавление организации отправлен.', 'success')
             
         elif question_type == 'organization-edit':
-            if not selected_org_id:
-                flash('Выберите организацию из списка', 'error')
-                return redirect(url_for('views.beginPage'))
-            
-            organization = Organization.query.get(selected_org_id)
+            # Редактируется только организация, уже привязанная к профилю —
+            # поиск и выбор организации из списка больше не нужен.
+            organization = current_user.organization
             if not organization:
-                flash('Организация не найдена', 'error')
+                flash('У вас не привязана организация для редактирования', 'error')
                 return redirect(url_for('views.beginPage'))
-            
-            if current_user.organization_id != organization.id:
-                flash('Вы можете изменять данные только своей организации', 'error')
-                return redirect(url_for('views.beginPage'))
-            
+
             current_quarter, current_year = get_current_quarter()
             
             has_approved_reports = Report.query.join(Version_report).filter(
