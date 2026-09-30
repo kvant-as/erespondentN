@@ -548,22 +548,25 @@
                     <div class="faq-section-nav">
                         <h4 class="nav-title">Содержание раздела:</h4>
                         <div class="nav-links">
-                            <a class="nav-link">
+                            <a class="nav-link" href="#section-defoult" data-target="section-defoult">
                                 <span class="nav-text">Изначальная продукция</span>
                             </a>
-                            <a class="nav-link">
+                            <a class="nav-link" href="#new-product" data-target="new-product">
+                                <span class="nav-text">Добавление новой продукции</span>
+                            </a>
+                            <a class="nav-link" href="#section-9010" data-target="section-9010">
                                 <span class="nav-text">Прочее потребление код строки 9010</span>
                             </a>
-                            <a class="nav-link">
+                            <a class="nav-link" href="#section-double-product" data-target="section-double-product">
                                 <span class="nav-text">Дублирование вида продукции</span>
                             </a>
-                            <a class="nav-link">
+                            <a class="nav-link" href="#section-0020–0031" data-target="section-0020–0031">
                                 <span class="nav-text">Коды строки 0020–0031</span>
                             </a>
-                            <a class="nav-link">
+                            <a class="nav-link" href="#section-7000" data-target="section-7000">
                                 <span class="nav-text">Код строки 7000</span>
                             </a>
-                            <a class="nav-link">
+                            <a class="nav-link" href="#section-grafy" data-target="section-grafy">
                                 <span class="nav-text">Правила заполнения граф [1] [2] [3] [4] [5]</span>
                             </a>
                         </div>
@@ -587,7 +590,43 @@
                             <span>Рисунок 15 - Виды продукции после создания отчета</span>
                         </div>
 
-          
+                        <div id="new-product" class="title-section">Добавление новой продукции</div>
+
+                        <p>Для добавления новой продукции выполните следующие действия:</p>
+
+                        <ol class="steps-list">
+                            <li>
+                                <strong>Перейдите на страницу отчетов</strong> — нажмите кнопку «Отчеты» или перейдите по ссылке.
+                            </li>
+                            <li>
+                                <strong>Выберите нужный отчет</strong> — в списке отчетов найдите нужный вам отчет и нажмите <strong>Просмотр.</strong>
+                            </li>
+                            <li>
+                                <strong>Слева вверху страницы</strong> — нажмите правой кнопкой мыши на кнопку <strong>Добавить</strong>.
+                                <div class="p_img">
+                                    <img src="{{ url_for('static', filename='img/post/new-product-btn.png') }}" alt="">
+                                    <span>Рисунок 32 - Добавить новую продукцию</span>
+                                </div>
+                            </li>
+                            <li>
+                                <strong>В появившемся списке</strong> выберите нужную продукцию кликнув левой кнопкой мыши по строке.
+                                <div class="p_img">
+                                    <img src="{{ url_for('static', filename='img/post/new-product-list.png') }}" alt="">
+                                    <span>Рисунок 33 - Шаг 1 список продукции</span>
+                                </div>
+
+                            </li>
+                            <li>
+                                <strong>Перейдите на следующий шаг </strong> — нажмите <strong>Далее.</strong>
+                            </li>
+                            <li>
+                                <strong>Заполните необходимые парамметры</strong> и нажмите <strong>Добавить продукцию.</strong> 
+                                <div class="p_img">
+                                    <img src="{{ url_for('static', filename='img/post/add-product-final.png') }}" alt="">
+                                    <span>Рисунок 34 - Шаг 2 заполнение парамметров</span>
+                                </div>
+                            </li>
+                        </ol>
 
                         <div id="section-9010" class="title-section">Прочее потребление (код 9010)</div>
                         <div class="answer-highlight-second">

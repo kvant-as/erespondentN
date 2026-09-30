@@ -19,15 +19,16 @@
     <div class="contener_row">
         {{ content.left_menu(active_tab) }}
         <div class="personal-info_area">
-                <div class="glass-info-block">
-                    {% if user.is_admin or not (user.is_auditor or user.is_reader) %}
-                        <p>Указывайте персональные данные лица заполняющего отчеты.</p>
-                        <p>После <strong>создания</strong> первого отчета редактирование данных организации становится <strong>недоступным</strong></p>
-                    {% elif user.is_auditor or user.is_reader %}
-                        <p>Указывайте свои настоящие данные для того чтобы с вами могли связаться.</p>
-                    {% endif %}
-                    
-                </div>
+            <a class="security-head">Данные пользователя</a>
+            <div class="glass-info-block">
+                {% if user.is_admin or not (user.is_auditor or user.is_reader) %}
+                    <p>Указывайте персональные данные лица заполняющего отчеты.</p>
+                    <p>После <strong>создания</strong> первого отчета изменение организации в профиле становится <strong>недоступным.</strong></p>
+                {% elif user.is_auditor or user.is_reader %}
+                    <p>Указывайте свои настоящие данные для того чтобы с вами могли связаться.</p>
+                {% endif %}
+                
+            </div>
 
             <form action="/add-personal-parametrs" method="POST">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
