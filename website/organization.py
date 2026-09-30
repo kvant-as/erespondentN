@@ -51,7 +51,7 @@ def send_delayed_response(user_id, text, delay_seconds=10):
     @copy_current_request_context
     def send_message():
         time.sleep(delay_seconds)
-        from website.models import Message, db
+        from website.models import Message
         new_message = Message(
             text=text,
             recipient_id=user_id,
@@ -91,8 +91,8 @@ def update_organization_data_with_delay(organization_id, new_name=None, new_okpo
     def update_task():
         time.sleep(delay_seconds)
         
-        from website.models import Organization, User, Message, Report, Version_report, Region, db
-        
+        from website.models import Organization, User, Message, Report, Version_report, Region
+
         organization = Organization.query.get(organization_id)
         if not organization:
             current_app.logger.error(f"Организация с ID {organization_id} не найдена.")

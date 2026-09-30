@@ -129,11 +129,11 @@ function loadFAQContent(questionId) {
     const contentDiv = faqContent.querySelector(`.info_page[data-question-id="${questionId}"]`);
     if (contentDiv) {
         contentDiv.style.display = 'block';
-        
+
         faqContent.classList.add('faq-content-active');
-        
+
         history.pushState({ questionId: questionId }, '', `#faq${questionId}`);
-        
+
         document.querySelectorAll('#status-faqlist li[data-question]').forEach(item => {
             item.classList.remove('active-question');
         });
@@ -141,6 +141,12 @@ function loadFAQContent(questionId) {
         if (selectedItem) {
             selectedItem.classList.add('active-question');
         }
+
+        // При переходе между вопросами (в т.ч. кнопками "вперёд"/"назад" в
+        // браузере, когда меняется #faqN) страница должна показывать ответ
+        // с самого начала, а не с того места, где пользователь долистал
+        // предыдущий вопрос.
+        window.scrollTo(0, 0);
     }
 }
 
@@ -183,7 +189,26 @@ document.querySelectorAll('#status-faqlist li[data-question]').forEach(item => {
     });
 });
 
+// Содержание раздела внутри ответа (например, "Особенности заполнения
+// отчета") — клик по пункту плавно прокручивает к соответствующему
+// подразделу того же ответа.
+document.querySelectorAll('.faq-section-nav .nav-link[data-target]').forEach(link => {
+    link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const target = document.getElementById(link.getAttribute('data-target'));
+        if (target) {
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    });
+});
+
 window.addEventListener('popstate', function(event) {
+    loadContentFromHash();
+});
+
+// На случай прямого перехода по ссылке вида /FAQ#faq14 (не через клик по
+// пункту списка, а сменой хэша страницы), которая popstate не вызывает.
+window.addEventListener('hashchange', function() {
     loadContentFromHash();
 });
 
