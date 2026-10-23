@@ -3,11 +3,38 @@ from datetime import datetime
 from flask import (
     Blueprint, json, jsonify, make_response, request
 )
+from flask_login import login_required, current_user
 
-from website.models import DirProduct, DirUnit, Organization, Sections, Region
+from website.models import DirProduct, DirUnit, Organization, Sections, Region, User
+from common_models import get_current_application_id
 from .. import db
 
 dbs = Blueprint('dbs', __name__)
+
+
+@dbs.route('/backfill-user-applications', methods=['POST'])
+@login_required
+def backfill_user_applications():
+    """Разовое действие (кнопка в админке): проставляет application_id =
+    erespondentN всем историческим аккаунтам, у которых он ещё не задан.
+
+    Аккаунты, уже привязанные к какому-то приложению (включая enPlans),
+    не трогаются — идемпотентно, можно нажимать повторно без риска."""
+    if not current_user.is_admin:
+        return jsonify({'message': 'Требуются права администратора'}), 403
+
+    app_id = get_current_application_id()
+    if not app_id:
+        return jsonify({
+            'message': 'Приложение erespondentN не найдено в таблице applications — примените миграцию common-models.'
+        }), 500
+
+    updated = User.query.filter(User.application_id.is_(None)).update(
+        {User.application_id: app_id}, synchronize_session=False
+    )
+    db.session.commit()
+
+    return jsonify({'message': f'Готово: {updated} аккаунтов привязано к erespondentN.'})
 
 # @dbs.route('/units', methods=['POST', 'GET'])
 # def units():

@@ -26,7 +26,6 @@ from flask_login import (
 
 from sqlalchemy import func
 from sqlalchemy.orm import joinedload
-from common_models.models import Plan
 from website.report import check_version_editable, control_func, create_section, get_organizations_with_reports_excel_xlsx, process_section_calculations, redirect_back, subtract_from_aggregated_sections, to_decimal, update_aggregated_sections, update_section_fields, update_version_status
 from ..export import create_archive_async, generate_excel_report, create_xml_for_version, export_tasks
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -44,7 +43,7 @@ from ..models import (
 
 from website.ecp import check_certificate_expiry
 from website.sessions import clear_session_cookie, create_login_response, session_required
-from common_models import current_utc_time
+from common_models import current_utc_time, get_current_application_id
 from ..email import send_email
 
 auth = Blueprint('auth', __name__)
@@ -73,7 +72,12 @@ def login():
         remember = True if request.form.get('remember') else False
 
         if email and password:
-            user = User.query.filter(func.lower(User.email) == func.lower(email)).first()
+            # Аккаунт привязан к конкретному приложению — тот же email может
+            # быть отдельно зарегистрирован и в erespondentN, и в enPlans.
+            user = User.query.filter(
+                func.lower(User.email) == func.lower(email),
+                User.application_id == get_current_application_id()
+            ).first()
             if user:
                 if check_password_hash(user.password, password):
                     login_user(user, remember=remember)
@@ -106,7 +110,11 @@ def sign():
         password1 = request.form.get('password1')
         password2 = request.form.get('password2')
         if email and password1:
-            if User.query.filter(func.lower(User.email) == func.lower(email)).first():
+            existing = User.query.filter(
+                func.lower(User.email) == func.lower(email),
+                User.application_id == get_current_application_id()
+            ).first()
+            if existing:
                 flash('Пользователь с таким email уже существует', 'error')
             elif not re.match(r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$', email):
                 flash('Некорректный адрес электронной почты', 'error') 
@@ -141,7 +149,8 @@ def code():
         if input_code == session.get('activation_code'):
             new_user = User(
                 email=session['temp_user']['email'],
-                password=session['temp_user']['password']
+                password=session['temp_user']['password'],
+                application_id=get_current_application_id()
             )
             db.session.add(new_user)
             db.session.commit()
@@ -265,7 +274,10 @@ def relod_password():
     if not email:
         flash('Пожалуйста, введите свой email, затем нажмите «Забыли пароль?» для восстановления доступа', 'error')
         return redirect(url_for('views.login'))
-    user = User.query.filter(func.lower(User.email) == func.lower(email)).first()
+    user = User.query.filter(
+        func.lower(User.email) == func.lower(email),
+        User.application_id == get_current_application_id()
+    ).first()
     if user:
         new_password = gener_password()
         hashed_password = generate_password_hash(new_password)
@@ -323,19 +335,8 @@ def delete_account():
         
         if has_approved:
             flash('Невозможно удалить аккаунт, так как есть отчеты со статусом "Одобрен"', 'error')
-            return redirect(url_for('auth.profile_danger'))     
-           
-           
-        has_active_plans = Plan.query.filter(
-            Plan.user_id == user.id,
-            (Plan.is_sent == True) | (Plan.is_approved == True) | (Plan.is_error == True)
-        ).first()
-        
-        if has_active_plans:
-            flash('Невозможно удалить аккаунт. У вас есть отправленные, Утвержденные планы или планы с ошибками', 'error')
-            return redirect(url_for('views.profile'))
-           
-           
+            return redirect(url_for('auth.profile_danger'))
+
         if current_user.is_admin:
             flash('Невозможно удалить аккаунт администратора', 'error')
             return redirect(url_for('auth.profile_danger'))
@@ -422,7 +423,10 @@ def change_email():
             if not check_password_hash(current_user.password, password):
                 return jsonify({'success': False, 'message': 'Неверный пароль'}), 400
             
-            existing_user = User.query.filter(func.lower(User.email) == func.lower(new_email)).first()
+            existing_user = User.query.filter(
+                func.lower(User.email) == func.lower(new_email),
+                User.application_id == get_current_application_id()
+            ).first()
             if existing_user and existing_user.id != current_user.id:
                 return jsonify({'success': False, 'message': 'Пользователь с таким email уже существует'}), 400
             

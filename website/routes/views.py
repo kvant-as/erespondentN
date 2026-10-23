@@ -33,6 +33,7 @@ from functools import wraps
 
 from datetime import datetime, timedelta
 from common_models.timeutils import current_utc_time, get_previous_quarter, get_report_year
+from common_models import get_current_application_id
 
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfbase.ttfonts import TTFont
@@ -115,7 +116,9 @@ def ajax_aware(f):
 
 @views.route('/', methods=['GET'])
 def beginPage():
-    user_data = User.query.filter_by().count()
+    # Только аккаунты ЭТОГО приложения — таблица User общая с enPlans,
+    # без фильтра сюда попадали бы и его пользователи тоже.
+    user_data = User.query.filter(User.application_id == get_current_application_id()).count()
     organization_data = Organization.query.count()
     report_data = Report.query.count()
     latest_news = News.query.filter(News.is_erespondentn == True).order_by(desc(News.id)).first()
@@ -358,7 +361,8 @@ def get_auditor_info_by_user(current_user):
     
     auditor = User.query.filter(
         User.is_auditor,
-        User.organization_id == region_management_org.id
+        User.organization_id == region_management_org.id,
+        User.application_id == get_current_application_id()
     ).first()
     
     if not auditor:
@@ -1227,7 +1231,11 @@ def change_category_report():
             return redirect(request.referrer)
         
         try:
-            recipient_user = User.query.filter_by(email=current_version.report.user.email).first()
+            # Раньше тут был повторный поиск того же пользователя по email —
+            # избыточно (он уже доступен через report.user) и после
+            # разделения аккаунтов по приложениям неоднозначно, т.к. email
+            # больше не уникален глобально.
+            recipient_user = current_version.report.user
             if recipient_user is None:
                 flash(f'Пользователь с email {current_version.report.user.email} не найден', 'error')
                 return redirect(request.referrer or url_for('views.index'))
@@ -1324,7 +1332,7 @@ def rollbackreport(id):
             return redirect(request.referrer)
         
         current_version = Version_report.query.filter_by(report_id=id).first()
-        recipient_user = User.query.filter_by(email=current_version.report.user.email).first()    
+        recipient_user = current_version.report.user
         if current_version:
             if current_version.status != 'Отправлен':
                 if isinstance(current_version.audit_time, datetime):

@@ -2,9 +2,9 @@
 перенесена сюда, в кастомную админ-панель, с общей страницы /profile (см.
 static/js/messages.js), где раньше администратор видел плоский поток всех
 обращений вперемешку со своими личными уведомлениями и отвечал через
-встроенную туда форму (routes/views.py: reply_to_message). Список открытых
-диалогов — на главной странице админки (см. admin.py: _admin_message_rows),
-здесь — сама переписка с конкретным пользователем и форма ответа.
+встроенную туда форму (routes/views.py: reply_to_message). Список всех
+диалогов — на отдельной странице (list_view, /admin/messages/), здесь же —
+сама переписка с конкретным пользователем и форма ответа.
 
 Message — плоская таблица без chat_id, поэтому "диалог" с пользователем
 собирается фильтром по обеим ролям: его вопросы (sender_id=user, to_admin)
@@ -12,6 +12,8 @@ Message — плоская таблица без chat_id, поэтому "диа
 автоматические системные уведомления (смена статуса отчёта и т.п., у них
 sender_id пуст) в этот диалог не попадают — это не переписка с админом.
 """
+from datetime import datetime
+
 from flask import Blueprint, abort, current_app, flash, jsonify, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 
@@ -39,6 +41,63 @@ def _thread_query(user_id):
             db.and_(Message.sender_id == user_id, Message.to_admin.is_(True)),
             db.and_(Message.recipient_id == user_id, Message.sender_id.isnot(None)),
         )
+    )
+
+
+def _all_threads():
+    """Все «диалоги» с администратором (Message.to_admin=True), по одному на
+    каждого писавшего пользователя: сам пользователь, его последнее
+    сообщение в диалоге и число непрочитанных. Отсортировано по свежести.
+    Используется в list_view ниже."""
+    sender_ids = [
+        row[0] for row in
+        db.session.query(Message.sender_id).filter(Message.to_admin == True).distinct().all()
+        if row[0]
+    ]
+
+    entries = []
+    for uid in sender_ids:
+        user = User.query.get(uid)
+        if not user:
+            continue
+        last = _thread_query(uid).order_by(Message.create_time.desc()).first()
+        if not last:
+            continue
+        unread = Message.query.filter_by(sender_id=uid, to_admin=True, is_read=False).count()
+        entries.append((user, last, unread))
+
+    entries.sort(key=lambda e: e[1].create_time or datetime.min, reverse=True)
+    return entries
+
+
+def _row(user, last, unread):
+    preview = (last.text or '').strip()
+    if len(preview) > 90:
+        preview = preview[:89].rstrip() + '…'
+    meta = f"{unread} новых" if unread else (
+        last.create_time.strftime("%d.%m %H:%M") if last.create_time else ""
+    )
+    return {
+        "title": _author_name(user),
+        "subtitle": preview,
+        "meta": meta,
+        "unread": unread,
+        "url": url_for("admin_messages.thread", user_id=user.id),
+    }
+
+
+@admin_messages_bp.route('/', methods=['GET'])
+@login_required
+def list_view():
+    """Полный список всех диалогов с администратором — отдельная страница,
+    больше не дублируется превью-панелью на главной странице админки."""
+    rows = [_row(user, last, unread) for user, last, unread in _all_threads()]
+
+    from ..admin import site  # noqa: E402  (ленивый импорт — не тянуть admin.py на старте)
+    return render_template(
+        'admin/messages_list.html',
+        rows=rows,
+        **site.nav_context(),
     )
 
 
@@ -121,4 +180,4 @@ def api_messages(user_id):
 
 def _author_name(user):
     full = ' '.join(filter(None, [user.last_name, user.first_name])).strip()
-    return user.fio or full or user.email or f'Пользователь №{user.id}'
+    return full or user.email or f'Пользователь №{user.id}'
