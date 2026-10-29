@@ -4,8 +4,8 @@ from werkzeug.security import generate_password_hash
 
 from common_models.admin import AdminSite, Field as F
 from common_models import (
-    count_online,
-    User, UserAppActivity, Organization, Region, News,
+    count_online, get_current_application_id,
+    User, Application, UserAppActivity, Organization, Region, News,
     Report, Version_report, Ticket, DirUnit, DirProduct, Sections, Message,
 )
 
@@ -18,6 +18,40 @@ site = AdminSite(
     logout_endpoint="auth.logout",
 )
 
+site.link("Сообщения администратору", "admin_messages.list_view", group="Обращения")
+
+
+def _scope_to_this_app(query):
+    """Аккаунты теперь привязаны к конкретному приложению — админка
+    erespondentN должна видеть/создавать только свои (иначе тут же
+    путается с enPlans-аккаунтами того же человека)."""
+    return query.filter(User.application_id == get_current_application_id())
+
+
+def _user_app_activity_scope(query):
+    return query.filter(UserAppActivity.app == "erespondentn")
+
+
+def _user_on_save(obj, creating):
+    """Новый аккаунт из админки всегда создаётся для ЭТОГО приложения —
+    поле application_id нарочно не редактируется через форму (см. ниже,
+    readonly), значение всегда берётся отсюда, а не из формы."""
+    if creating:
+        obj.application_id = get_current_application_id()
+
+
+def _user_application_display(obj):
+    return obj.application.name if obj.application else "—"
+
+
+def _org_account_emails(org):
+    """Email аккаунтов, привязанных к организации — только из ЭТОГО
+    приложения (у организации вполне может быть отдельный аккаунт и в
+    enPlans, его сюда не подмешиваем)."""
+    app_id = get_current_application_id()
+    emails = [u.email for u in org.users if u.application_id == app_id and u.email]
+    return ", ".join(emails) if emails else "—"
+
 
 def _news_on_save(obj, creating):
     """Держим published_at в синхроне с галочкой «Опубликовано»."""
@@ -29,89 +63,47 @@ def _news_on_save(obj, creating):
         obj.published_at = None
 
 
-def _admin_message_rows():
-    """Пользователи, писавшие администратору (Message.to_admin=True) —
-    сгруппированы в «диалоги» для панели на главной странице админки.
-    Сама переписка/ответ — на отдельной странице (routes/admin_messages.py),
-    здесь только сводка: последнее сообщение + количество непрочитанных."""
-    from flask import url_for
-    from common_models import db
-
-    sender_ids = [
-        row[0] for row in
-        db.session.query(Message.sender_id).filter(Message.to_admin == True).distinct().all()
-        if row[0]
-    ]
-
-    entries = []
-    for uid in sender_ids:
-        user = User.query.get(uid)
-        if not user:
-            continue
-        last = (
-            Message.query.filter(
-                db.or_(
-                    db.and_(Message.sender_id == uid, Message.to_admin == True),
-                    db.and_(Message.recipient_id == uid, Message.sender_id.isnot(None)),
-                )
-            )
-            .order_by(Message.create_time.desc())
-            .first()
-        )
-        if not last:
-            continue
-        unread = Message.query.filter_by(sender_id=uid, to_admin=True, is_read=False).count()
-        entries.append((user, last, unread))
-
-    from datetime import datetime
-    entries.sort(key=lambda e: e[1].create_time or datetime.min, reverse=True)
-
-    rows = []
-    for user, last, unread in entries[:12]:
-        preview = last.text or ''
-        if len(preview) > 90:
-            preview = preview[:90].rstrip() + '…'
-        full = f"{user.last_name or ''} {user.first_name or ''}".strip()
-        name = user.fio or full or user.email or f"Пользователь №{user.id}"
-        meta = f"{unread} новых" if unread else (
-            last.create_time.strftime("%d.%m %H:%M") if last.create_time else ""
-        )
-        rows.append({
-            "title": name,
-            "subtitle": preview,
-            "meta": meta,
-            "url": url_for("admin_messages.thread", user_id=user.id),
-        })
-    return rows
-
 # --------------------------------------------------------------------------- #
 #  Основные
 # --------------------------------------------------------------------------- #
 
 site.register(
     User, name="Пользователи", group="Основные", stat_label="Пользователей",
-    list_display=["id", "email", "fio", "organization", "begin_time"],
+    list_display=["id", "email", "organization", "begin_time"],
     list_badges=["is_admin", "is_auditor", "is_approver", "is_reader"],
-    search=["email", "fio", "last_name", "first_name", "telephone"],
+    search=["email", "last_name", "first_name", "telephone"],
+    scope_query=_scope_to_this_app,
+    on_save=_user_on_save,
     fields=[
         F("email", "Email", type="email", required=True),
-        F("fio", "ФИО"),
         F("last_name", "Фамилия"), F("first_name", "Имя"), F("patronymic_name", "Отчество"),
         F("telephone", "Телефон"), F("post", "Должность"),
         F("is_admin", "Администратор", type="bool"),
         F("is_auditor", "Аудитор", type="bool"),
         F("is_approver", "Утверждающий", type="bool"),
         F("is_reader", "Читатель", type="bool"),
-        F("organization_id", "Организация", type="fk", target=Organization, target_label="full_name"),
+        F("organization_id", "Организация", type="fk-search", target=Organization, target_label="full_name"),
+        F("application_id", "Приложение", readonly=True, display=_user_application_display,
+          help="Аккаунт создаётся только для текущего приложения (ErespondentN) — не редактируется."),
         F("password", "Пароль", type="password", skip_if_blank=True,
           transform=generate_password_hash, help="Оставьте пустым, чтобы не менять"),
     ],
 )
 
 site.register(
+    Application, name="Приложения", group="Основные",
+    list_display=["id", "code", "name"], search=["code", "name"], order_by="code",
+    fields=[
+        F("code", "Код (APP_NAME)", required=True),
+        F("name", "Название", required=True),
+    ],
+)
+
+site.register(
     Organization, name="Организации", group="Основные", stat_label="Организаций",
-    list_display=["id", "full_name", "okpo", "region", "ministry"],
+    list_display=["id", "full_name", "okpo", "region", "ministry", ("accounts", "Email аккаунта")],
     list_badges=["is_active", "is_regular", "is_coordinator", "is_approver", "is_region_management"],
+    list_format={"accounts": _org_account_emails},
     search=["full_name", "okpo", "ynp"],
     fields=[
         F("full_name", "Полное название", required=True),
@@ -263,19 +255,21 @@ site.register(
     readonly=True, order_by="-last_active", per_page=50,
     list_display=["id", "user", "app", "first_seen", "last_active"],
     search=["app"],
+    scope_query=_user_app_activity_scope,
 )
 
 # --------------------------------------------------------------------------- #
 
 site.dashboard(
     greeting_attr="first_name",
-    stats=["news", "report", "organization", "message"],
+    stats=["news", "report", "organization", "user"],
     online_count=lambda: count_online("erespondentn"),
-    panels=[
+    actions=[
         {
-            "title": "Сообщения администратору",
-            "rows": _admin_message_rows,
-            "empty": "Открытых обращений нет",
+            "label": "Привязать старые аккаунты к erespondentN",
+            "endpoint": "dbs.backfill_user_applications",
+            "method": "post",
+            "confirm": "Проставить application_id = erespondentN всем аккаунтам, у которых он ещё не задан? Действие безопасно повторять.",
         },
     ],
 )

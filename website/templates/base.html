@@ -4,7 +4,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> 
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('cm_assets.static', filename='css/message-flash.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
     <link rel="shortcut icon" href="{{ url_for('static', filename='img/logo-white.svg')}}">
@@ -247,13 +248,17 @@
     {% block content %} 
     {% endblock %}
 
-    {% block javascript %} 
+    {% block javascript %}
+      <script src="{{ url_for('cm_assets.static', filename='js/message-flash.js') }}"></script>
       <script src="{{ url_for('static', filename='js/base.js') }}"></script>
       <script src="{{ url_for('static', filename='js/period.js') }}"></script>
       <script src="{{ url_for('static', filename='js/cookie.js') }}"></script>
       <script>
         document.addEventListener('DOMContentLoaded', () => {
-            messageFlash.init();
+            // erespondentN хранит иконки уведомлений по другому пути
+            // (/static/img/svg/), чем enPlans (/static/img/) — общий
+            // модуль принимает это конфигом вместо жёстко зашитого пути.
+            messageFlash.init({ iconBasePath: '{{ url_for("static", filename="img/svg") }}' });
 
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
