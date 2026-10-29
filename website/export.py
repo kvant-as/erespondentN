@@ -330,7 +330,7 @@ def generate_excel_report(version_id):
             ws["K4"].alignment = left
                             
             ws.merge_cells("K5:M5")
-            ws["K5"].value = "(министерство, концерн, государственный комитет)"
+            ws["K5"].value = "(юридическое лицо)"
             ws["K5"].font = regular_font_11
             ws["K5"].alignment = left
                     

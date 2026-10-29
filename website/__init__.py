@@ -79,6 +79,9 @@ def create_app():
     from .admin import init_admin
     init_admin(app)
 
+    from common_models.assets import init_assets
+    init_assets(app)
+
     from common_models.session_ui import init_session_ui
     init_session_ui(app)
 

@@ -1,0 +1,27 @@
+{% extends "cm_admin/base.html" %}
+{% block title %}{{ site.brand }} · Сообщения администратору{% endblock %}
+
+{% block content %}
+  <div class="cm-section-head">
+    <h1 class="cm-h1">Сообщения администратору</h1>
+    <a class="cm-link" href="{{ url_for('cm_admin.dashboard') }}">← к панели</a>
+  </div>
+
+  <div class="cm-rows">
+    {% for row in rows %}
+      <a class="cm-row" href="{{ row.url }}">
+        <div class="cm-row-block">
+          <span class="cm-row-title">{{ row.title }}</span>
+          {% if row.subtitle %}<span class="cm-row-sub">{{ row.subtitle }}</span>{% endif %}
+        </div>
+        {% if row.meta %}
+          <span class="cm-row-meta {{ 'cm-row-meta--unread' if row.unread }}">{{ row.meta }}</span>
+        {% endif %}
+      </a>
+    {% else %}
+      <div class="cm-empty">Обращений пока нет</div>
+    {% endfor %}
+  </div>
+
+  <p class="cm-muted">Всего диалогов: {{ rows|length }}</p>
+{% endblock %}
