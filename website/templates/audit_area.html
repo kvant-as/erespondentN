@@ -150,7 +150,7 @@
                                 <polyline points="6 9 12 15 18 9"></polyline>
                             </svg>
                         </div>
-                        <div class="dropdown-menu" id="region-menu" data-is-auditor="{{ current_user.is_auditor|lower }}" data-user-region-digit="{{ current_user.organization.region.number if current_user.organization and current_user.organization.region else '' }}">
+                        <div class="dropdown-menu" id="region-menu" data-is-auditor="{{ current_user.is_region_auditor|lower }}" data-user-region-digit="{{ current_user.organization.region.number if current_user.organization and current_user.organization.region else '' }}">
                             <div class="dropdown-item" data-value="">Все регионы</div>
                             <div class="dropdown-item" data-value="1">Брестская область</div>
                             <div class="dropdown-item" data-value="2">Витебская область</div>

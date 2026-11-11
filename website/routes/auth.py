@@ -341,7 +341,7 @@ def delete_account():
             flash('Невозможно удалить аккаунт администратора', 'error')
             return redirect(url_for('auth.profile_danger'))
         
-        if current_user.auditor:
+        if current_user.is_region_auditor or current_user.is_reader:
             flash('Невозможно удалить аккаунт проверяющего отчеты.', 'error')
             return redirect(url_for('auth.profile_danger'))
         

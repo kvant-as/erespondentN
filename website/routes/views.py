@@ -55,7 +55,7 @@ def owner_only(f):
             flash('Версия отчета не найдена', 'error')
             return redirect(url_for('views.report_area', user=current_user))
         report = version.report
-        if report.user_id != current_user.id and current_user.is_admin == False and current_user.is_auditor == False:
+        if report.user_id != current_user.id and current_user.is_admin == False and current_user.is_region_auditor == False:
             flash('Недостаточно прав для доступа к этому отчёту', 'error')
             return redirect(url_for('views.report_area', user=current_user))
         return f(*args, **kwargs)
@@ -79,7 +79,7 @@ def profile_complete(f):
 def auditors_only(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if not (current_user.is_admin or current_user.is_auditor or current_user.is_reader):
+        if not (current_user.is_admin or current_user.is_region_auditor or current_user.is_reader):
             flash('Недостаточно прав для доступа', 'error')
             return redirect(url_for('views.profile_common'))
         if not current_user.last_name or not current_user.first_name or not current_user.telephone:
@@ -359,11 +359,13 @@ def get_auditor_info_by_user(current_user):
     if not region_management_org:
         return None
     
-    auditor = User.query.filter(
-        User.is_auditor,
+    # Аккаунт читателя тоже может быть привязан к региональному
+    # управлению — проверяющим показываем только "чистого" аудитора.
+    candidates = User.query.filter(
         User.organization_id == region_management_org.id,
         User.application_id == get_current_application_id()
-    ).first()
+    ).order_by(User.id).all()
+    auditor = next((u for u in candidates if not (u.is_reader or u.is_admin)), None)
     
     if not auditor:
         return None
@@ -1711,7 +1713,7 @@ def load_org_stat():
         flash('Не указан год или квартал', 'error')
         return redirect(request.referrer)
 
-    if not (current_user.is_admin or current_user.is_auditor):
+    if not (current_user.is_admin or current_user.is_region_auditor):
         flash('У вас нет доступа к отчетам', 'error')
         return redirect(request.referrer)
 

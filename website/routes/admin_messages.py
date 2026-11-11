@@ -17,7 +17,7 @@ from datetime import datetime
 from flask import Blueprint, abort, current_app, flash, jsonify, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 
-from common_models import current_utc_time, db
+from common_models import current_utc_time, db, get_current_application_id
 
 from ..email import send_email
 from ..models import Message, User
@@ -33,6 +33,15 @@ def _guard():
 
 def _is_ajax():
     return request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
+
+def _app_user_or_404(user_id):
+    """Пользователь ЭТОГО приложения — аккаунты enPlans в переписке
+    erespondentN не показываются и не открываются по прямой ссылке."""
+    return User.query.filter(
+        User.id == user_id,
+        User.application_id == get_current_application_id(),
+    ).first_or_404()
 
 
 def _thread_query(user_id):
@@ -51,7 +60,10 @@ def _all_threads():
     Используется в list_view ниже."""
     sender_ids = [
         row[0] for row in
-        db.session.query(Message.sender_id).filter(Message.to_admin == True).distinct().all()
+        db.session.query(Message.sender_id)
+        .join(User, User.id == Message.sender_id)
+        .filter(Message.to_admin == True, User.application_id == get_current_application_id())
+        .distinct().all()
         if row[0]
     ]
 
@@ -104,7 +116,7 @@ def list_view():
 @admin_messages_bp.route('/<int:user_id>', methods=['GET', 'POST'])
 @login_required
 def thread(user_id):
-    target_user = User.query.get_or_404(user_id)
+    target_user = _app_user_or_404(user_id)
 
     if request.method == 'POST':
         content = (request.form.get('content') or '').strip()
@@ -168,7 +180,7 @@ def api_messages(user_id):
     """JSON для реал-тайм-поллинга на странице переписки — тот же формат
     полей (content/is_user/created_at), что у чата виртуального помощника
     в enPlans, чтобы переиспользовать тот же клиентский приём."""
-    User.query.get_or_404(user_id)
+    _app_user_or_404(user_id)
     messages = _thread_query(user_id).order_by(Message.create_time.asc()).all()
     return jsonify([{
         'id': m.id,
