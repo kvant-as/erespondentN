@@ -40,6 +40,12 @@ def _user_on_save(obj, creating):
         obj.application_id = get_current_application_id()
 
 
+def _user_auditor_display(obj):
+    if obj.is_region_auditor:
+        return f"Да — {obj.organization.short_name or obj.organization.full_name}"
+    return "Нет"
+
+
 def _user_application_display(obj):
     return obj.application.name if obj.application else "—"
 
@@ -70,7 +76,7 @@ def _news_on_save(obj, creating):
 site.register(
     User, name="Пользователи", group="Основные", stat_label="Пользователей",
     list_display=["id", "email", "organization", "begin_time"],
-    list_badges=["is_admin", "is_auditor", "is_approver", "is_reader"],
+    list_badges=["is_admin", "is_region_auditor", "is_reader"],
     search=["email", "last_name", "first_name", "telephone"],
     scope_query=_scope_to_this_app,
     on_save=_user_on_save,
@@ -79,9 +85,10 @@ site.register(
         F("last_name", "Фамилия"), F("first_name", "Имя"), F("patronymic_name", "Отчество"),
         F("telephone", "Телефон"), F("post", "Должность"),
         F("is_admin", "Администратор", type="bool"),
-        F("is_auditor", "Аудитор", type="bool"),
-        F("is_approver", "Утверждающий", type="bool"),
         F("is_reader", "Читатель", type="bool"),
+        F("is_region_auditor", "Аудитор", readonly=True, display=_user_auditor_display,
+          help="Не редактируется: аудитором становится аккаунт регионального управления по надзору — "
+               "для этого выберите такую организацию в поле «Организация»."),
         F("organization_id", "Организация", type="fk-search", target=Organization, target_label="full_name"),
         F("application_id", "Приложение", readonly=True, display=_user_application_display,
           help="Аккаунт создаётся только для текущего приложения (ErespondentN) — не редактируется."),
@@ -151,7 +158,7 @@ site.register(
     list_display=["id", "organization", "year", "quarter", "user"], order_by="-id",
     fields=[
         F("org_id", "Организация", type="fk", target=Organization, target_label="full_name"),
-        F("user_id", "Пользователь", type="fk", target=User, target_label="email"),
+        F("user_id", "Пользователь", type="fk-search", target=User, target_label="email"),
         F("year", "Год", type="int"),
         F("quarter", "Квартал", type="int"),
     ],
@@ -241,8 +248,8 @@ site.register(
     list_display=["id", "sender", "recipient", "text", "create_time"],
     list_badges=["to_admin", "is_read"], search=["text"], order_by="-id", per_page=50,
     fields=[
-        F("sender_id", "Отправитель", type="fk", target=User, target_label="email"),
-        F("recipient_id", "Получатель", type="fk", target=User, target_label="email"),
+        F("sender_id", "Отправитель", type="fk-search", target=User, target_label="email"),
+        F("recipient_id", "Получатель", type="fk-search", target=User, target_label="email"),
         F("text", "Текст", type="text", required=True),
         F("to_admin", "Администратору", type="bool"),
         F("is_read", "Прочитано", type="bool"),
@@ -265,12 +272,12 @@ site.dashboard(
     stats=["news", "report", "organization", "user"],
     online_count=lambda: count_online("erespondentn"),
     actions=[
-        {
-            "label": "Привязать старые аккаунты к erespondentN",
-            "endpoint": "dbs.backfill_user_applications",
-            "method": "post",
-            "confirm": "Проставить application_id = erespondentN всем аккаунтам, у которых он ещё не задан? Действие безопасно повторять.",
-        },
+        # {
+        #     "label": "Привязать старые аккаунты к erespondentN",
+        #     "endpoint": "dbs.backfill_user_applications",
+        #     "method": "post",
+        #     "confirm": "Проставить application_id = erespondentN всем аккаунтам, у которых он ещё не задан? Действие безопасно повторять.",
+        # },
     ],
 )
 

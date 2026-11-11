@@ -48,7 +48,15 @@ def create_app():
     app.config['SESSION_TOKEN_COOKIE_SECURE'] = os.getenv('SESSION_COOKIE_SECURE', '').lower() in ('1', 'true', 'yes')
     app.config['SESSION_TIMEOUT_PRIVILEGED'] = timedelta(hours=9)
     app.config['SESSION_TIMEOUT_DEFAULT'] = timedelta(minutes=30)
-    app.config['SESSION_PRIVILEGED_ATTRS'] = ('is_admin', 'is_auditor')
+    # Роли в erespondentN: администратор и читатель — роли пользователя
+    # (user_roles), аудитор — любой аккаунт регионального управления по
+    # надзору (Organization.is_region_management, см. User.is_region_auditor).
+    app.config['SESSION_PRIVILEGED_ATTRS'] = ('is_admin', 'is_region_auditor')
+    app.config['SESSION_ROLE_LABELS'] = (
+        ('is_admin', 'Администратор'),
+        ('is_reader', 'Читатель'),
+        ('is_region_auditor', 'Аудитор'),
+    )
     app.config['SESSION_DEFAULT_REDIRECT'] = 'views.profile'
     app.config['SESSION_ENFORCE_IN_DEBUG'] = True
 

@@ -359,10 +359,13 @@ def get_auditor_info_by_user(current_user):
     if not region_management_org:
         return None
     
-    auditor = User.query.filter(
+    # Аккаунт читателя тоже может быть привязан к региональному
+    # управлению — проверяющим показываем только "чистого" аудитора.
+    candidates = User.query.filter(
         User.organization_id == region_management_org.id,
         User.application_id == get_current_application_id()
-    ).first()
+    ).order_by(User.id).all()
+    auditor = next((u for u in candidates if not (u.is_reader or u.is_admin)), None)
     
     if not auditor:
         return None
