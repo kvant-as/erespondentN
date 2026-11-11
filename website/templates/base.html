@@ -33,12 +33,12 @@
                     <li onclick="window.location.href='/'">
                         <span class="menu-text">Главная</span>
                     </li>
-                    {% if current_user.is_authenticated and not (current_user.is_admin or current_user.is_auditor or current_user.is_reader) %}
+                    {% if current_user.is_authenticated and not (current_user.is_admin or current_user.is_region_auditor or current_user.is_reader) %}
                         <li onclick="window.location.href='/reports'">
                             <span class="menu-text">Отчеты</span>
                         </li>
                     {% endif %}
-                    {% if current_user.is_authenticated and (current_user.is_auditor or current_user.is_reader) %}
+                    {% if current_user.is_authenticated and (current_user.is_region_auditor or current_user.is_reader) %}
                         <li onclick="window.location.href='/audit-area/not_viewed?year={{previous_year}}&quarter={{previous_quarter}}'">
                             <span class="menu-text">Отчеты</span>
                         </li>
@@ -122,14 +122,14 @@
                         <span>Главная</span>
                     </button>
                     
-                    {% if current_user.is_admin or not (current_user.is_auditor or current_user.is_reader) %}
+                    {% if current_user.is_admin or not (current_user.is_region_auditor or current_user.is_reader) %}
                         <button onclick="window.location.href='/reports'">
                             {{ icons.icon_reports() }}
                             <span>Отчеты</span>
                         </button>
                     {% endif %}
 
-                    {% if current_user.is_admin or current_user.is_auditor or current_user.is_reader %}
+                    {% if current_user.is_admin or current_user.is_region_auditor or current_user.is_reader %}
                         {% set audit_url = '/audit-area/not_viewed?year=' ~ previous_year ~ '&quarter=' ~ previous_quarter ~ '&region=all'%}
                         <button onclick="window.location.href='{{ audit_url }}'">
                             {{ icons.icon_audit() }}
@@ -281,7 +281,7 @@
          admin       → все слайды
        Показ больше не привязан к незаполненному профилю (см. cookie.js). #}
     {% if current_user.is_authenticated %}
-    {% set _info_role = 'admin' if current_user.is_admin else ('auditor' if (current_user.is_auditor or current_user.is_reader) else 'respondent') %}
+    {% set _info_role = 'admin' if current_user.is_admin else ('auditor' if (current_user.is_region_auditor or current_user.is_reader) else 'respondent') %}
     <div id="system-info-modal" class="modal" style="display: none;" data-user-role="{{ _info_role }}">
         <div class="info-modal-content">
             {{ icons.icon_close() }}

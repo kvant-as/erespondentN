@@ -21,10 +21,10 @@
         <div class="personal-info_area">
             <a class="security-head">Данные пользователя</a>
             <div class="glass-info-block">
-                {% if user.is_admin or not (user.is_auditor or user.is_reader) %}
+                {% if user.is_admin or not (user.is_region_auditor or user.is_reader) %}
                     <p>Указывайте персональные данные лица заполняющего отчеты.</p>
                     <p>После <strong>создания</strong> первого отчета изменение организации в профиле становится <strong>недоступным.</strong></p>
-                {% elif user.is_auditor or user.is_reader %}
+                {% elif user.is_region_auditor or user.is_reader %}
                     <p>Указывайте свои настоящие данные для того чтобы с вами могли связаться.</p>
                 {% endif %}
                 
@@ -116,16 +116,16 @@
 
                     <tr>
                         <td><span title = "Организация за которую отчитываются">Предприятие <span class="required-mark">&#42;</span></span></td>
-                        <td style = "display: flex; flex-direction: row;" {%if count_reports == 0 and not current_user.is_auditor and not current_user.is_reader%}id = "link_chooseOrgModal"{%endif%}>
+                        <td style = "display: flex; flex-direction: row;" {%if count_reports == 0 and not current_user.is_region_auditor and not current_user.is_reader%}id = "link_chooseOrgModal"{%endif%}>
                             <input
-                                class = "pred_name" type="text" style = "{%if count_reports == 0 and not current_user.is_auditor%}
+                                class = "pred_name" type="text" style = "{%if count_reports == 0 and not current_user.is_region_auditor%}
                                 border-top-right-radius: 0;
                                 border-bottom-right-radius: 0;
                                 background: white;
                                 width: calc(100% - 70px);
                                 {%else%} {%endif%}"
                                 placeholder="Наименование предприятия"  name = "full_name_common" value="{{ current_user.organization.full_name if current_user.organization else '' }}" readonly>
-                                {%if count_reports == 0 and (not current_user.is_auditor and not current_user.is_reader)%}
+                                {%if count_reports == 0 and (not current_user.is_region_auditor and not current_user.is_reader)%}
                                     <a class="left-input-btn" >
                                         {{ icons.icon_search() }}
                                     </a>
@@ -133,7 +133,7 @@
                                 <input type="hidden" name="id_org" value="{% if current_user.organization %}{{ current_user.organization.id }}{% else %}{% endif %}">
                         </td>
                     </tr>
-                    {%if not current_user.is_auditor and not current_user.is_reader%}
+                    {%if not current_user.is_region_auditor and not current_user.is_reader%}
                         <tr>
                             <td><span title = "Общестатистический код предприятий и организаций">ОКПО</span></td>
                             <td>    

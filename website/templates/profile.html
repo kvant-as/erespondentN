@@ -24,7 +24,7 @@
                 {{ icons.icon_arrow_right() }}
             </button>
 
-                   {%if current_user.is_admin or not (current_user.is_auditor or current_user.is_reader)%}
+                   {%if current_user.is_admin or not (current_user.is_region_auditor or current_user.is_reader)%}
                 <button class="acc-btn-otherbtn blue_btn" onclick="window.location.href='/reports'">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                         <path d="M12 4.5v15M4.5 12h15" />
@@ -33,7 +33,7 @@
                 </button>
             {%else%}
             {%endif%}
-            {% if current_user.is_admin or current_user.is_auditor or current_user.is_reader %}
+            {% if current_user.is_admin or current_user.is_region_auditor or current_user.is_reader %}
             <button class="acc-btn-otherbtn blue_btn green" onclick="window.location.href='/audit-area/not_viewed?year={{previous_year}}&quarter={{previous_quarter}}';">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                     <circle cx="10" cy="10" r="7"/>
