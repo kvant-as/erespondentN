@@ -309,7 +309,10 @@ def control_func(id):
 
     return redirect(request.referrer) 
 
-def get_reports_by_status(status, year=None, quarter=None, region=None):
+def get_reports_by_status(status, year=None, quarter=None, region=None, sort='asc'):
+    # Порядок по дате поступления (sent_time): по умолчанию сначала ранние —
+    # проверяющие разбирают отчёты в порядке очереди.
+    sent_order = Version_report.sent_time.desc().nullslast() if sort == 'desc' else Version_report.sent_time.asc().nullslast()
     def translate_status(status):
         status_map = {
             'not_viewed': 'Отправлен',
@@ -356,7 +359,7 @@ def get_reports_by_status(status, year=None, quarter=None, region=None):
                 )
             else:
                 return []
-        return query.order_by(Version_report.sent_time.desc()).all()
+        return query.order_by(sent_order).all()
     
     else:
         if current_user.organization and current_user.organization.region:
@@ -373,7 +376,7 @@ def get_reports_by_status(status, year=None, quarter=None, region=None):
             return query.filter(
                 or_(*[Version_report.status == s for s in statuses]),
                 *filters
-            ).order_by(Version_report.sent_time.desc()).all()
+            ).order_by(sent_order).all()
             
         else:
             trans_status = translate_status(status)
@@ -386,6 +389,6 @@ def get_reports_by_status(status, year=None, quarter=None, region=None):
                 return query.filter(
                     Version_report.status == trans_status,
                     *filters
-                ).order_by(Version_report.sent_time.desc()).all()
+                ).order_by(sent_order).all()
             else:
                 return []

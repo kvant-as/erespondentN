@@ -1,0 +1,186 @@
+@media (max-width: 1200px) {
+  .profile_page .personal-info_area {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .profile_page .personal-info_area td input {
+    width: calc(100% - 24px);
+    max-width: 700px;
+    margin-left: 24px;
+    box-sizing: border-box;
+  }
+}
+
+@media (max-width: 1024px) {
+  .footer-col ul li {
+    min-width: 0;
+  }
+  .footer-col ul li a {
+    overflow-wrap: anywhere;
+  }
+}
+
+@media (max-width: 768px) {
+  .page_log_reg {
+    height: auto;
+    min-height: 100vh;
+    padding: 96px 16px 32px;
+    box-sizing: border-box;
+  }
+  .log_reg_contener {
+    width: 100%;
+    max-width: 440px;
+    margin: 0 auto;
+  }
+  .reg-flow {
+    width: 100%;
+    max-width: 440px;
+    margin: 0 auto;
+  }
+  .log-reg-form {
+    width: 100%;
+    min-width: 0;
+  }
+  .log-reg-form form {
+    width: 100%;
+    max-width: 100%;
+  }
+  .link_cont {
+    min-width: 0;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .statistics-row {
+    margin-top: 40px;
+  }
+
+  .search-cont {
+    width: calc(100% - 32px);
+    margin: 8px 16px;
+  }
+
+  .report-area-menu {
+    overflow: visible;
+  }
+  .content-pod-menu {
+    padding: 0 8px;
+  }
+  .content-pod-menu nav ul {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px 0;
+  }
+  .content-pod-menu nav ul section {
+    flex: 1 1 auto;
+    margin: 0;
+    min-width: 0;
+  }
+  .functions_menu {
+    height: auto;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 2px;
+  }
+  .content-pod-menu nav ul li {
+    min-width: 64px;
+    height: auto;
+    padding: 8px 6px;
+    gap: 4px;
+  }
+  .content-pod-menu nav ul li:hover {
+    padding: 8px 6px;
+  }
+  .content-pod-menu nav ul li img,
+  .content-pod-menu nav ul li.pod-row-action svg {
+    height: 28px;
+    width: auto;
+  }
+  .content-pod-menu nav ul li a {
+    font-size: 12px;
+    padding-top: 2px;
+  }
+  .functions_menu_name {
+    font-size: 12px;
+    padding: 4px 6px 2px;
+  }
+
+  .profile_page {
+    padding-bottom: 110px;
+  }
+}
+
+@media (max-width: 768px) {
+  .pf-area {
+    padding-bottom: 0;
+  }
+  .pf-card .app-btn {
+    width: 100%;
+    justify-content: center;
+  }
+  .pf-card {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .info-modal-content {
+    min-width: 0;
+  }
+  .reg-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .egr-lookup-row {
+    flex-wrap: wrap;
+  }
+  .egr-lookup-btn {
+    width: 100%;
+    justify-content: center;
+  }
+  .reg-steps {
+    padding: 12px 14px 10px;
+  }
+  .egr-card {
+    padding: 14px;
+  }
+  .egr-row {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 6px;
+  }
+  .reg-step-title {
+    font-size: 12px;
+    line-height: 1.25;
+    white-space: normal;
+  }
+}
+
+@media (max-width: 768px) {
+  .pf-rows {
+    gap: 14px;
+  }
+  .pf-row {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 6px;
+  }
+  .pf-row-group {
+    margin-top: 16px;
+  }
+  .pf-row-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #374151;
+  }
+  .pf-actions .app-btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .content-pod-menu .menu_audit > li,
+  .content-pod-menu .menu_audit > li:hover {
+    width: 76px;
+    min-width: 76px;
+    height: auto;
+    padding: 8px 4px;
+  }
+}

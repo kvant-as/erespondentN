@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+{% block title %}Организация - ErespondentN{% endblock %}
+{% block content %}
+
+{% set org = current_user.organization %}
+{% set egr_labels = {'active': 'Действующая', 'liquidating': 'В процессе ликвидации', 'liquidated': 'Ликвидирована', 'bankrupt': 'Банкротство', 'unknown': 'Состояние не определено'} %}
+
+<div class="profile_page">
+    <div class = "rotation-fromareas">
+        <div class = "rotation-fromareas_info">
+            <span>
+                <a class = "back_orbital" href="/profile">Профиль</a>
+            </span>
+            <span class = "svg-arr">
+                {{ icons.icon_arrow_right() }}
+            </span>
+            <span>
+                <a>Организация</a>
+            </span>
+        </div>
+    </div>
+    <div class="contener_row">
+        {{ content.left_menu(active_tab) }}
+        <div class="personal-info_area pf-area">
+            <h2 class="security-head">Данные организации</h2>
+            <div class="glass-info-block">
+                {% if not current_user.is_region_auditor and not current_user.is_reader %}
+                <p>После создания первого отчёта сменить организацию нельзя.</p>
+                {% endif %}
+            </div>
+
+            {% if org %}
+            <div class="pf-rows">
+                <div class="pf-row">
+                    <span class="pf-row-label">Наименование</span>
+                    <input class="pf-input" type="text" value="{{ org.full_name or 'Нет данных' }}" title="{{ org.full_name or '' }}">
+                </div>
+                <div class="pf-row">
+                    <span class="pf-row-label">Сокращённое наименование</span>
+                    <input class="pf-input" type="text" value="{{ org.short_name or 'Нет данных' }}">
+                </div>
+                <div class="pf-row pf-row-group">
+                    <span class="pf-row-label" title="Учётный номер плательщика">УНП</span>
+                    <input class="pf-input" type="text" value="{{ org.ynp or 'Нет данных' }}">
+                </div>
+                {% if not current_user.is_region_auditor and not current_user.is_reader %}
+                <div class="pf-row">
+                    <span class="pf-row-label" title="Общегосударственный классификатор предприятий и организаций">ОКПО</span>
+                    <input class="pf-input" type="text" value="{{ org.okpo or 'Нет данных' }}">
+                </div>
+                {% endif %}
+                <div class="pf-row">
+                    <span class="pf-row-label">Регион</span>
+                    <input class="pf-input" type="text" value="{{ org.region.name if org.region else 'Нет данных' }}">
+                </div>
+                <div class="pf-row">
+                    <span class="pf-row-label">Юридический адрес</span>
+                    <input class="pf-input" type="text" value="{{ org.legal_address or 'Нет данных' }}" title="{{ org.legal_address or '' }}">
+                </div>
+                <div class="pf-row pf-row-group">
+                    <span class="pf-row-label">Статус</span>
+                    <input class="pf-input{% if org.egr_status_kind %} pf-input-status-{{ org.egr_status_kind }}{% endif %}" type="text"
+                           value="{{ egr_labels.get(org.egr_status_kind, org.egr_status) if org.egr_status_kind else 'Не сверялась' }}">
+                </div>
+                <div class="pf-row">
+                    <span class="pf-row-label">Сверено с ЕГР</span>
+                    <input class="pf-input" type="text" data-org-checked
+                           value="{{ org.egr_checked_at.strftime('%d.%m.%Y %H:%M') if org.egr_checked_at else 'Ещё не сверялась' }}">
+                </div>
+            </div>
+
+            <p class="pf-org-message" data-org-message hidden></p>
+
+            <p class="pf-hint">
+                Данные обновляются из Единого государственного регистра юридических лиц и индивидуальных предпринимателей
+                (<a href="https://egr.gov.by" target="_blank" rel="noopener" class="instruction-link">egr.gov.by</a>) по УНП{% if org.ynp %} {{ org.ynp }}{% endif %}.
+            </p>
+            <div class="pf-actions">
+                <button type="button" class="app-btn" id="orgRefreshBtn" {% if not org.ynp %}disabled title="У организации не указан УНП"{% endif %}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+                    <span>Обновить данные организации</span>
+                </button>
+                {% if can_change_org %}
+                <button type="button" class="app-btn app-btn--secondary" id="orgChangeBtn">Сменить организацию</button>
+                {% endif %}
+            </div>
+            {% if not org.ynp %}
+            <p class="pf-hint">У организации не указан УНП, поэтому обновить её данные из ЕГР нельзя. Обратитесь к администратору.</p>
+            {% endif %}
+            {% else %}
+            <form action="{{ url_for('views.profile_org_change') }}" method="POST" class="pf-org-pick">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="unp" data-egr-unp>
+                <p class="pf-hint">Организация не указана. Найдите её по УНП — данные загрузятся из ЕГР.</p>
+                {{ content.egr_lookup('profile-empty') }}
+                <button type="submit" class="app-btn" data-egr-submit data-loading-text="Сохраняем…" disabled>
+                    {{ icons.icon_send() }}
+                    <span>Выбрать организацию</span>
+                </button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% if org and can_change_org %}
+<div id="changeOrgModal" class="modal">
+    <div class="modal-content pf-modal">
+        <div class="modal-header">
+            <h3 class="change-position">Смена организации</h3>
+            {{ icons.icon_close() }}
+        </div>
+        <form action="{{ url_for('views.profile_org_change') }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="unp" data-egr-unp>
+            {{ content.egr_lookup('profile-change') }}
+            <button type="submit" class="app-btn" data-egr-submit data-loading-text="Сохраняем…" disabled>
+                {{ icons.icon_send() }}
+                <span>Выбрать организацию</span>
+            </button>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+<script src="{{ url_for('static', filename='js/egr_org.js') }}"></script>
+<script>
+(function () {
+    var refreshBtn = document.getElementById('orgRefreshBtn');
+    var message = document.querySelector('[data-org-message]');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', function () {
+            var label = refreshBtn.querySelector('span');
+            refreshBtn.disabled = true;
+            refreshBtn.classList.add('is-loading');
+            label.textContent = 'Обновление…';
+            fetch('{{ url_for("views.profile_org_refresh") }}', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': '{{ csrf_token() }}', 'X-Requested-With': 'XMLHttpRequest' },
+                credentials: 'same-origin'
+            })
+                .then(function (r) { return r.json().catch(function () { return {}; }); })
+                .then(function (data) {
+                    if (!data.success) throw new Error(data.error || 'Не удалось обновить данные из ЕГР');
+                    var changed = (data.changes || []).map(function (c) { return c.field; });
+                    try {
+                        sessionStorage.setItem('orgRefreshMessage', changed.length
+                            ? 'Обновлено из ЕГР: ' + changed.join(', ')
+                            : 'Данные совпадают с ЕГР — изменений нет');
+                    } catch (e) {}
+                    window.location.reload();
+                })
+                .catch(function (err) {
+                    refreshBtn.disabled = false;
+                    refreshBtn.classList.remove('is-loading');
+                    label.textContent = 'Обновить данные организации';
+                    message.textContent = err.message;
+                    message.classList.add('is-error');
+                    message.hidden = false;
+                });
+        });
+    }
+    try {
+        var msg = sessionStorage.getItem('orgRefreshMessage');
+        if (msg && message) {
+            sessionStorage.removeItem('orgRefreshMessage');
+            message.textContent = msg;
+            message.hidden = false;
+        }
+    } catch (e) {}
+
+    var modal = document.getElementById('changeOrgModal');
+    var openBtn = document.getElementById('orgChangeBtn');
+    if (modal && openBtn) {
+        openBtn.addEventListener('click', function () {
+            modal.classList.add('active');
+            var input = modal.querySelector('[data-egr-input]');
+            if (input) setTimeout(function () { input.focus(); }, 50);
+        });
+        modal.querySelector('.close').addEventListener('click', function () { modal.classList.remove('active'); });
+        modal.addEventListener('click', function (e) { if (e.target === modal) modal.classList.remove('active'); });
+    }
+})();
+</script>
+{% endblock %}

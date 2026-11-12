@@ -18,132 +18,65 @@
     </div>
     <div class="contener_row">
         {{ content.left_menu(active_tab) }}
-        <div class="personal-info_area">
-            <div class="account-security-wrap">
-                <div class="account-security-head">
-                    <a>Изменение электронного адреса</a>
+        <div class="personal-info_area pf-area">
+            <section class="pf-section">
+                <h2 class="security-head">Изменение электронного адреса</h2>
+                <div class="pf-card">
+                    <p class="pf-card-text">
+                        Адрес электронной почты, привязанный к аккаунту: <strong>{{ current_user.email }}</strong>.
+                        После смены все уведомления будут приходить на новый адрес, а входить нужно будет по нему.
+                    </p>
+                    <a class="app-btn app-btn--secondary" href="/change-email">Изменить e-mail</a>
                 </div>
+            </section>
 
-                <div class="account-danger-card">
-                    <div class="account-danger-body">
-                        <div class="account-delete-action">
-                            <p class="account-delete-warning">
-                                Здесь вы можете изменить адрес электронной почты, привязанный к вашему аккаунту. 
-                                После смены email все уведомления будут приходить на новый адрес.
-                            </p>
-                            
-                            <div class="account-form-actions" style="padding: 15px;">
-                     
-                            <button 
-                                type="submit" 
-                                class="delete-scale-btn non" 
-                                onclick="window.location.href='/change-email'"
-                    
-                            >   
-                                <img src="{{ url_for('static', filename='img/non-stop.png')}}" alt="">
-                                <span>Перейти к изменению email</span>
-                            </button>
-                                
-                            </div>
+            <section class="pf-section">
+                <h2 class="security-head">Удаление личного кабинета</h2>
+                <div class="pf-card pf-card-danger">
+                    <p class="pf-card-text">
+                        Удаление личного кабинета приведёт к безвозвратному удалению всех ваших данных,
+                        включая отчёты, профиль и историю действий. Это действие невозможно отменить.
+                    </p>
+                    <p class="pf-card-note">Доступно только при отсутствии одобренных отчётов.</p>
+
+                    <form id="accountDeleteForm" method="POST" action="{{ url_for('auth.delete_account') }}" class="pf-form">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
+                        <div class="pf-field pf-field-full">
+                            <label for="accountConfirmEmail">Для подтверждения введите <strong>{{ current_user.email }}</strong></label>
+                            <input type="email" id="accountConfirmEmail" name="confirm_email"
+                                   placeholder="Адрес электронной почты" autocomplete="off" required>
                         </div>
-                    </div>
+                        <button type="submit" id="accountDeleteBtn" class="app-btn app-btn--danger" disabled>Удалить личный кабинет</button>
+                    </form>
                 </div>
-            </div>
-            <div class="account-security-wrap">
-                <div class="account-security-head">
-                    <a>Удаление личного кабинета</a>
-                </div>
-
-                <div class="account-danger-card">
-                    <div class="account-danger-body">
-                        <div class="account-delete-action">
-                            <p class="account-delete-warning">
-                                Удаление личного кабинета приведет к безвозвратному удалению всех ваших данных, 
-                                включая отчеты, профиль и историю действий. Это действие невозможно отменить.
-                            </p>
-                            <p class="account-delete-rule">
-                                Доступно только при отсутствии одобренных отчетов.
-                            </p>
-                            
-                            <form id="accountDeleteForm" method="POST" action="{{ url_for('auth.delete_account') }}">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
-                                
-                                <div class="account-form-group">
-                                    <label for="accountConfirmEmail">
-                                        Введите <strong>{{ current_user.email }}</strong> для подтверждения
-                                    </label>
-                                    <input 
-                                        type="email" 
-                                        id="accountConfirmEmail" 
-                                        name="confirm_email" 
-                                        class="account-form-control" 
-                                        placeholder="Введите адрес электронной почты"
-                                        autocomplete="off"
-                                        required
-                                    >
-                                </div>
-                                
-                                <div class="account-form-actions">
-                                    <button 
-                                        type="submit" 
-                                        id="accountDeleteBtn" 
-                                        class="delete-scale-btn" 
-                                        disabled
-                                    >   
-                                        <img src="{{ url_for('static', filename='img/stop.png')}}" alt="">
-                                        <span>Удалить личный кабинет</span>
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-
-
-            </div>
-            
+            </section>
         </div>
     </div>
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const emailInput = document.getElementById('accountConfirmEmail');
-    const deleteBtn = document.getElementById('accountDeleteBtn');
-    const btnStatus = document.getElementById('accountBtnStatus');
-    const userEmail = '{{ current_user.email }}';
-    
-    function checkEmailMatch() {
-        const inputValue = emailInput.value.trim();
-        const isMatch = inputValue === userEmail;
-        
-        deleteBtn.disabled = !isMatch;
-        
-        if (isMatch) {
-            btnStatus.className = 'account-btn-status account-btn-status-active';
-            emailInput.style.borderColor = '#28a745';
-        } else if (inputValue.length > 0) {
-            btnStatus.className = 'account-btn-status';
-            emailInput.style.borderColor = '#dc3545';
-        } else {
-            btnStatus.textContent = 'Введите email для активации';
-            btnStatus.className = 'account-btn-status';
-            emailInput.style.borderColor = '#e9ecef';
-        }
-    }
-    
-    emailInput.addEventListener('input', checkEmailMatch);
-    
-    const form = document.getElementById('accountDeleteForm');
-    form.addEventListener('submit', function(e) {
-        if (emailInput.value.trim() !== userEmail) {
+(function () {
+    var emailInput = document.getElementById('accountConfirmEmail');
+    var deleteBtn = document.getElementById('accountDeleteBtn');
+    var form = document.getElementById('accountDeleteForm');
+    var userEmail = {{ current_user.email|tojson }};
+
+    function matches() { return emailInput.value.trim() === userEmail; }
+
+    emailInput.addEventListener('input', function () {
+        var value = emailInput.value.trim();
+        deleteBtn.disabled = !matches();
+        emailInput.classList.toggle('is-invalid', value.length > 0 && !matches());
+        emailInput.classList.toggle('is-valid', matches());
+    });
+
+    form.addEventListener('submit', function (e) {
+        if (!matches()) {
             e.preventDefault();
             alert('Email не совпадает. Введите правильный адрес для подтверждения удаления.');
-            return false;
         }
-    
     });
-});
+})();
 </script>
 
 {% endblock %}

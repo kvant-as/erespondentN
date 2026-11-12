@@ -68,9 +68,12 @@ def profile_complete(f):
             flash('Требуется авторизация', 'error')
             return redirect(url_for('views.login'))  
           
-        if not current_user.last_name or not current_user.first_name or not current_user.telephone or not current_user.organization_id:
-            flash('Пожалуйста, заполните полностью свой профиль', 'error')
+        if not current_user.last_name or not current_user.first_name or not current_user.telephone:
+            flash('Пожалуйста, заполните личные данные в профиле', 'error')
             return redirect(url_for('views.profile_common'))
+        if not current_user.organization_id:
+            flash('Укажите организацию по УНП', 'error')
+            return redirect(url_for('views.profile_org'))
                 
         return f(*args, **kwargs)
     
@@ -170,7 +173,7 @@ def forgot_password():
 
 @views.route('/code', methods=['GET'])
 def code():
-    return render_template('code.html', user=current_user
+    return render_template('code.html', user=current_user, email=(session.get('temp_user') or {}).get('email')
             )
     
 @views.route('/test', methods=['GET'])
@@ -262,12 +265,102 @@ def profile():
 @login_required
 @session_required
 def profile_common():
-    count_reports = Report.query.filter_by(user_id=current_user.id).count()
-    return render_template('profile_common.html', 
-                        user=current_user, 
-                        count_reports=count_reports,
+    return render_template('profile_common.html',
+                        user=current_user,
                         active_tab = 'common'
                         )
+
+
+@views.route('/profile/organization', methods=['GET'])
+@login_required
+@session_required
+def profile_org():
+    """Раздел «Организация» профиля — данные организации из ЕГР, обновление и смена по УНП."""
+    count_reports = Report.query.filter_by(user_id=current_user.id).count()
+    return render_template('profile_org.html',
+                        user=current_user,
+                        count_reports=count_reports,
+                        can_change_org=_can_change_org(current_user, count_reports),
+                        active_tab = 'org'
+                        )
+
+
+def _can_change_org(user, count_reports=None):
+    """Сменить организацию может респондент, пока у него нет отчётов."""
+    if user.is_region_auditor or user.is_reader:
+        return False
+    if count_reports is None:
+        count_reports = Report.query.filter_by(user_id=user.id).count()
+    return count_reports == 0
+
+
+@views.route('/register/personal', methods=['GET'])
+def register_personal():
+    """Шаг 3 регистрации — личные данные (см. auth.register_personal)."""
+    temp_user = session.get('temp_user') or {}
+    if current_user.is_authenticated:
+        return redirect(url_for('views.profile'))
+    if not temp_user.get('email_verified'):
+        flash('Сначала подтвердите электронную почту', 'error')
+        return redirect(url_for('views.sign'))
+    return render_template('register_personal.html', user=current_user, email=temp_user.get('email'),
+                           personal=temp_user.get('personal') or {})
+
+
+@views.route('/register/organization', methods=['GET'])
+def register_org():
+    """Шаг 4 регистрации — организация по УНП из ЕГР (см. auth.register_organization)."""
+    temp_user = session.get('temp_user') or {}
+    if current_user.is_authenticated:
+        return redirect(url_for('views.profile'))
+    if not temp_user.get('email_verified'):
+        flash('Сначала подтвердите электронную почту', 'error')
+        return redirect(url_for('views.sign'))
+    if not temp_user.get('personal_done'):
+        return redirect(url_for('views.register_personal'))
+    return render_template('register_org.html', user=current_user, email=temp_user.get('email'))
+
+
+@views.route('/profile/organization/refresh', methods=['POST'])
+@login_required
+@session_required
+def profile_org_refresh():
+    """Кнопка «Обновить данные организации» — данные привязанной организации из ЕГР по её УНП."""
+    from ..egr_org import EgrError, refresh_from_egr
+
+    org = current_user.organization
+    if not org:
+        return jsonify({'success': False, 'error': 'Организация не выбрана'}), 400
+    try:
+        changes = refresh_from_egr(org)
+    except EgrError as exc:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(exc)}), 502
+    db.session.commit()
+    current_app.logger.info(f'EGR refresh org {org.id} (УНП {org.ynp}) by user {current_user.id}: {len(changes)} changes')
+    return jsonify({'success': True, 'changes': [{'field': f, 'old': o, 'new': n} for f, o, n in changes]})
+
+
+@views.route('/profile/organization/change', methods=['POST'])
+@login_required
+@session_required
+def profile_org_change():
+    """Смена организации по УНП из ЕГР — пока у респондента нет отчётов."""
+    from ..egr_org import EgrError, upsert_from_egr
+
+    if not _can_change_org(current_user):
+        flash('Сменить организацию нельзя: по ней уже есть отчёты', 'error')
+        return redirect(url_for('views.profile_org'))
+    try:
+        organization, created = upsert_from_egr(request.form.get('unp', ''))
+    except EgrError as exc:
+        db.session.rollback()
+        flash(str(exc), 'error')
+        return redirect(url_for('views.profile_org'))
+    current_user.organization = organization
+    db.session.commit()
+    flash(f'Организация изменена: {organization.short_name or organization.full_name}', 'success')
+    return redirect(url_for('views.profile_org'))
 
 @views.route('/profile/session', methods=['GET'])
 @login_required
@@ -515,8 +608,9 @@ def api_audit_data():
     
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 50, type=int)
-    
-    reports = get_reports_by_status(status, year_filter, quarter_filter, region_filter)
+    sort = 'desc' if request.args.get('sort') == 'desc' else 'asc'
+
+    reports = get_reports_by_status(status, year_filter, quarter_filter, region_filter, sort)
     
     if search_name or search_okpo:
         filtered_reports = []
@@ -571,7 +665,8 @@ def api_audit_data():
         'page': page,
         'per_page': per_page,
         'has_more': end < total_count,
-        'count': len(reports_data)
+        'count': len(reports_data),
+        'sort': sort
     })  
 
 @views.route('/audit-area/report/<int:id>', methods=['GET'])
@@ -1570,6 +1665,13 @@ def send_for_admin():
         if not question_type:
             flash('Выберите тип вопроса', 'error')
             return redirect(url_for('views.beginPage'))
+
+        # Организация теперь выбирается и обновляется по УНП из ЕГР
+        # (регистрация и профиль → «Организация»), заявки администратору
+        # на добавление или изменение организации больше не принимаются.
+        if question_type in ('organization-none', 'organization-edit'):
+            flash('Данные организации загружаются из ЕГР по УНП: обновите их в профиле, раздел «Организация»', 'error')
+            return redirect(url_for('views.profile_org') if current_user.organization_id else url_for('views.beginPage'))
         
         if question_type == 'organization-none':
             if not organization_name or not organization_okpo or not organization_ynp or not organization_region:

@@ -3,7 +3,9 @@
 {% block content %}
 {{ content.blurback() }}
 <div class="page_log_reg">
-    <div class="log_reg_contener">
+    <div class="reg-flow">
+        {{ content.reg_steps(2) }}
+        <div class="log_reg_contener">
         <div class="log_reg_img"></div>
     
         <div class="log-reg-form"> 
@@ -12,7 +14,7 @@
                     <a onclick="window.location.href='/login'" class = "active" style="margin-right: 19px;">Введите код для активации</a>
                 </div>
                 <div class="glass-info-block" style = "max-width: 450px;">
-                    <p>Код подтверждения будет отправлен на указанную электронную почту. Время доставки может составлять от нескольких секунд до нескольких минут. Если он так и не пришел прочитайте пожалуйста <a href="/FAQ#faq16" target="_blank" class = "instruction-link">как решить проблему</a></p>
+                    <p>Код подтверждения будет отправлен на {% if email %}почту <a class = "instruction-link">{{ email }}</a>{% else %}указанную электронную почту{% endif %} Время доставки может составлять от нескольких секунд до нескольких минут. Если он так и не пришел прочитайте пожалуйста <a href="/FAQ#faq16" target="_blank" class = "instruction-link">как решить проблему</a></p>
                 </div>
                 <div class="authorization_data">
                     <div class="activation_code_container">
@@ -30,7 +32,7 @@
                     
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="log_buttons_area">
-                    <button type="submit" class="submit_button blue_btn">         
+                    <button type="submit" class="submit_button app-btn">         
                         {{ icons.icon_send() }}
                         <span>Отправить</span>         
                     </button>
@@ -44,6 +46,7 @@
             </div>
             
         </div>
+    </div>
     </div>
 </div>
 

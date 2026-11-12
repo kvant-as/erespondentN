@@ -638,7 +638,7 @@
                             
                             {% if current_version and current_version.status not in ['Одобрен', 'Готов к удалению', 'Есть замечания'] and current_user and not current_user.is_reader %}
                             <div class="model_but_area right">
-                                <button type="submit" class="blue_btn">
+                                <button type="submit" class="app-btn">
                                     {{ icons.icon_send() }}
                                     <span>Отправить сообщение</span>
                                 </button>
@@ -688,7 +688,11 @@
         <ul class="sticky_status">
         <li class="{% if active_tab == 'common' %}active_li{% endif %}" onclick="window.location.href='/profile/common'">
             {{ icons.user_icon() }}
-            <a class="left_menu_text">Общее</a>
+            <a class="left_menu_text">Личные данные</a>
+        </li>
+        <li class="{% if active_tab == 'org' %}active_li{% endif %}" onclick="window.location.href='/profile/organization'">
+            {{ icons.icon_org() }}
+            <a>Организация</a>
         </li>
         <li class="{% if active_tab == 'pass' %}active_li{% endif %}" onclick="window.location.href='/profile/password'">
             {{ icons.lock_icon() }}
@@ -708,4 +712,71 @@
         </li>
         </ul>
     </nav>
+{% endmacro %}
+
+{% macro reg_steps(current) %}
+{% set titles = ['Аккаунт', 'Почта', 'Личные данные', 'Организация'] %}
+<nav class="reg-steps" aria-label="Шаги регистрации">
+    <p class="reg-steps-caption">Шаг {{ current }} из {{ titles|length }}</p>
+    <ol class="reg-steps-list">
+        {% for title in titles %}
+        {% set n = loop.index %}
+        <li class="reg-step{% if n < current %} is-done{% elif n == current %} is-current{% endif %}"{% if n == current %} aria-current="step"{% endif %}>
+            <span class="reg-step-bar" aria-hidden="true"></span>
+            <span class="reg-step-title">
+                {% if n < current %}<svg class="reg-step-check" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>{% endif %}
+                {{ title }}
+            </span>
+        </li>
+        {% endfor %}
+    </ol>
+</nav>
+{% endmacro %}
+
+{% macro egr_lookup(prefix) %}
+<div class="egr-lookup" data-egr-lookup>
+    <label class="egr-lookup-label" for="{{ prefix }}-unp">УНП организации</label>
+    <div class="egr-lookup-row">
+        <input id="{{ prefix }}-unp" class="egr-lookup-input" type="text" inputmode="numeric" autocomplete="off"
+               maxlength="9" placeholder="9 цифр" data-egr-input>
+        <button type="button" class="app-btn app-btn--secondary egr-lookup-btn" data-egr-search disabled>
+            {{ icons.icon_search() }}
+            <span>Найти в ЕГР</span>
+        </button>
+    </div>
+    <p class="egr-lookup-hint" data-egr-status>Данные организации загрузятся из Единого государственного регистра (ЕГР).</p>
+    <div class="egr-card" data-egr-card hidden>
+        <div class="egr-card-top">
+            <span class="egr-card-title">Данные из ЕГР</span>
+            <span class="egr-card-status" data-egr-field="status"></span>
+        </div>
+        <div class="egr-rows">
+            <div class="egr-row">
+                <span class="egr-row-label">Наименование</span>
+                <span class="egr-row-value" data-egr-field="full_name"></span>
+            </div>
+            <div class="egr-row">
+                <span class="egr-row-label">УНП</span>
+                <span class="egr-row-value" data-egr-field="unp"></span>
+            </div>
+            <div class="egr-row">
+                <span class="egr-row-label">Регион</span>
+                <span class="egr-row-value" data-egr-field="region"></span>
+            </div>
+            <div class="egr-row">
+                <span class="egr-row-label">Юридический адрес</span>
+                <span class="egr-row-value" data-egr-field="legal_address"></span>
+            </div>
+        </div>
+        <p class="egr-card-note" data-egr-note></p>
+    </div>
+</div>
+{% endmacro %}
+
+{% macro phone_group(prefix, existing='', hidden_name='telephone') %}
+<div class="phone-field">
+    <div class="phone-group-list" id="{{ prefix }}-phone-list" data-existing-phones="{{ existing or '' }}"></div>
+    <div class="phone-hint">Выберите код оператора или города и введите номер — всего 12 цифр вместе с кодом +375</div>
+    <input type="hidden" name="{{ hidden_name }}" id="{{ prefix }}-telephone">
+</div>
 {% endmacro %}

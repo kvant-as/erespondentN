@@ -33,6 +33,22 @@ def session_status():
         'enforced': True
     })
 
+@api.route('/egr/lookup', methods=['GET'])
+def egr_lookup():
+    """Организация по УНП из ЕГР — для шага «Организация» регистрации (почта
+    уже подтверждена, аккаунта ещё нет) и для смены организации в профиле."""
+    from flask import session
+    from ..egr_org import EgrError, lookup
+
+    pending = (session.get('temp_user') or {}).get('email_verified')
+    if not (current_user.is_authenticated or pending):
+        return jsonify({'success': False, 'error': 'Необходима авторизация'}), 401
+    try:
+        return jsonify({'success': True, 'organization': lookup(request.args.get('unp', ''))})
+    except EgrError as exc:
+        return jsonify({'success': False, 'error': str(exc)}), 400
+
+
 @api.route('/organizations', methods=['GET'])
 @login_required
 @session_required

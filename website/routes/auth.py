@@ -147,26 +147,116 @@ def code():
             return redirect(url_for('views.sign'))
         
         if input_code == session.get('activation_code'):
-            new_user = User(
-                email=session['temp_user']['email'],
-                password=session['temp_user']['password'],
-                application_id=get_current_application_id()
-            )
-            db.session.add(new_user)
-            db.session.commit()
-
-            remember = True
-            session.pop('temp_user', None)
+            # Почта подтверждена, но аккаунт ещё не создаётся — сначала
+            # шаг «Организация» (регистрация_организации ниже).
+            temp_user = dict(session['temp_user'])
+            temp_user['email_verified'] = True
+            session['temp_user'] = temp_user
             session.pop('activation_code', None)
-            
-            response = create_login_response(new_user)
-            login_user(new_user, remember=remember)
-            send_email('', new_user.email, 'registration')
-            flash('Аккаунт успешно активирован! Теперь перейдите к заполнению профиля!', 'success')
-            return response
+            flash('Почта подтверждена. Заполните личные данные', 'success')
+            return redirect(url_for('views.register_personal'))
         else:
             flash('Некорректный код активации', 'error')
     return redirect(url_for('views.code'))
+
+
+NAME_RE = re.compile(r'^[A-Za-zА-Яа-яЁё-]{1,50}$')
+
+
+@auth.route('/register/personal', methods=['POST'])
+def register_personal():
+    """Шаг «Личные данные»: ФИО и телефон сохраняются в черновике
+    регистрации, аккаунт создаётся позже — после выбора организации."""
+    temp_user = session.get('temp_user') or {}
+    if not temp_user.get('email_verified'):
+        flash('Сессия регистрации истекла. Пожалуйста, начните регистрацию заново', 'error')
+        return redirect(url_for('views.sign'))
+
+    personal = {
+        'last_name': request.form.get('last_name', '').strip(),
+        'first_name': request.form.get('first_name', '').strip(),
+        'patronymic_name': request.form.get('patronymic_name', '').strip(),
+        'telephone': request.form.get('telephone', '').strip(),
+    }
+    temp_user = dict(temp_user)
+    temp_user['personal'] = personal
+    session['temp_user'] = temp_user
+
+    if not (personal['last_name'] and personal['first_name'] and personal['patronymic_name'] and personal['telephone']):
+        flash('Заполните фамилию, имя, отчество и номер телефона', 'error')
+        return redirect(url_for('views.register_personal'))
+    for key, label in (('last_name', 'Фамилия'), ('first_name', 'Имя'), ('patronymic_name', 'Отчество')):
+        if not NAME_RE.match(personal[key]):
+            flash(f'{label}: только буквы и дефис, одним словом', 'error')
+            return redirect(url_for('views.register_personal'))
+    from ..phones import parse_and_validate_phones
+    telephone, phone_error = parse_and_validate_phones(personal['telephone'])
+    if phone_error:
+        flash(phone_error, 'error')
+        return redirect(url_for('views.register_personal'))
+    personal['telephone'] = telephone
+
+    temp_user['personal_done'] = True
+    session['temp_user'] = temp_user
+    return redirect(url_for('views.register_org'))
+
+
+@auth.route('/register/organization', methods=['POST'])
+def register_organization():
+    """Последний шаг регистрации: организация по УНП из ЕГР. Есть в базе —
+    её данные обновляются, нет — добавляется. После этого создаётся аккаунт."""
+    from ..egr_org import EgrError, upsert_from_egr
+
+    temp_user = session.get('temp_user') or {}
+    if not temp_user.get('email_verified') or not temp_user.get('email') or not temp_user.get('password'):
+        flash('Сессия регистрации истекла. Пожалуйста, начните регистрацию заново', 'error')
+        return redirect(url_for('views.sign'))
+    if not temp_user.get('personal_done'):
+        flash('Сначала заполните личные данные', 'error')
+        return redirect(url_for('views.register_personal'))
+
+    email = temp_user['email']
+    personal = temp_user.get('personal') or {}
+    if User.query.filter(
+        func.lower(User.email) == func.lower(email),
+        User.application_id == get_current_application_id()
+    ).first():
+        session.pop('temp_user', None)
+        flash('Пользователь с таким email уже существует — войдите в систему', 'error')
+        return redirect(url_for('views.login'))
+
+    try:
+        organization, created = upsert_from_egr(request.form.get('unp', ''))
+    except EgrError as exc:
+        db.session.rollback()
+        flash(str(exc), 'error')
+        return redirect(url_for('views.register_org'))
+
+    new_user = User(
+        email=email,
+        password=temp_user['password'],
+        application_id=get_current_application_id(),
+        last_name=personal.get('last_name'),
+        first_name=personal.get('first_name'),
+        patronymic_name=personal.get('patronymic_name'),
+        telephone=personal.get('telephone'),
+    )
+    new_user.organization = organization
+    db.session.add(new_user)
+    db.session.commit()
+    current_app.logger.info(
+        f'Registration {new_user.id}: organization {organization.id} (УНП {organization.ynp}) '
+        f'{"added from EGR" if created else "updated from EGR"}'
+    )
+
+    session.pop('temp_user', None)
+    session.pop('activation_code', None)
+
+    login_user(new_user, remember=True)
+    response = create_login_response(new_user, 'views.profile')
+    send_email('', new_user.email, 'registration')
+    flash('Аккаунт успешно создан!', 'success')
+    return response
 
 @auth.route('/resend-code', methods=['POST'])
 def resend_code():
@@ -189,49 +279,30 @@ def add_personal_parametrs():
         second_name = request.form.get('second_name_common', '').strip()
         patronymic = request.form.get('patronymic_common', '').strip()
         telephone = request.form.get('telephone_common', '').strip()
-        
-        id_org = request.form.get('id_org', '').strip()
 
-        if not all([name, second_name, telephone]):
+        if not all([name, second_name, patronymic, telephone]):
             flash('Заполните все обязательные поля', 'error')
             return redirect(url_for('views.profile_common'))
 
+        from ..phones import parse_and_validate_phones
+        telephone, phone_error = parse_and_validate_phones(telephone)
+        if phone_error:
+            flash(phone_error, 'error')
+            return redirect(url_for('views.profile_common'))
+
+        # Организация здесь больше не выбирается — она задаётся по УНП из
+        # ЕГР при регистрации или кнопкой «Сменить организацию» в профиле.
         current_user.first_name = name
         current_user.last_name = second_name
         current_user.patronymic_name = patronymic
-        db.session.commit()
-
-
-        # existing_telephone = User.query.filter(User.id != current_user.id, User.telephone == telephone).first()
-        # if existing_telephone:
-        #     flash('Пользователь с таким номером телефона уже существует', 'error')
-        #     return redirect(url_for('views.profile_common'))
         current_user.telephone = telephone
         db.session.commit()
-        
-        if not all([id_org]):
-            flash('Выберите предприятие', 'error')
-            return redirect(url_for('views.profile_common'))
-        
-        organization = Organization.query.filter_by(id=id_org).first()
-        if not organization:
-            flash('Организация не найдена', 'error')
-            return redirect(url_for('views.profile_common'))
-        db.session.commit()
 
-        # existing_userOrg = User.query.filter_by(organization_id=organization.id).first()
-        # if existing_userOrg and existing_userOrg.id != current_user.id:
-        #     flash('Аккаунт с такой организацией уже существует', 'error')
-        #     return redirect(url_for('views.profile_common'))
-        
-        current_user.organization_id = organization.id
-        
-        session.pop('temp_user', None)
-        session.pop('activation_code', None)
-        
-        db.session.commit()
+        if not current_user.organization_id:
+            flash('Данные сохранены. Укажите организацию по УНП', 'error')
+            return redirect(url_for('views.profile_org'))
         flash('Данные успешно обновлены', 'success')
-        
+
     return redirect(url_for('views.profile_common'))
 
 @auth.route('/profile/password', methods=['POST'])
@@ -252,6 +323,10 @@ def profile_password():
 
         if new_password != conf_new_password:
             flash('При подтверждении пароля произошла ошибка', 'error')
+            return redirect(url_for('views.profile_password'))
+
+        if len(new_password) < 5:
+            flash('Пароль должен содержать не менее 5 символов', 'error')
             return redirect(url_for('views.profile_password'))
 
         user = User.query.filter_by(id=current_user.id).first()

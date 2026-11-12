@@ -3,6 +3,7 @@ class AuditModule {
         this.currentStatus = document.getElementById('current-status')?.value || 'all_reports';
         this.yearFilter = document.getElementById('year-filter-value')?.value || '';
         this.quarterFilter = document.getElementById('quarter-filter-value')?.value || '';
+        this.sortOrder = new URLSearchParams(window.location.search).get('sort') === 'desc' ? 'desc' : 'asc';
         this.previousReportRow = null;
         this.selectedReportId = null;
         this.longPressTimer = null;
@@ -24,6 +25,7 @@ class AuditModule {
         this.attachEventListeners();
         this.attachGlobalEventListeners();
         this.initCustomDropdown();
+        this.initSortDropdown();
         this.updateDropdownFromUrl();
         this.setDefaultRegionForAuthor();
         this.setupPagination();
@@ -90,6 +92,7 @@ class AuditModule {
     }
 
     async loadData(page = 1) {
+        this.isLoading = true;
         const loadingSpinner = document.getElementById('loading-spinner');
         const reportsContent = document.getElementById('reports-content');
         const emptyState = document.getElementById('empty-state');
@@ -124,6 +127,8 @@ class AuditModule {
             console.error('Error loading data:', error);
             if (loadingSpinner) loadingSpinner.style.display = 'none';
             this.showError('Ошибка загрузки данных');
+        } finally {
+            this.isLoading = false;
         }
     }
 
@@ -133,7 +138,8 @@ class AuditModule {
             year: this.yearFilter,
             quarter: this.quarterFilter,
             page: page,
-            per_page: this.pageSize
+            per_page: this.pageSize,
+            sort: this.sortOrder
         });
         
         const searchName = document.getElementById('organization-filter')?.value;
@@ -254,6 +260,8 @@ class AuditModule {
         
         if (statusText === 'Непросмотренный') {
             event.dataTransfer.setData('text/plain', reportId);
+            event.dataTransfer.effectAllowed = 'move';
+            this.setDragGhost(event, row);
             row.classList.add('dragging');
             this.setDraggingState(true);
         } else {
@@ -265,6 +273,25 @@ class AuditModule {
         }
         row.classList.add('active-report');
         this.previousReportRow = row;
+    }
+
+    setDragGhost(event, row) {
+        // Своя карточка вместо стандартного «призрака» строки: название
+        // организации и подсказка, куда её можно бросить.
+        if (!event.dataTransfer || !event.dataTransfer.setDragImage) return;
+        const name = row.querySelector('td:nth-child(4) input')?.value || 'Отчёт';
+        const ghost = document.createElement('div');
+        ghost.className = 'report-drag-ghost';
+        const title = document.createElement('span');
+        title.className = 'report-drag-ghost-title';
+        title.textContent = name;
+        const hint = document.createElement('span');
+        hint.className = 'report-drag-ghost-hint';
+        hint.textContent = 'Перенесите на статус в меню';
+        ghost.append(title, hint);
+        document.body.appendChild(ghost);
+        event.dataTransfer.setDragImage(ghost, 18, 18);
+        setTimeout(() => ghost.remove(), 0);
     }
 
     handleDragEnd(event) {
@@ -314,28 +341,14 @@ class AuditModule {
     }
 
     setDraggingState(isDragging) {
-        const with_remarks = document.querySelector('li[data-action="remarks"]');
-        const to_conf = document.querySelector('li[data-action="to_download"]');
-        const to_del = document.querySelector('li[data-action="to_delete"]');
-        
-        if (with_remarks) {
-            with_remarks.style.background = isDragging ? 'rgb(255, 231, 185)' : '';
-            with_remarks.style.color = isDragging ? 'black' : '';
-            with_remarks.style.padding = isDragging ? '20px 50px' : '';
-            with_remarks.style.marginBottom = isDragging ? '0' : '';
-        }
-        if (to_conf) {
-            to_conf.style.background = isDragging ? 'rgb(194, 255, 204)' : '';
-            to_conf.style.color = isDragging ? 'black' : '';
-            to_conf.style.padding = isDragging ? '20px 50px' : '';
-            to_conf.style.marginBottom = isDragging ? '0' : '';
-        }
-        if (to_del) {
-            to_del.style.background = isDragging ? 'rgb(255, 206, 206)' : '';
-            to_del.style.color = isDragging ? 'black' : '';
-            to_del.style.padding = isDragging ? '20px 50px' : '';
-            to_del.style.marginBottom = isDragging ? '0' : '';
-        }
+        const menu = document.querySelector('.menu_audit');
+        if (!menu) return;
+        menu.classList.toggle('is-drop-mode', isDragging);
+        menu.querySelectorAll('li[data-action]').forEach(item => {
+            const isTarget = ['remarks', 'to_download', 'to_delete'].includes(item.dataset.action);
+            item.classList.toggle('drop-target', isDragging && isTarget);
+            if (!isDragging) item.classList.remove('is-drop-hover');
+        });
     }
 
     setupDropTargets() {
@@ -368,18 +381,22 @@ class AuditModule {
 
     handleDragEnter(event) {
         event.preventDefault();
-        event.currentTarget.classList.add('dragging');
+        event.currentTarget.classList.add('is-drop-hover');
     }
 
     handleDragLeave(event) {
         event.preventDefault();
-        event.currentTarget.classList.remove('dragging');
+        const item = event.currentTarget;
+        if (!event.relatedTarget || !item.contains(event.relatedTarget)) {
+            item.classList.remove('is-drop-hover');
+        }
     }
 
     handleDrop(event) {
         event.preventDefault();
         const targetItem = event.currentTarget;
-        targetItem.classList.remove('dragging');
+        targetItem.classList.remove('is-drop-hover');
+        this.setDraggingState(false);
         const reportId = event.dataTransfer.getData('text/plain');
         const action = targetItem.dataset.action;
         
@@ -402,35 +419,96 @@ class AuditModule {
 
     setupNavigationItems() {
         const navItems = document.querySelectorAll('.menu_audit li[data-action]');
-        
+
         navItems.forEach(item => {
-            item.removeEventListener('click', this.handleNavClick);
-            this.handleNavClick = (event) => {
-                navItems.forEach(i => i.classList.remove('active_functions_menu'));
-                item.classList.add('active_functions_menu');
-                
+            item.addEventListener('click', () => {
                 const action = item.getAttribute('data-action');
-                const year = this.getQueryParam('year');
-                const quarter = this.getQueryParam('quarter');
-                const region = this.getQueryParam('region');
-                
-                let url = `/audit-area/${action}`;
-                const params = [];
-                if (year) params.push(`year=${year}`);
-                if (quarter) params.push(`quarter=${quarter}`);
-                if (region && region !== 'all') params.push(`region=${region}`);
-                if (params.length > 0) url += `?${params.join('&')}`;
-                
-                window.location.href = url;
-            };
-            item.addEventListener('click', this.handleNavClick);
+                if (action === this.currentStatus || this.isLoading) return;
+                this.switchStatus(action, true);
+            });
         });
-        
-        const currentAction = window.location.pathname.split('/').pop();
-        navItems.forEach(item => {
-            if (item.getAttribute('data-action') === currentAction) {
-                item.classList.add('active_functions_menu');
+
+        window.addEventListener('popstate', () => {
+            const action = window.location.pathname.split('/').pop();
+            this.sortOrder = new URLSearchParams(window.location.search).get('sort') === 'desc' ? 'desc' : 'asc';
+            this.updateSortUi();
+            if (action && action !== this.currentStatus) {
+                this.switchStatus(action, false);
+            } else {
+                this.loadData(1);
             }
+        });
+
+        this.highlightActiveStatus();
+    }
+
+    switchStatus(action, pushHistory) {
+        // Раздел меню переключается без перезагрузки страницы: меняются
+        // статус, адрес в строке браузера, таблица и счётчики (loadData).
+        this.currentStatus = action;
+        const statusInput = document.getElementById('current-status');
+        const exportStatusInput = document.getElementById('status-audit');
+        if (statusInput) statusInput.value = action;
+        if (exportStatusInput) exportStatusInput.value = action;
+
+        if (pushHistory) {
+            const url = new URL(window.location);
+            url.pathname = `/audit-area/${action}`;
+            window.history.pushState({ status: action }, '', url);
+        }
+        this.highlightActiveStatus();
+        if (this.previousReportRow) {
+            this.previousReportRow = null;
+        }
+        this.loadData(1);
+    }
+
+    highlightActiveStatus() {
+        document.querySelectorAll('.menu_audit li[data-action]').forEach(item => {
+            item.classList.toggle('active_functions_menu', item.getAttribute('data-action') === this.currentStatus);
+        });
+    }
+
+    initSortDropdown() {
+        const dropdown = document.getElementById('sort-dropdown');
+        const trigger = document.getElementById('sort-trigger');
+        const menu = document.getElementById('sort-menu');
+        if (!dropdown || !trigger || !menu) return;
+
+        trigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dropdown.classList.toggle('open');
+        });
+        menu.querySelectorAll('.dropdown-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.stopPropagation();
+                dropdown.classList.remove('open');
+                const value = item.dataset.value === 'desc' ? 'desc' : 'asc';
+                if (value === this.sortOrder) return;
+                this.sortOrder = value;
+                this.updateSortUi();
+                const url = new URL(window.location);
+                if (value === 'desc') {
+                    url.searchParams.set('sort', 'desc');
+                } else {
+                    url.searchParams.delete('sort');
+                }
+                window.history.replaceState(window.history.state, '', url);
+                this.loadData(1);
+            });
+        });
+        document.addEventListener('click', () => dropdown.classList.remove('open'));
+        this.updateSortUi();
+    }
+
+    updateSortUi() {
+        const menu = document.getElementById('sort-menu');
+        const text = document.querySelector('#sort-trigger .dropdown-text');
+        if (!menu) return;
+        menu.querySelectorAll('.dropdown-item').forEach(item => {
+            const selected = item.dataset.value === this.sortOrder;
+            item.classList.toggle('selected', selected);
+            if (selected && text) text.textContent = item.textContent;
         });
     }
 
@@ -650,19 +728,13 @@ class AuditModule {
     }
 
     animateStatsLoading() {
-        const statElements = [
-            document.querySelector('[data-action="not_viewed"] .count-reports span'),
-            document.querySelector('[data-action="to_delete"] .count-reports span'),
-            document.querySelector('[data-action="remarks"] .count-reports span'),
-            document.querySelector('[data-action="to_download"] .count-reports span'),
-            document.querySelector('[data-action="all_reports"] .count-reports span')
-        ];
-        
-        statElements.forEach(element => {
-            if (element) {
-                element.classList.add('stat-loading');
+        // Пока грузятся новые данные, числа остаются на месте (только слегка
+        // пульсируют) — иначе «...» меняет ширину плиток и меню прыгает.
+        document.querySelectorAll('.menu_audit .count-reports span').forEach(element => {
+            if (!/^\d+$/.test(element.textContent.trim())) {
                 element.textContent = '...';
             }
+            element.classList.add('stat-loading');
         });
     }
 
@@ -730,14 +802,14 @@ class AuditModule {
         if (emptyState) emptyState.style.display = 'none';
         if (reportsContent) reportsContent.style.display = 'block';
 
-        const sortedReports = [...reports].sort((a, b) => {
-            return new Date(b.sent_datetime) - new Date(a.sent_datetime);
-        });
-        
+        // Порядок задаёт сервер (параметр sort, по дате поступления) —
+        // здесь строки не пересортировываются, иначе порядок ломался бы
+        // между страницами пагинации.
+        const rows = reports.map(report => this.getReportRowHTML(report)).join('');
         if (append) {
-            tbody.innerHTML += sortedReports.map(report => this.getReportRowHTML(report)).join('');
+            tbody.innerHTML += rows;
         } else {
-            tbody.innerHTML = sortedReports.map(report => this.getReportRowHTML(report)).join('');
+            tbody.innerHTML = rows;
         }
     }
 
@@ -913,10 +985,10 @@ class AuditModule {
         const isAuditor = regionMenu?.dataset?.isAuditor === 'true';
         const userRegionDigit = regionMenu?.dataset?.userRegionDigit;
 
-        document.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('selected'));
+        document.querySelectorAll('#region-menu .dropdown-item').forEach(i => i.classList.remove('selected'));
 
         if (isAuditor && userRegionDigit) {
-            const targetItem = document.querySelector(`.dropdown-item[data-value="${userRegionDigit}"]`);
+            const targetItem = document.querySelector(`#region-menu .dropdown-item[data-value="${userRegionDigit}"]`);
             const dropdownText = document.querySelector('#region-dropdown .dropdown-text');
             if (targetItem && dropdownText) {
                 targetItem.classList.add('selected');
@@ -926,7 +998,7 @@ class AuditModule {
         }
 
         if (regionFromUrl && regionFromUrl !== '' && regionFromUrl !== 'all') {
-            const targetItem = document.querySelector(`.dropdown-item[data-value="${regionFromUrl}"]`);
+            const targetItem = document.querySelector(`#region-menu .dropdown-item[data-value="${regionFromUrl}"]`);
             if (targetItem) {
                 targetItem.classList.add('selected');
                 const dropdownText = document.querySelector('#region-dropdown .dropdown-text');
@@ -937,7 +1009,7 @@ class AuditModule {
             }
         }
         
-        const allItem = document.querySelector('.dropdown-item[data-value=""]');
+        const allItem = document.querySelector('#region-menu .dropdown-item[data-value=""]');
         if (allItem) {
             allItem.classList.add('selected');
             const dropdownText = document.querySelector('#region-dropdown .dropdown-text');
@@ -958,10 +1030,10 @@ class AuditModule {
         const urlParams = new URLSearchParams(window.location.search);
         const regionFromUrl = urlParams.get('region');
 
-        document.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('selected'));
+        document.querySelectorAll('#region-menu .dropdown-item').forEach(i => i.classList.remove('selected'));
 
         if (isAuditor && userRegionDigit) {
-            const targetItem = document.querySelector(`.dropdown-item[data-value="${userRegionDigit}"]`);
+            const targetItem = document.querySelector(`#region-menu .dropdown-item[data-value="${userRegionDigit}"]`);
             const dropdownText = document.querySelector('#region-dropdown .dropdown-text');
             
             if (targetItem && dropdownText) {
@@ -978,7 +1050,7 @@ class AuditModule {
         }
         
         if (regionFromUrl && regionFromUrl !== '' && regionFromUrl !== 'all') {
-            const urlTargetItem = document.querySelector(`.dropdown-item[data-value="${regionFromUrl}"]`);
+            const urlTargetItem = document.querySelector(`#region-menu .dropdown-item[data-value="${regionFromUrl}"]`);
             if (urlTargetItem) {
                 urlTargetItem.classList.add('selected');
                 const dropdownText = document.querySelector('#region-dropdown .dropdown-text');
@@ -989,7 +1061,7 @@ class AuditModule {
             }
         }
         
-        const allItem = document.querySelector('.dropdown-item[data-value=""]');
+        const allItem = document.querySelector('#region-menu .dropdown-item[data-value=""]');
         if (allItem) {
             allItem.classList.add('selected');
             const dropdownText = document.querySelector('#region-dropdown .dropdown-text');
@@ -1027,7 +1099,8 @@ class AuditModule {
                 search_name: searchName,
                 search_okpo: searchOkpo,
                 page: 1,
-                per_page: this.pageSize
+                per_page: this.pageSize,
+                sort: this.sortOrder
             });
             
             if (regionFilter && regionFilter !== '' && regionFilter !== 'all') {

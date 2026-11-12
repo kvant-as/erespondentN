@@ -1,198 +1,78 @@
 {% extends "base.html" %}
-{% block title %}Общее - ErespondentN{% endblock %}
+{% block title %}Личные данные - ErespondentN{% endblock %}
 {% block content %}
 
 <div class="profile_page">
     <div class = "rotation-fromareas">
-        <div class = "rotation-fromareas_info"> 
+        <div class = "rotation-fromareas_info">
             <span>
                 <a class = "back_orbital" href="/profile">Профиль</a>
             </span>
-            <span class = "svg-arr"> 
+            <span class = "svg-arr">
                 {{ icons.icon_arrow_right() }}
             </span>
             <span>
-                <a>Общее</a>
+                <a>Личные данные</a>
             </span>
         </div>
     </div>
     <div class="contener_row">
         {{ content.left_menu(active_tab) }}
-        <div class="personal-info_area">
-            <a class="security-head">Данные пользователя</a>
+        <div class="personal-info_area pf-area">
+            <h2 class="security-head">Данные пользователя</h2>
             <div class="glass-info-block">
                 {% if user.is_admin or not (user.is_region_auditor or user.is_reader) %}
-                    <p>Указывайте персональные данные лица заполняющего отчеты.</p>
-                    <p>После <strong>создания</strong> первого отчета изменение организации в профиле становится <strong>недоступным.</strong></p>
-                {% elif user.is_region_auditor or user.is_reader %}
-                    <p>Указывайте свои настоящие данные для того чтобы с вами могли связаться.</p>
+                    <p>Указывайте персональные данные лица, заполняющего отчёты.</p>
+                {% else %}
+                    <p>Указывайте свои настоящие данные, чтобы с вами могли связаться.</p>
                 {% endif %}
-                
             </div>
 
             <form action="/add-personal-parametrs" method="POST">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <table>
-                    {#<tr>
-                        <td><span title = "Уровень доступа к функциям">Тип пользователя</span></div></td>
-                        <td><input type="text" value="{{current_user.is_admin}}" readonly></td>
-                    </tr>#}
-                   <tr>
-                        <td>Фамилия <span class="required-mark">&#42;</span></td>
-                        <td>                    
-                            <div class="clear-input_container">
-                                <input type="text" name="second_name_common" placeholder="Введите фамилию" 
-                                value="{{ current_user.last_name or '' }}" 
-                                required id="second_name_input" maxlength="50"
-                                pattern="[^\s]+" title="Только одно слово, без пробелов">
-                                <span class="clear-btn">
-                                    &times;
-                                </span>
-                            </div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>Имя <span class="required-mark">&#42;</span></td>
-                        <td>                    
-                            <div class="clear-input_container">
-                                <input type="text" name="name_common" placeholder="Введите имя" 
-                                value="{{ current_user.first_name or '' }}" 
-                                required id="name_input" maxlength="50"
-                                pattern="[^\s]+" title="Только одно слово, без пробелов">
-                                <span class="clear-btn">
-                                    &times;
-                                </span>
-                            </div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td><span title="Не обязательно для заполнения">Отчество</span></td>
-                        <td>                    
-                            <div class="clear-input_container">
-                                <input type="text" name="patronymic_common" placeholder="Введите отчество" 
-                                value="{{ current_user.patronymic_name or '' }}" 
-                                id="patronymic_input" maxlength="50"
-                                pattern="[^\s]+" title="Только одно слово, без пробелов">
-                                <span class="clear-btn">
-                                    &times;
-                                </span>
-                            </div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>E-mail <span class="required-mark">&#42;</span></td>
-                        <td style = "display: flex; flex-direction: row;">                        
-                            <input class = "pred_name" type="text" value="{{current_user.email}}" 
-                            style = "
-                                border-top-right-radius: 0;
-                                border-bottom-right-radius: 0; 
-                                background: white; 
-                                width: calc(100% - 70px);"  
-                                readonly
-                                >
-                            <a class="left-input-btn" href="/change-email"> 
-                                {{ icons.icon_edit() }}
-                            </a>
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <td>Номер телефона <span class="required-mark">&#42;</span></td>
-                        <td>
-                            <div class="clear-input_container">
-                                <input 
-                                    type="text" 
-                                    name="telephone_common" 
-                                    placeholder="Введите номер телефона" 
-                                    value="{{current_user.telephone if current_user.telephone else ''}}" 
-                                    required 
-                                    id="telephone_input"  maxlength="13">
-                                <span class="clear-btn">
-                                        &times; 
-                                </span>
-                            </div>
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <td><span title = "Организация за которую отчитываются">Предприятие <span class="required-mark">&#42;</span></span></td>
-                        <td style = "display: flex; flex-direction: row;" {%if count_reports == 0 and not current_user.is_region_auditor and not current_user.is_reader%}id = "link_chooseOrgModal"{%endif%}>
-                            <input
-                                class = "pred_name" type="text" style = "{%if count_reports == 0 and not current_user.is_region_auditor%}
-                                border-top-right-radius: 0;
-                                border-bottom-right-radius: 0;
-                                background: white;
-                                width: calc(100% - 70px);
-                                {%else%} {%endif%}"
-                                placeholder="Наименование предприятия"  name = "full_name_common" value="{{ current_user.organization.full_name if current_user.organization else '' }}" readonly>
-                                {%if count_reports == 0 and (not current_user.is_region_auditor and not current_user.is_reader)%}
-                                    <a class="left-input-btn" >
-                                        {{ icons.icon_search() }}
-                                    </a>
-                                {%else%} {%endif%}
-                                <input type="hidden" name="id_org" value="{% if current_user.organization %}{{ current_user.organization.id }}{% else %}{% endif %}">
-                        </td>
-                    </tr>
-                    {%if not current_user.is_region_auditor and not current_user.is_reader%}
-                        <tr>
-                            <td><span title = "Общестатистический код предприятий и организаций">ОКПО</span></td>
-                            <td>    
-                                <input 
-                                type="text" 
-                                name = "okpo_common" 
-                                placeholder="Окпо предприятия" 
-                                value="{{current_user.organization.okpo if current_user.organization.okpo else ''}}" readonly>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td><span title = "Учетный номер плательщика (может быть пусто)">УНП</span></td>
-                            <td>    
-                                <input 
-                                type="text" 
-                                name = "ynp_common" 
-                                placeholder="Унп предприятия (может быть пусто)" 
-                                value="{{current_user.organization.ynp if current_user.organization.ynp else 'Нет данных'}}" readonly>
-                            </td>
-                        </tr>
-                    {%endif%}
-                    <tr>
-                        <td><span title = "Республиканский орган государственного управления">Регион</span></td>
-                        <td>    
-                            <input 
-                                type="text"
-                                placeholder="Регион предприятия" 
-                                value="{{current_user.organization.region.name if current_user.organization.region else 'Нет данных'}}" readonly>
-                        </td>
-                    </tr>
-                </table>
-                <div class = "how-to-change-org-data">
-                    <span>Для того чтобы изменить данные организации прочитайте</span>&nbsp; 
-                    <a href="/FAQ#faq20" class="instruction-link" target = "blank"> инструкцию</a>.
-                </div>
-                <div class="dop-info-cont">
-                    <div class="dop-cont-note">
-                        <span>
-                            <span class="required-mark">*</span> 
-                        </span>
-                        <span>
-                            —
-                        </span>
-                        <span>
-                            обязательные поля
-                        </span>
+                <div class="pf-rows">
+                    <div class="pf-row">
+                        <label class="pf-row-label" for="second_name_input">Фамилия <span class="required-mark">&#42;</span></label>
+                        <div class="clear-input_container">
+                            <input class="pf-input" type="text" name="second_name_common" placeholder="Введите фамилию"
+                                   value="{{ current_user.last_name or '' }}" required id="second_name_input" maxlength="50"
+                                   pattern="[^\s]+" title="Только одно слово, без пробелов">
+                            <span class="clear-btn">&times;</span>
+                        </div>
                     </div>
-                    <div class="dop-cont-note">
-                        {#<svg class="dop-cont-icon" viewBox="0 0 20 20" fill="">
-                            <rect x="4" y="4" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.5" fill="none"/>
-                            <line x1="4" y1="8" x2="16" y2="8" stroke="currentColor" stroke-width="1.5"/>
-                            <circle cx="10" cy="12" r="1" fill="currentColor" opacity="0.5"/>
-                        </svg>#}
-                        <span>
-                            <span class="gray-field-note">Серое поле</span> — только для просмотра
-                        </span>
+                    <div class="pf-row">
+                        <label class="pf-row-label" for="name_input">Имя <span class="required-mark">&#42;</span></label>
+                        <div class="clear-input_container">
+                            <input class="pf-input" type="text" name="name_common" placeholder="Введите имя"
+                                   value="{{ current_user.first_name or '' }}" required id="name_input" maxlength="50"
+                                   pattern="[^\s]+" title="Только одно слово, без пробелов">
+                            <span class="clear-btn">&times;</span>
+                        </div>
+                    </div>
+                    <div class="pf-row">
+                        <label class="pf-row-label" for="patronymic_input">Отчество <span class="required-mark">&#42;</span></label>
+                        <div class="clear-input_container">
+                            <input class="pf-input" type="text" name="patronymic_common" placeholder="Введите отчество"
+                                   value="{{ current_user.patronymic_name or '' }}" required id="patronymic_input" maxlength="50"
+                                   pattern="[^\s]+" title="Только одно слово, без пробелов">
+                            <span class="clear-btn">&times;</span>
+                        </div>
+                    </div>
+                    <div class="pf-row pf-row-group">
+                        <label class="pf-row-label" for="email_view">E-mail <span class="required-mark">&#42;</span></label>
+                        <div class="pf-inline">
+                            <input class="pf-input" id="email_view" type="text" value="{{ current_user.email }}" readonly>
+                            <a class="pf-inline-btn" href="/change-email" title="Изменить e-mail">{{ icons.icon_edit() }}</a>
+                        </div>
+                    </div>
+                    <div class="pf-row pf-row-top">
+                        <span class="pf-row-label">Номер телефона <span class="required-mark">&#42;</span></span>
+                        {{ content.phone_group('profile', current_user.telephone, 'telephone_common') }}
                     </div>
                 </div>
-                <button class = "blue_btn" type="submit" style="margin-bottom: 100px;">
+
+                <p class="pf-hint">Со зведочкой <span class="required-mark">*</span> — обязательные поля. Серые поля доступны только для просмотра.</p>
+                <button class="app-btn" type="submit">
                     {{ icons.icon_add() }}
                     <span>Применить изменения</span>
                 </button>
@@ -201,254 +81,32 @@
     </div>
 </div>
 
-<div id="chooseOrgModal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3 class="change-position">Поиск организации</h3>
-            {{ icons.icon_close() }}
-        </div>
-        <div class="answer-highlight-second">
-            <div class="highlight-icon">💡</div>
-            <p>Если организация <strong>отсутствует</strong> в перечне, вы можете инициировать её добавление через <a href="/FAQ#faq15" class="instruction-link">форму-заявку</a>.</p>
-        </div>
-
-        <div class="search-cont">
-            <label for="search_organization">Поиск</label>
-            <input name="search_organization" class="search_input" type="text" placeholder="Введите наименование или ОКПО">
-        </div>
-        
-        <div class = "modal-main">
-            <table class="organizations-table">
-                <thead>
-                    <tr>
-                        <th>Наименование организации</th>
-                        <th>ОКПО</th>
-                    </tr>
-                </thead>
-                <tbody id="chooserOganizationTableBody">
-                    
-                </tbody>
-            </table>
-       </div>
-        
-        <div class="pagination-area" id="paginationArea" style="display: none;">
-            <div class="pagination-container">
-                <button id="prevPageBtn" class="pagination-btn prev-btn" aria-label="Предыдущая страница">
-                    <svg class="pagination-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
-                    </svg>
-                </button>
-                
-                <div class="pagination-pages">
-                    <span id="currentPage" class="page-current">1</span>
-                    <span class="page-separator">/</span>
-                    <span id="totalPages" class="page-total">1</span>
-                </div>
-                
-                <button id="nextPageBtn" class="pagination-btn next-btn" aria-label="Следующая страница">
-                    <svg class="pagination-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"/>
-                    </svg>
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
+<script src="{{ url_for('static', filename='js/phone_group.js') }}"></script>
 <script>
- document.addEventListener("DOMContentLoaded", function () {
-    const searchInput = document.querySelector('input[name="search_organization"]');
-    const tableBody = document.getElementById("chooserOganizationTableBody");
-    const chooseOrgModal = document.getElementById("chooseOrgModal");
-    const linkChooseOrgModal = document.getElementById("link_chooseOrgModal");
-    const closeChooseOrgModal = chooseOrgModal.querySelector(".close");
-    const paginationArea = document.getElementById("paginationArea");
-    const prevPageBtn = document.getElementById("prevPageBtn");
-    const nextPageBtn = document.getElementById("nextPageBtn");
-    const currentPageEl = document.getElementById('currentPage');
-    const totalPagesEl = document.getElementById('totalPages');
-
-    if (!searchInput || !tableBody || !chooseOrgModal || !linkChooseOrgModal || !closeChooseOrgModal) {
-        return;
-    }
-
-    let searchQuery = "";
-    let currentPage = 1;
-    let hasNextPage = false;
-    let isLoading = false;
-
-    function loadOrganizations(page = 1, query = "") {
-        if (isLoading) return;
-        
-        isLoading = true;
-        currentPage = page;
-        
-        fetch(`/api/organizations?q=${query}&page=${page}`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`Ошибка HTTP: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                tableBody.innerHTML = "";
-                hasNextPage = data.has_next;
-                
-                currentPageEl.textContent = currentPage;
-                totalPagesEl.textContent = data.total_pages || currentPage;
-
-                if (!data.organizations.length) {
-                    tableBody.innerHTML = '<tr><td colspan="2" style = "padding: 15px 20px; text-align: center; font-size: 15px;">Такой организации нет</td></tr>';
-                    if (paginationArea) paginationArea.style.display = "none";
-                } else {
-                    data.organizations.forEach(org => {
-                        const row = document.createElement("tr");
-                        row.dataset.id = org.id;
-                        row.innerHTML = `
-                            <td>${org.full_name}</td>
-                            <td>${org.okpo}</td>
-                            <td style="display: none;">${org.ynp || ''}</td>
-                            <td style="display: none;">${org.ministry || ''}</td>
-                        `;
-                        tableBody.appendChild(row);
-                    });
-                    
-                    if (paginationArea) {
-                        if (currentPage > 1 || hasNextPage) {
-                            paginationArea.style.display = "block";
-                        } else {
-                            paginationArea.style.display = "none";
-                        }
-                    }
-                }
-                
-                if (prevPageBtn) prevPageBtn.disabled = currentPage <= 1;
-                if (nextPageBtn) nextPageBtn.disabled = !hasNextPage;
-                
-                isLoading = false;
-            })
-            .catch(error => {
-                console.error("Ошибка загрузки организаций:", error);
-                tableBody.innerHTML = '<tr><td colspan="2">Ошибка загрузки данных</td></tr>';
-                if (paginationArea) paginationArea.style.display = "none";
-                isLoading = false;
-            });
-    }
-
-    let debounceTimer;
-    searchInput.addEventListener("input", function () {
-        clearTimeout(debounceTimer);
-        searchQuery = this.value.trim();
-        currentPage = 1;
-        debounceTimer = setTimeout(() => loadOrganizations(1, searchQuery), 300);
-    });
-
-    if (prevPageBtn) {
-        prevPageBtn.addEventListener("click", function () {
-            if (currentPage > 1 && !isLoading) {
-                loadOrganizations(currentPage - 1, searchQuery);
-            }
+(function () {
+    function onlyLetters(id) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('keypress', function (e) {
+            if (!/^[A-Za-zА-Яа-яЁё\s-]$/.test(String.fromCharCode(e.which))) e.preventDefault();
         });
     }
+    ['second_name_input', 'name_input', 'patronymic_input'].forEach(onlyLetters);
 
-    if (nextPageBtn) {
-        nextPageBtn.addEventListener("click", function () {
-            if (hasNextPage && !isLoading) {
-                loadOrganizations(currentPage + 1, searchQuery);
-            }
+    new PhoneGroupInput(
+        document.getElementById('profile-phone-list'),
+        document.getElementById('profile-telephone'),
+        null,
+        { maxCount: 1, inputClass: 'pf-input' }
+    );
+
+    document.querySelectorAll('.clear-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var input = this.parentElement.querySelector('input');
+            input.value = '';
+            input.focus();
         });
-    }
-
-    linkChooseOrgModal.addEventListener("click", function () {
-        chooseOrgModal.classList.add("active");
-        currentPage = 1;
-        searchInput.value = "";
-        searchQuery = "";
-        loadOrganizations(1);
     });
-
-    tableBody.addEventListener("click", function (event) {
-        if (event.target.tagName === "TD") {
-            let row = event.target.closest("tr");
-            if (!row) return;
-            
-            const orgId = row.dataset.id;
-            
-            let orgData = {
-                id: orgId,
-                full_name: row.cells[0]?.textContent.trim() || '',
-                okpo: row.cells[1]?.textContent.trim() || '',
-                ynp: row.cells[2]?.textContent.trim() || '',
-                ministry: row.cells[3]?.textContent.trim() || ''
-            };
-
-            const fullNameInput = document.querySelector('input[name="full_name_common"]');
-            const okpoInput = document.querySelector('input[name="okpo_common"]');
-            const ynpInput = document.querySelector('input[name="ynp_common"]');
-            const ministryInput = document.querySelector('input[name="ministry_common"]');
-            const idOrgInput = document.querySelector('input[name="id_org"]');
-            
-            if (fullNameInput) fullNameInput.value = orgData.full_name;
-            if (okpoInput) okpoInput.value = orgData.okpo;
-            if (ynpInput) ynpInput.value = orgData.ynp;
-            if (ministryInput) ministryInput.value = orgData.ministry;
-            if (idOrgInput) idOrgInput.value = orgData.id;
-
-            chooseOrgModal.classList.remove("active");
-        }
-    });
-
-    closeChooseOrgModal.addEventListener("click", function () {
-        chooseOrgModal.classList.remove("active");
-    });
-
-    chooseOrgModal.addEventListener("click", function (event) {
-        if (event.target === chooseOrgModal) {
-            chooseOrgModal.classList.remove("active");
-        }
-    });
-
-    loadOrganizations(1);
-});
-
-
-document.getElementById('second_name_input').addEventListener('keypress', function (e) {
-    const char = String.fromCharCode(e.which);
-    if (!/^[A-Za-zА-Яа-яЁё\s-]$/.test(char)) {
-        e.preventDefault();
-    }
-});
-
-document.getElementById('name_input').addEventListener('keypress', function (e) {
-    const char = String.fromCharCode(e.which);
-    if (!/^[A-Za-zА-Яа-яЁё\s-]$/.test(char)) {
-        e.preventDefault(); 
-    }
-});    
-
-document.getElementById('patronymic_input').addEventListener('keypress', function (e) {
-    const char = String.fromCharCode(e.which);
-    if (!/^[A-Za-zА-Яа-яЁё\s-]$/.test(char)) {
-        e.preventDefault();
-    }
-});
-
-document.getElementById('telephone_input').addEventListener('keypress', function (e) {
-    const char = String.fromCharCode(e.which);
-    const currentValue = this.value;
-
-    if (!/^[0-9]$/.test(char) && !(char === '+' && currentValue.length === 0)) {
-        e.preventDefault();
-    }
-});
-
-document.querySelectorAll('.clear-btn').forEach(btn => {
-    btn.addEventListener('click', function() {
-        const input = this.parentElement.querySelector('input');
-        input.value = '';
-        input.focus();
-    });
-});
+})();
 </script>
 {% endblock %}
-

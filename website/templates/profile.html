@@ -25,7 +25,7 @@
             </button>
 
                    {%if current_user.is_admin or not (current_user.is_region_auditor or current_user.is_reader)%}
-                <button class="acc-btn-otherbtn blue_btn" onclick="window.location.href='/reports'">
+                <button class="acc-btn-otherbtn app-btn" onclick="window.location.href='/reports'">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                         <path d="M12 4.5v15M4.5 12h15" />
                     </svg>
@@ -34,7 +34,7 @@
             {%else%}
             {%endif%}
             {% if current_user.is_admin or current_user.is_region_auditor or current_user.is_reader %}
-            <button class="acc-btn-otherbtn blue_btn green" onclick="window.location.href='/audit-area/not_viewed?year={{previous_year}}&quarter={{previous_quarter}}';">
+            <button class="acc-btn-otherbtn app-btn app-btn--success" onclick="window.location.href='/audit-area/not_viewed?year={{previous_year}}&quarter={{previous_quarter}}';">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                     <circle cx="10" cy="10" r="7"/>
                     <path d="M15 15L21 21"/>
@@ -130,7 +130,7 @@
 
 
             <div class="model_but_area" >
-                <button type="submit" class="blue_btn">
+                <button type="submit" class="app-btn">
                     {{ icons.icon_calendar() }}
                     <span>Выбранный период</span>
                 </button>

@@ -163,6 +163,23 @@
                     </div>
                 </div>
             </div>
+
+            <div class="search-input-wrapper">
+                <div class="search-cont">
+                    <div class="custom-dropdown" id="sort-dropdown" title="Порядок по дате поступления отчёта">
+                        <div class="dropdown-trigger" id="sort-trigger">
+                            <span class="dropdown-text">Сначала ранние</span>
+                            <svg class="dropdown-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </div>
+                        <div class="dropdown-menu" id="sort-menu">
+                            <div class="dropdown-item selected" data-value="asc">Сначала ранние</div>
+                            <div class="dropdown-item" data-value="desc">Сначала поздние</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
     <div class="report-list">
@@ -338,7 +355,7 @@
         <div class="model_but_area" >
             <button 
                 type="button" 
-                class="blue_btn"
+                class="app-btn"
                 onclick="filterSentedReports()">
                     {{ icons.icon_calendar() }}
                     <span>Выбранный период</span>
@@ -413,7 +430,7 @@
             </div>
             
             <div class="model_but_area between">
-                <button type="submit" class="blue_btn" id="export_submit_btn">
+                <button type="submit" class="app-btn" id="export_submit_btn">
                     {{ icons.icon_upload() }}
                     <span>Экспортировать</span>
                 </button>

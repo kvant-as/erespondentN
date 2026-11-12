@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 function updateCounter(textarea) {
     const counter = document.getElementById('messageCounter');
-    const submitBtn = document.querySelector('.blue_btn');
+    const submitBtn = document.querySelector('.app-btn');
     const currentLength = textarea.value.length;
     const maxLength = parseInt(textarea.getAttribute('maxlength'));
     

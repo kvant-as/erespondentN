@@ -7,6 +7,7 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link rel="stylesheet" href="{{ url_for('cm_assets.static', filename='css/message-flash.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/mobile.css') }}">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
     <link rel="shortcut icon" href="{{ url_for('static', filename='img/logo-white.svg')}}">
     <title>{% block title %}ErespondentN - Информационная система учета и обработки отчетов предприятий{% endblock %}</title>
@@ -217,7 +218,7 @@
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                   <input type="hidden" id = "report-id-null" name="report-id-null" value="{% if current_version and current_version.id %}{{current_version.id}}{% endif %}">
                   <div class="model_but_area right">
-                      <button type="submit" id = "send_button" class="blue_btn">
+                      <button type="submit" id = "send_button" class="app-btn">
                           {{ icons.icon_send() }}
                           <span>Отправить на проверку</span>
                       </button>

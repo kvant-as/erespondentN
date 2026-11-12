@@ -146,10 +146,9 @@ window.addEventListener('resize', () => {
 });
 
 window.addEventListener('resize', () => {
-    if (window.scrollY > 0) {
-        if (window.innerWidth < 1000) {
-            header.style.boxShadow = 'none';
-        }
+    const header = document.querySelector('.fixed-header');
+    if (header && window.scrollY > 0 && window.innerWidth < 1000) {
+        header.style.boxShadow = 'none';
     }
 });
 

@@ -18,18 +18,22 @@
     </div>
     <div class="contener_row">
         {{ content.left_menu(active_tab) }}
-        <div class="personal-info_area">
-            <a class="session-name-card">Сессия пользователя</a>
-            {% include 'cm_session/section.html' %}
-            <a class="session-name-card" style="margin-top: 50px;">Автоматически удалять аккаунт</a>
-            <div class="session-this-device">
-                <div class="first-floor">
-                    <div class="session-text-area">
-                        <a class="session-this-device-name">Если сеанс не активен</a>
-                        <a class="session-this-device_app">1 год</a>
+        <div class="personal-info_area pf-area">
+            <section class="pf-section">
+                <h2 class="security-head">Сессия пользователя</h2>
+                {% include 'cm_session/section.html' %}
+            </section>
+
+            <section class="pf-section">
+                <h2 class="security-head">Автоматическое удаление аккаунта</h2>
+                <div class="pf-card">
+                    <div class="pf-card-row">
+                        <span class="pf-card-label">Если сеанс не активен</span>
+                        <span class="pf-card-value">1 год</span>
                     </div>
+                    <p class="pf-card-note">Аккаунт, в который не входили больше года, удаляется автоматически.</p>
                 </div>
-            </div>
+            </section>
         </div>
     </div>
 </div>

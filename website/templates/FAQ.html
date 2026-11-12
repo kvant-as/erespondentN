@@ -15,7 +15,7 @@
         </div>
     </div>
 
-    <button type="button" class="blue_btn faq-mobile-menu-toggle" id="mobileMenuToggle">
+    <button type="button" class="app-btn faq-mobile-menu-toggle" id="mobileMenuToggle">
         <span>Показать категории вопросов</span>
     </button>
 
@@ -67,7 +67,7 @@
                         <a href="javascript:void(0)">- Нет моей организации в списке</a> 
                     </li>
                     <li data-question="20">
-                        <a href="javascript:void(0)">- Как отредактировать данные организации?</a> 
+                        <a href="javascript:void(0)">- Как обновить данные организации?</a> 
                     </li>
                 </ul> 
               
@@ -1803,78 +1803,46 @@
             <div class="info_page info_faq" data-question-id="20" style="display: none;">
                 <div class="faq_question_info">
                     <div class="info_page_name">
-                        <h1>Как отредактировать данные организации</h1>
+                        <h1>Как обновить данные организации?</h1>
                     </div>
                     <div class="infos">
                         <div class="answer-highlight-second">
                             <div class="highlight-icon">💡</div>
                             <div>
-                                <p><strong>Важное условие:</strong> Для редактирования данных организации необходимо быть <strong>авторизованным</strong> в системе и иметь <strong>привязанную организацию</strong> в профиле.</p>
+                                <p>Данные организации загружаются из <strong>Единого государственного регистра</strong> юридических лиц и индивидуальных предпринимателей (ЕГР) по УНП. Вручную их редактировать и отправлять заявку администратору <strong>не нужно</strong>.</p>
                             </div>
                         </div>
 
-                        <p>Если данные вашей организации изменились (наименование, ОКПО или УНП), вы можете отправить запрос на их обновление.</p>
-
-                        <p><strong>Инструкция по редактированию данных организации:</strong></p>
+                        <p><strong>Как обновить данные:</strong></p>
 
                         <ol class="steps-list">
-                            <li>Перейдите к  <a class="instruction-link" href="/#askquestion-form">форме обратной связи</a>.</li>
-                            <li>В поле <strong>«Выберите тип вопроса»</strong> выберите значение <strong>«Изменить данные организации»</strong>.</li>
+                            <li>Откройте профиль и перейдите в раздел <a class="instruction-link" href="/profile/organization">«Организация»</a>.</li>
+                            <li>Проверьте данные: наименование, УНП, ОКПО, регион, юридический адрес, Статус и дату последней сверки.</li>
+                            <li>Нажмите кнопку <strong>«Обновить данные организации»</strong>. Система запросит актуальные сведения в ЕГР и покажет, какие поля изменились, или сообщит, что данные совпадают с ЕГР.</li>
                         </ol>
 
-                        <div class="p_img">
-                            <img src="{{ url_for('static', filename='img/post/edit-org-select.png') }}" alt="Выбор типа вопроса 'Изменить данные организации'">
-                            <span>Рисунок 1 - Выбор типа вопроса для редактирования организации</span>
-                        </div>
-
-                        <ol class="steps-list" style="counter-reset: step-counter 3;">
-                            <li>В появившемся поле <strong>«Поиск организации»</strong> начните вводить название вашей организации или код ОКПО.</li>
-                            <li>Из выпадающего списка <strong>выберите вашу организацию</strong>.</li>
-                        </ol>
-
-                        <div class="p_img">
-                            <img src="{{ url_for('static', filename='img/post/edit-org-search.png') }}" alt="Поиск организации">
-                            <span>Рисунок 2 - Поиск и выбор организации</span>
-                        </div>
-
-                        <ol class="steps-list"  style="counter-reset: step-counter 5;">
-                            <li>После выбора организации появятся поля для редактирования:</li>
-                        </ol>
+                        <p><strong>Какие данные обновляются из ЕГР:</strong></p>
                         <div class="opred-text fit">
-                            <strong>Новое наименование организации</strong> — укажите актуальное полное наименование
+                            <strong>Полное и сокращённое наименование</strong> — как в регистре
                         </div>
                         <div class="opred-text fit">
-                            <strong>Новый код УНП</strong> — укажите актуальное код УНП (состоящий из 9-ти цифр)
+                            <strong>Юридический адрес</strong> — индекс, населённый пункт, улица, дом
                         </div>
                         <div class="opred-text fit">
-                            <strong>Новый код ОКПО</strong> — укажите актуальное код ОКПО (состоящий из 12-ти цифр)
+                            <strong>Регион</strong> — определяется по юридическому адресу
                         </div>
                         <div class="opred-text fit">
-                            <strong>Новый Регион</strong> — укажите регион
+                            <strong>Состояние</strong> — действующая, в процессе ликвидации, ликвидирована или банкротство
                         </div>
- 
-                        <div class="p_img">
-                            <img src="{{ url_for('static', filename='img/post/edit-org-fields.png') }}" alt="Поля для редактирования данных организации">
-                            <span>Рисунок 3 - Поля для ввода новых данных организации</span>
-                        </div>
+                        <p>УНП и ОКПО при обновлении не меняются.</p>
 
-                        <ol class="steps-list" style="counter-reset: step-counter 6;">
-                            <li>Измените <strong>только те поля, которые необходимо изменить</strong>. Неизмененные данные останутся прежними.</li> 
-                            <li>Нажмите кнопку <strong>«Отправить вопрос»</strong>.</li>
-                        </ol>
+                        <p><strong>Если вы отчитываетесь за другую организацию</strong>, нажмите в том же разделе <strong>«Сменить организацию»</strong>, введите УНП и выберите организацию из ЕГР. Сменить организацию можно, пока у вас нет созданных отчётов.</p>
 
-                        <p>После отправки вы получите уведомление в профиле о том, что запрос отправлен, а через некоторое время ответ на ваше сообщение в профиле.</p>
-                        <div class="answer-highlight-second" style = "margin-top: 40px;">
+                        <div class="answer-highlight-second" style="margin-top: 40px;">
                             <div class="highlight-icon">✅</div>
                             <div>
-                                <p>Редактирование данных организации в текущем квартале невозможно, если у вас есть отчеты со статусом <strong>«Одобрено»</strong>. В этом случае для изменения данных необходимо обратиться к администратору.</p>
+                                <p>Если у организации не указан УНП, кнопка обновления недоступна. В этом случае напишите администратору через <a class="instruction-link" href="/#askquestion-form">форму обратной связи</a>, выбрав тип вопроса <strong>«Другое»</strong>, и укажите УНП организации.</p>
                             </div>
-                        </div>
-
-                        
-                        <div class="p_img">
-                            <img src="{{ url_for('static', filename='img/post/edit-org-success2.png') }}" alt="Успешная отправка запроса">
-                            <span>Рисунок 4 - Уведомление об отправке запроса на изменение данных</span>
                         </div>
                     </div>
                 </div>
