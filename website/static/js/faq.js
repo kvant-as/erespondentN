@@ -114,7 +114,23 @@ document.querySelectorAll('#status-faqlist li[data-content]').forEach(item => {
     });
 });
 
-function loadFAQContent(questionId) {
+function faqSlug(questionId) {
+    const page = document.querySelector(`.info_page[data-question-id="${questionId}"]`);
+    return (page && page.dataset.slug) || `faq${questionId}`;
+}
+
+// В адресе вопрос обозначается короткой фразой (/FAQ#no-code). Старые ссылки
+// вида /FAQ#faq16 тоже открываются.
+function questionIdFromHash(hash) {
+    if (!hash) return null;
+    const page = Array.from(document.querySelectorAll('.info_page[data-slug]'))
+        .find(item => item.dataset.slug === hash);
+    if (page) return page.dataset.questionId;
+    const legacy = hash.match(/^faq(\d+)$/);
+    return legacy ? legacy[1] : null;
+}
+
+function loadFAQContent(questionId, replaceHistory = false) {
     const faqContent = document.getElementById('faqContent');
     const placeholder = faqContent.querySelector('.faq-content-placeholder');
     
@@ -132,7 +148,14 @@ function loadFAQContent(questionId) {
 
         faqContent.classList.add('faq-content-active');
 
-        history.pushState({ questionId: questionId }, '', `#faq${questionId}`);
+        const hash = `#${faqSlug(questionId)}`;
+        if (window.location.hash !== hash) {
+            if (replaceHistory) {
+                history.replaceState({ questionId: questionId }, '', hash);
+            } else {
+                history.pushState({ questionId: questionId }, '', hash);
+            }
+        }
 
         document.querySelectorAll('#status-faqlist li[data-question]').forEach(item => {
             item.classList.remove('active-question');
@@ -143,7 +166,7 @@ function loadFAQContent(questionId) {
         }
 
         // При переходе между вопросами (в т.ч. кнопками "вперёд"/"назад" в
-        // браузере, когда меняется #faqN) страница должна показывать ответ
+        // браузере, когда меняется адрес вопроса) страница должна показывать ответ
         // с самого начала, а не с того места, где пользователь долистал
         // предыдущий вопрос.
         window.scrollTo(0, 0);
@@ -151,10 +174,9 @@ function loadFAQContent(questionId) {
 }
 
 function loadContentFromHash() {
-    const hash = window.location.hash.substring(1);
-    if (hash && hash.startsWith('faq')) {
-        const questionId = hash.replace('faq', '');
-        loadFAQContent(questionId);
+    const questionId = questionIdFromHash(decodeURIComponent(window.location.hash.substring(1)));
+    if (questionId) {
+        loadFAQContent(questionId, true);
         
         const questionItem = document.querySelector(`li[data-question="${questionId}"]`);
         if (questionItem) {
@@ -206,7 +228,7 @@ window.addEventListener('popstate', function(event) {
     loadContentFromHash();
 });
 
-// На случай прямого перехода по ссылке вида /FAQ#faq14 (не через клик по
+// На случай прямого перехода по ссылке вида /FAQ#export-approved (не через клик по
 // пункту списка, а сменой хэша страницы), которая popstate не вызывает.
 window.addEventListener('hashchange', function() {
     loadContentFromHash();

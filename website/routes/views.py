@@ -276,22 +276,16 @@ def profile_common():
 @session_required
 def profile_org():
     """Раздел «Организация» профиля — данные организации из ЕГР, обновление и смена по УНП."""
-    count_reports = Report.query.filter_by(user_id=current_user.id).count()
     return render_template('profile_org.html',
                         user=current_user,
-                        count_reports=count_reports,
-                        can_change_org=_can_change_org(current_user, count_reports),
+                        can_change_org=_can_change_org(current_user),
                         active_tab = 'org'
                         )
 
 
-def _can_change_org(user, count_reports=None):
-    """Сменить организацию может респондент, пока у него нет отчётов."""
-    if user.is_region_auditor or user.is_reader:
-        return False
-    if count_reports is None:
-        count_reports = Report.query.filter_by(user_id=user.id).count()
-    return count_reports == 0
+def _can_change_org(user):
+    """Организация выбирается при регистрации; сменить её может только администратор."""
+    return bool(user.is_admin)
 
 
 @views.route('/register/personal', methods=['GET'])
@@ -345,11 +339,12 @@ def profile_org_refresh():
 @login_required
 @session_required
 def profile_org_change():
-    """Смена организации по УНП из ЕГР — пока у респондента нет отчётов."""
+    """Выбор организации по УНП из ЕГР: смена — только администратором,
+    первичный выбор — у старых аккаунтов, созданных без организации."""
     from ..egr_org import EgrError, upsert_from_egr
 
-    if not _can_change_org(current_user):
-        flash('Сменить организацию нельзя: по ней уже есть отчёты', 'error')
+    if current_user.organization_id and not _can_change_org(current_user):
+        flash('Сменить организацию может только администратор', 'error')
         return redirect(url_for('views.profile_org'))
     try:
         organization, created = upsert_from_egr(request.form.get('unp', ''))

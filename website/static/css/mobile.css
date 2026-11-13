@@ -133,6 +133,9 @@
   .egr-lookup-row {
     flex-wrap: wrap;
   }
+  .egr-lookup-field {
+    flex-basis: 100%;
+  }
   .egr-lookup-btn {
     width: 100%;
     justify-content: center;

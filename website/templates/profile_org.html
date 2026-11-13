@@ -24,8 +24,10 @@
         <div class="personal-info_area pf-area">
             <h2 class="security-head">Данные организации</h2>
             <div class="glass-info-block">
-                {% if not current_user.is_region_auditor and not current_user.is_reader %}
-                <p>После создания первого отчёта сменить организацию нельзя.</p>
+                {% if can_change_org %}
+                <p>Как администратор вы можете сменить организацию по УНП.</p>
+                {% else %}
+                <p>Организация выбирается при регистрации, сменить её нельзя.</p>
                 {% endif %}
             </div>
 

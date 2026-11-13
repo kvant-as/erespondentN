@@ -4,6 +4,12 @@
 {% set svg_path = "M5.83327 4.23243L2.00911 0.410763C1.85043 0.267295 1.64267 0.19034 1.42882 0.195832C1.21498 0.201323 1.01143 0.288839 0.860333 0.440261C0.709232 0.591683 0.622148 0.795412 0.617111 1.00927C0.612074 1.22312 0.68947 1.43073 0.833274 1.5891L4.65494 5.41076C4.81117 5.56704 4.89893 5.77896 4.89893 5.99993C4.89893 6.2209 4.81117 6.43282 4.65494 6.5891L0.833274 10.4108C0.677017 10.5671 0.589277 10.7792 0.589356 11.0002C0.589434 11.2213 0.677324 11.4333 0.833691 11.5895C0.990058 11.7458 1.20209 11.8335 1.42315 11.8334C1.64421 11.8334 1.85618 11.7455 2.01244 11.5891L5.83327 7.76743C6.30195 7.29861 6.56524 6.66284 6.56524 5.99993C6.56524 5.33702 6.30195 4.70125 5.83327 4.23243Z" %}
 
 {% block content %}
+{% macro faq_img(name, caption, alt='') %}
+<div class="p_img">
+    <img src="{{ url_for('static', filename='img/post/' ~ name) }}" alt="{{ alt or caption }}" loading="lazy">
+    <span>{{ caption }}</span>
+</div>
+{% endmacro %}
 <div class="faq_page">
     <div class="rotation-fromareas">
         <div class="rotation-fromareas_info"> 
@@ -41,20 +47,18 @@
                     </li>
                 </ul>  
                 
-                <li data-content="authorization_faq">
+                <!-- <li data-content="authorization_faq">
                     <a>Авторизация</a>
                     <svg fill="#002762" height="12" viewBox="0 0 7 12" width="7" xmlns="http://www.w3.org/2000/svg">
                         <path d="{{ svg_path }}"></path>
                     </svg>
-                </li>
-                <ul class="content" id="authorization_faq" style="display: none;">
-                    <li data-question="2">
-                        <a href="javascript:void(0)">- Что делать если забыл пароль?</a>
-                    </li>
+                </li> -->
+                <!-- <ul class="content" id="authorization_faq" style="display: none;">
+              
                     <li data-question="12">      
                         <a href="javascript:void(0)">- Вход в аккаунт аудитора</a>
                     </li>
-                </ul>
+                </ul> -->
 
                 <li data-content="org_faq">
                     <a>Организации</a>
@@ -79,16 +83,19 @@
                 </li>
                 <ul class="content" id="profile_faq" style="display: none;">
                     <li data-question="6">  
-                        <a href="javascript:void(0)">- Как заполнить профиль пользователя?</a>
+                        <a href="javascript:void(0)">- Как изменить личные данные?</a>
                     </li>
                     <li data-question="5">    
-                        <a href="javascript:void(0)">- Почему я не могу изменить данные учетной записи?</a>
+                        <a href="javascript:void(0)">- Какие данные можно изменить?</a>
                     </li>
                     <li data-question="3">
                         <a href="javascript:void(0)">- Как изменить пароль?</a>
                     </li>
                     <li data-question="22">
                         <a href="javascript:void(0)">- Как изменить электронный адрес?</a>
+                    </li>
+                          <li data-question="2">
+                        <a href="javascript:void(0)">- Что делать если забыл пароль?</a>
                     </li>
                 </ul>
                 
@@ -106,7 +113,7 @@
                         <a href="javascript:void(0)">- Особенности заполнения отчета</a>
                     </li>
                     <li data-question="23">
-                        <a href="javascript:void(0)">Кто проверяет мой отчет?</a>
+                        <a href="javascript:void(0)">- Кто проверяет мой отчет?</a>
                     </li>
                     <li data-question="21">
                         <a href="javascript:void(0)">- Как скопировать отчет?</a>
@@ -165,201 +172,119 @@
                 </h2>
                 <p>Кликните на любой вопрос в меню, чтобы увидеть ответ</p>
             </div>
-            <div class="info_page info_faq" data-question-id="1" style="display: none;">
+            <div class="info_page info_faq" data-question-id="1" data-slug="registration" style="display: none;">
                 <div class="faq_question_info">
                     <div class="info_page_name">
                         <h1>Как зарегистрироваться юридическому лицу?</h1>
                     </div>
                     <div class="infos">
+                        <p>Регистрация проходит в четыре шага: аккаунт, подтверждение почты, личные данные и организация. Аккаунт создаётся только на последнем шаге, после выбора организации.</p>
+
                         <div class="answer-highlight-second">
                             <div class="highlight-icon">💡</div>
-                            <div>
-                                <p><strong>Важное правило:</strong> На один адрес электронной почты можно создать только <strong>один аккаунт</strong>.</p>
-                            </div>
+                            <p>На один адрес электронной почты можно создать только один аккаунт.</p>
                         </div>
-                        
-                        <ol class="steps-list" >
+
+                        <ol class="steps-list">
                             <li>
-                                <strong>Перейдите на <a class = "instruction-link" href="/">главную страницу</a> и нажмите кнопку «Зарегистрироваться»</strong>
-                                <div class="p_img">
-                                    <img src="{{ url_for('static', filename='img/post/2.png') }}" alt="Главная страница с кнопкой регистрации">
-                                    <span>Рисунок 1 - Кнопка «Зарегистрироваться» на главной странице</span>
-                                </div>
+                                Перейдите на <a class="instruction-link" href="/">главную страницу</a> и нажмите «Зарегистрироваться».
+                                {{ faq_img('2.png', 'Кнопка «Зарегистрироваться» на главной странице') }}
+                            </li>
+                            <li>
+                                На шаге «Аккаунт» укажите электронную почту организации, придумайте пароль (не короче 5 символов), повторите его, отметьте согласие с пользовательским соглашением и нажмите «Зарегистрироваться».
+                                {{ faq_img('3.png', 'Форма регистрации') }}
+                            </li>
+                            <li>
+                                На шаге «Почта» введите пятизначный код из письма. Если письмо не пришло, нажмите «Отправить ещё раз» или воспользуйтесь <a class="instruction-link" href="/FAQ#no-code">этой инструкцией</a>.
+                                {{ faq_img('4.png', 'Ввод кода подтверждения') }}
+                            </li>
+                            <li>
+                                На шаге «Личные данные» заполните фамилию, имя, отчество и номер телефона. Укажите данные сотрудника, который будет заполнять отчёты.
+                                {{ faq_img('personal-data.png', 'Заполнение личных данных') }}
+                            </li>
+                            <li>
+                                На шаге «Организация» введите УНП своей организации и нажмите «Найти в ЕГР». Проверьте найденные сведения и нажмите «Выбрать и создать аккаунт».
+                                {{ faq_img('rester-organization.png', 'Поиск организации через ЕГР') }}
                             </li>
                         </ol>
-                        <div class="answer-highlight-second">
-                            <div class="highlight-icon">📝</div>
-                            <div>    
-                                <p><strong>Заполните форму регистрации. Вам потребуется указать:</strong></p>
-                                <ol>
-                                    <li><strong>Электронная почта</strong> — адрес вашей организации</li>
-                                    <li><strong>Пароль</strong> — создайте надежный пароль</li>
-                                    <li><strong>Подтверждение пароля</strong> — введите пароль еще раз</li>
-                                </ol>
-                                <div class="answer-highlight-note">
-                                    <strong>Совет по безопасности:</strong> Используйте сложный пароль для защиты аккаунта.
-                                </div>
-                            </div>
-                        </div>
-                        <ol class="steps-list" style="counter-reset: step-counter 1;">
-                            <li>
-                                <strong>Поставьте галочку в поле «Принять условия пользовательского соглашения»</strong>
-                            </li>
-                            <li>
-                                <strong>Нажмите кнопку «Зарегистрироваться» (см. рисунок №2)</strong>
-                                <div class="p_img">
-                                    <img src="{{ url_for('static', filename='img/post/3.png') }}" alt="Форма регистрации с полями для ввода">
-                                    <span>Рисунок 2 - Форма регистрации</span>
-                                </div>
-                            </li>
-                        </ol>
-                        
-                        <div class="answer-highlight-second">
-                            <div class="highlight-icon">📧</div>
-                            <div>
-                                <p><strong>Подтвердите вашу электронную почту:</strong></p>
-                                <p>После нажатия кнопки регистрации:</p>
-                                <ol>
-                                    <li>На указанную почту придет проверочный код</li>
-                                    <li>Введите этот код в специальное поле</li>
-                                </ol>
-                            </div>
-                        </div>
-                        <div class="p_img">
-                            <img src="{{ url_for('static', filename='img/post/4.png') }}" alt="Форма для ввода проверочного кода с email">
-                            <span>Рисунок 3 - Ввод проверочного кода с email</span>
-                        </div>
-                        <ol class="steps-list" style="counter-reset: step-counter 3;">
-                            <li><strong>Если код не пришел, нажмите «Отправить еще раз», в противном случае следуйте шагам <a class = "instruction-link" href="/FAQ#faq16">инструкции</a>.</strong>
-                            <strong>После успешной проверки вы перейдете на страницу профиля</strong></li>
-                        </ol> 
-                        <div class="answer-highlight-note">
-                            <strong>После успешной регистрации:</strong> Вы сможете добавить данные вашей организации в профиле и начать работу с системой.
-                        </div>
+
+                        <p>
+                            Организацию выбирайте внимательно: после создания аккаунта изменить её самостоятельно нельзя.
+                        </p>
                     </div>
                 </div>
             </div>
-            <div class="info_page info_faq" data-question-id="2" style="display: none;">
+            <div class="info_page info_faq" data-question-id="2" data-slug="forgot-password" style="display: none;">
                 <div class="faq_question_info">
                     <div class="info_page_name">
                         <h1>Что делать если забыл пароль?</h1>
                     </div>
                     <div class="infos">
-                        
-                        <div class="answer-highlight-second">
-                            <div class="highlight-icon">🔑</div>
-                            <div>
-                                <p>Если вы забыли пароль, вы можете <strong>восстановить</strong>  доступ к аккаунту. Для этого выполните следующие шаги:</p>
-                            </div>
-                        </div>
-                        
+                        <p>Если вы забыли пароль, система пришлёт на почту новый временный пароль.</p>
+
                         <ol class="steps-list">
-                            <li><strong>Перейдите на страницу <a href="/login"  class = "instruction-link">авторизации</a></strong>;</li>
-                            <li>Введите в поле <strong>E-mail</strong> электронный адрес, <strong>на который был зарегистрирован аккаунт</strong>;</li>
-                            <li>Найдите на странице кнопку <strong>«Забыли пароль?»</strong> и <strong>нажмите на неё</strong> (см. рисунок №6);</li>
+                            <li>
+                                Откройте страницу <a href="/login" class="instruction-link">авторизации</a> и нажмите «Забыли пароль?».
+                                {{ faq_img('6.png', 'Ссылка «Забыли пароль?» на странице авторизации') }}
+                            </li>
+                            <li>
+                                Введите адрес электронной почты, на который зарегистрирован аккаунт, и нажмите «Отправить».
+                                {{ faq_img('foget-pass-form.png', 'Форма «Забыли пароль?»', 'Форма восстановления пароля') }}
+                            </li>
+                            <li>
+                                Найдите письмо с новым паролем и войдите с ним в систему.
+                                {{ faq_img('7.png', 'Сообщение из письма с новым паролем', 'Письмо с новым паролем') }}
+                            </li>
                         </ol>
-                        
-                        <div class="p_img">
-                            <img src="{{ url_for('static', filename='img/post/6.png') }}" alt="">
-                            <span>Рисунок 6 - Кнопка «Забыли пароль?» на странице авторизации</span>
-                        </div>
-                        
-                        <ol class="steps-list" style="counter-reset: step-counter 3;" >
-                            <li><strong>В открывшейся форме введите ваш электронный адрес;</strong></li>
-                            <li><strong>Нажмите кнопку "Отправить" (см. рисунок №7).</strong></li>
-                        </ol>
-                        <div class="p_img">
-                            <img src="{{ url_for('static', filename='img/post/foget-pass-form.png') }}" alt="">
-                            <span>Рисунок 7 - Форма "Забыли пароль?"</span>
-                        </div>
-                        <div class="answer-highlight-second">
-                            <div class="highlight-icon">📧</div>
-                            <div>
-                                <p><strong>Что происходит дальше:</strong></p>
-                                <ol>
-                                    <li>Если аккаунт с таким email <strong>существует</strong>, на вашу почту придет письмо.</li>
-                                    <li>В письме будет <strong>новый временный пароль</strong>.</li>
-                                    <li><strong>Используйте</strong> этот пароль для входа в систему.</li>
-                                </ol>
-                            </div>
-                        </div>
-                        
-                        <div class="p_img">
-                            <img src="{{ url_for('static', filename='img/post/7.png') }}" alt="Пример письма с новым паролем">
-                            <span>Рисунок 7 - Письмо с новым паролем на электронной почте</span>
-                        </div>
-                        
+
                         <div class="answer-highlight-second">
                             <div class="highlight-icon">🔄</div>
-                            <div>
-                                <p><strong>После входа с временным паролем рекомендуется:</strong></p>
-                                <ol>
-                                    <li>Перейти в <strong>настройки профиля</strong> → раздел <strong>«Безопасность»</strong></li>
-                                    <li>Заменить временный пароль на <strong>свой постоянный</strong></li>
-                                </ol>
+                            <p>После входа замените временный пароль на свой в профиле, раздел <a class="instruction-link" href="/profile/password">«Безопасность»</a>.</p>
+                            <div class="answer-highlight-note">
+                                Если письмо не приходит, проверьте папку «Спам» и правильность адреса.
                             </div>
                         </div>
-                        
-                        <div class="answer-highlight-note">
-                            <strong>Если письмо не приходит:</strong> проверьте папку «Спам» и убедитесь, что вводите правильный email.
-                        </div>
-                        
+
                     </div>
                 </div>
             </div>
-            <div class="info_page info_faq" data-question-id="3" style="display: none;"> 
+            <div class="info_page info_faq" data-question-id="3" data-slug="change-password" style="display: none;">
                 <div class="faq_question_info">
-
                     <div class="info_page_name">
                         <h1>Как изменить пароль?</h1>
                     </div>
-
                     <div class="infos">
-                        <div class="answer-highlight-second">
-                            <div class="highlight-icon">💡</div>
-                            <p>Для <strong>изменения</strong> текущего пароля учетной записи требуется быть <strong>авторизированным</strong> в «ErespondentN».</p>
-                        </div>
-                        <p>Чтобы изменить пароль учетной записи необходимо:</p>
+                        <p>Пароль меняется в профиле, для этого нужно войти в систему.</p>
                         <ol class="steps-list">
                             <li>
-                                <strong>Перейдите в свой профиль</strong> сайта ErespondentN (см. рисунок №8).
-                                <div class="p_img">
-                                    <img src="{{ url_for('static', filename='img/post/8.png') }}" alt="">
-                                    <span>Рисунок 8 - Переход на страницу профиля</span>
-                                </div>
+                                Нажмите на значок пользователя в правом верхнем углу и выберите «Параметры профиля».
+                                {# ЗАМЕНИТЬ СКРИНШОТ: меню пользователя в шапке #}
+                                {{ faq_img('8.png', 'Меню пользователя') }}
                             </li>
                             <li>
-                                <strong>Перейдите в парамметры своего профиля</strong> (см. рисунок №9).
-                                <div class="p_img">
-                                    <img src="{{ url_for('static', filename='img/post/9.png') }}" alt="">
-                                    <span>Рисунок 9 - Переход на страницу профиля</span>
-                                </div>
+                                В меню слева откройте раздел «Безопасность».
+                                {# ЗАМЕНИТЬ СКРИНШОТ: меню профиля с разделом «Безопасность» #}
+                                {{ faq_img('10.png', 'Раздел «Безопасность»') }}
                             </li>
                             <li>
-                                <strong>Перейти в раздел «Безопасность»</strong> (см. рисунок №10).
-                                <div class="p_img">
-                                    <img src="{{ url_for('static', filename='img/post/10.png') }}" alt="">
-                                    <span>Рисунок 10 - Раздел «Конфиденциальность»</span>
-                                </div>
-                            </li>
-                            <li>
-                                <p>Последовательно заполните все три поля: <strong>введите</strong> свой <strong>текущий пароль</strong> в поле "Старый пароль", создайте и впишите <strong>новый пароль</strong> в поле "Новый пароль", после чего повторно введите <strong> этот же новый пароль</strong> в поле "Подтверждение пароля" для проверки. В конце обязательно <strong>нажмите</strong> кнопку <strong>"Применить изменения"</strong> , чтобы сохранить новые настройки безопасности.</p>
-                                <div class="p_img">
-                                    <img src="{{ url_for('static', filename='img/post/18.png') }}" alt="">
-                                    <span>Рисунок 11 - Изменение пароля</span>
-                                </div>
+                                Введите текущий пароль, затем новый пароль и повторите его. Нажмите «Изменить пароль».
+                                {# ЗАМЕНИТЬ СКРИНШОТ: раздел «Безопасность», форма изменения пароля #}
+                                {{ faq_img('18.png', 'Изменение пароля') }}
                             </li>
                         </ol>
+                        <div class="answer-highlight-note">
+                            После смены пароля система завершит сеанс, и нужно будет войти заново с новым паролем. На почту придёт уведомление о смене пароля.
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="info_page info_faq" data-question-id="4" style="display: none;">
+            <div class="info_page info_faq" data-question-id="4" data-slug="about" style="display: none;">
                 <div class="faq_question_info">
                     <div class="info_page_name">
                         <h1>Описание веб-приложения</h1>
                     </div>
                     <div class="infos">
-                        <p>Веб-приложение автоматизирует процессы формирования респондентами отчетов по форме ведомственной отчетности квартальной периодичности — <strong>«Сведения о нормах расхода и (или) предельных уровнях потребления топливно-энергетических ресурсов»</strong>.</p>
+                        <p>Веб-приложение автоматизирует подготовку отчётов по форме ведомственной отчётности квартальной периодичности «Сведения о нормах расхода и (или) предельных уровнях потребления топливно-энергетических ресурсов».</p>
                         <div class="grid-FAQ">
                             <div class="card-FAQ">
                                 <div class="icon-FAQ">
@@ -402,11 +327,9 @@
                             </div>
                         </div>
 
-
-                        <p>Приложение работает в онлайн-режиме, предусматривая создание личного кабинета для последующего взаимодействия с веб-порталом.</p>
-
-                        <p>Программное обеспечение <strong>«ErespondentN»</strong> предназначено для заполнения формы отчетности первичными данными и передачи отчетов в установленной форме.</p>
-                        <p><strong>Разработчик:</strong> Научно-производственное республиканское унитарное предприятие<a class = "instruction-link" href="https://kvant-as.by/" style = "font-weight: 600;"> «Квант-АС»</a>.</p>
+                        <p>Приложение работает онлайн: после регистрации у организации появляется личный кабинет, в котором заполняются и отправляются отчёты.</p>
+                        <p>Программное обеспечение «ErespondentN» предназначено для заполнения формы отчётности первичными данными и передачи отчётов в установленной форме.</p>
+                        <p>Разработчик — научно-производственное республиканское унитарное предприятие <a class="instruction-link" href="https://kvant-as.by/">«Квант-АС»</a>.</p>
                         {#
                         <p><strong>Исполнители / Администраторы (тел. 8 017 365-04-33):</strong> </p>
                         <div class = "opred-text fit">
@@ -417,134 +340,108 @@
                         </div>#}
                     </div>
                 </div>
-            </div>  
-            <div class="info_page info_faq" data-question-id="5" style="display: none;">
+            </div>
+            <div class="info_page info_faq" data-question-id="5" data-slug="account-data" style="display: none;">
                 <div class="faq_question_info">
                     <div class="info_page_name">
-                        <h1>Почему я не могу изменить данные учетной записи?</h1>
+                        <h1>Какие данные учетной записи можно изменить?</h1>
                     </div>
                     <div class="infos">
+                        <p>Большую часть данных можно изменить в любой момент, в том числе после создания отчётов.</p>
+
+                        <div class="opred-text">
+                            <strong>Личные данные</strong> фамилия, имя, отчество и номер телефона меняются в разделе <a class="instruction-link" href="/profile/common">«Личные данные»</a>.
+                        </div>
+                        <div class="opred-text">
+                            <strong>Электронная почта</strong> меняется с подтверждением кодом, см. <a class="instruction-link" href="/FAQ#change-email">как изменить электронный адрес</a>.
+                        </div>
+                        <div class="opred-text">
+                            <strong>Пароль</strong> меняется в разделе <a class="instruction-link" href="/profile/password">«Безопасность»</a>.
+                        </div>
+                        <div class="opred-text">
+                            <strong>Данные организации</strong> обновляются из ЕГР кнопкой в разделе <a class="instruction-link" href="/profile/organization">«Организация»</a>, см. <a class="instruction-link" href="/FAQ#update-organization">как обновить данные организации</a>.
+                        </div>
+
                         <div class="answer-highlight-second">
                             <div class="highlight-icon">💡</div>
-                            <p>Данные учетной записи <strong>можно отредактировать</strong> лишь при <strong>отсутствии</strong> отчетов на аккаунте.</p>
+                            <p>Саму организацию, выбранную при регистрации, изменить нельзя. Если она выбрана ошибочно, напишите администратору через <a class="instruction-link" href="/#askquestion-form">форму обратной связи</a>.</p>
                         </div>
-
-                        
-                        <div class="p_img">
-                            <img src="{{ url_for('static', filename='img/post/11.png') }}" alt="">
-                            <span>Рисунок 11 - Отсутствие отчетов</span>
-                        </div>
+                        {# ЗАМЕНИТЬ СКРИНШОТ: страница «Отчёты» (был img/post/11.png) #}
+                        {{ faq_img('11.png', 'Меню страницы отчетов') }}
                     </div>
                 </div>
-            </div>  
-            <div class="info_page info_faq" data-question-id="6" style="display: none;">
+            </div>
+            <div class="info_page info_faq" data-question-id="6" data-slug="personal-data" style="display: none;">
                 <div class="faq_question_info">
                     <div class="info_page_name">
-                        <h1>Как заполнить профиль пользователя?</h1>
+                        <h1>Как изменить личные данные?</h1>
                     </div>
                     <div class="infos">
-                        <p>Чтобы начать работать с отчетами, требуется указать организацию и данные пользователя-представителя, перейдя по клавише <strong>«Мой профиль»</strong> на страницу с информацией о пользователе (см. рисунок 12).</p>
+                        <p>Фамилия, имя, отчество и номер телефона указываются при регистрации. Изменить их можно в профиле.</p>
                         <ol class="steps-list">
                             <li>
-                                <strong>Перейдите в свой профиль</strong> сайта ErespondentN (см. рисунок №11).
-                                <div class="p_img">
-                                    <img src="{{ url_for('static', filename='img/post/8.png') }}" alt="">
-                                    <span>Рисунок 11 - Переход на страницу профиля</span>
-                                </div>
+                                Нажмите на значок пользователя в правом верхнем углу и выберите «Параметры профиля».
+                                {# ЗАМЕНИТЬ СКРИНШОТ: меню пользователя в шапке #}
+                                {{ faq_img('8.png', 'Меню пользователя') }}
                             </li>
                             <li>
-                                <strong>Перейдите в парамметры своего профиля</strong> (см. рисунок №12).
-                                <div class="p_img">
-                                    <img src="{{ url_for('static', filename='img/post/9.png') }}" alt="">
-                                    <span>Рисунок 12 - Переход на страницу профиля</span>
-                                </div>
+                                Откроется раздел «Личные данные». Исправьте нужные поля и нажмите «Применить изменения».
+                                {# ЗАМЕНИТЬ СКРИНШОТ: раздел «Личные данные» #}
+                                {{ faq_img('14.png', 'Личные данные') }}
+                                {{ faq_img('19.png', 'Поиск организации') }}
+                                {{ faq_img('12.png', 'Профиль пользователя') }}
                             </li>
                         </ol>
-                        <p>После перехода на страницу редактирования профиля, вам будет доступна форма для заполнения личных данных. Эта информация необходима для корректной работы системы и связи с вами.</p>
 
-                        <div class="answer-highlight-second" >
+                        <p>Все поля раздела обязательны:</p>
+                        <div class="opred-text fit">
+                            <strong>Фамилия, имя, отчество</strong> сотрудника, который заполняет отчёты
+                        </div>
+                        <div class="opred-text fit">
+                            <strong>Номер телефона</strong> для связи, в формате +375
+                        </div>
+
+                        <div class="answer-highlight-second">
                             <div class="highlight-icon">💡</div>
-                            <p>При заполнении профиля указывайте персональные данные заполняющего отчеты.</p>
-                        </div>
-                        <p><strong>Что нужно заполнить в профиле:</strong></p>
-                        <div class = "opred-text fit">
-                            <strong>Фамилия</strong> — укажите вашу фамилию
-                        </div>
-                        <div class = "opred-text fit">
-                            <strong>Имя</strong> — укажите ваше имя
-                        </div>
-                        <div class = "opred-text fit">
-                            <strong>Отчество</strong> — укажите, если есть (это поле необязательное)
-                        </div>
-                        <div class = "opred-text fit">
-                            <strong>Номер телефона</strong> — актуальный номер для связи
-                        </div>
-
-                        <p>Затем требуется <strong>найти свою организацию</strong>, кликнув на клавишу <strong>"🔎"</strong> и в появившемся окне <strong>выбрать (кликнув по строке)</strong> свою организацию (см. рисунки 13-14).</p>
-                        <div class="p_img">
-                            <img src="{{ url_for('static', filename='img/post/14.png') }}" alt="">
-                            <span>Рисунок 13 - Клавиша 🔎 "Выбрать предприятие"</span>
-                        </div>
-                        <div class="p_img">
-                            <img src="{{ url_for('static', filename='img/post/19.png') }}" alt="">
-                            <span>Рисунок 14 - Выбор предприятия</span>
-                        </div>
-
-                        <p>Пример заполненого профиля (см. рисунок 15).</p>
-                        <div class="p_img">
-                            <img src="{{ url_for('static', filename='img/post/12.png') }}" alt="">
-                            <span>Рисунок 15 - Мой профиль</span>
+                            <p>Без заполненных личных данных и выбранной организации создавать отчёты нельзя: система перенаправит в профиль.
+                                </p>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="info_page info_faq" data-question-id="7" style="display: none;">
+            <div class="info_page info_faq" data-question-id="7" data-slug="ask-question" style="display: none;">
                 <div class="faq_question_info">
                     <div class="info_page_name">
                         <h1>Как задать вопрос администратору?</h1>
                     </div>
                     <div class="infos">
-                    
-                        <p>Если у вас возникли вопросы или проблемы, вы можете напрямую обратиться к администратору системы. Для этого выполните следующие шаги:</p>
-                        
+                        <p>Вопрос администратору отправляется через форму обратной связи на главной странице. Отправлять вопросы могут только авторизованные пользователи.</p>
+
                         <ol class="steps-list">
-                            <li>Перейдите к <a class="instruction-link" href="/#askquestion-form">форме обратной связи</a>.</li>
-                            <li>Выберите ваш <strong>тип вопроса</strong> из доступных на выбор.</li>
-                            <li><strong>Введите ваш вопрос</strong> если выбрали <strong>Прочее</strong>, или же введите данные организации если выбрали <strong>Нет организации.</strong></li>
-                            <li><strong>Нажмите кнопку отправки</strong> — ваше сообщение будет отправлено администратору на рассмотрение.</li>
+                            <li>Войдите в систему и перейдите к <a class="instruction-link" href="/#askquestion-form">форме обратной связи</a>.</li>
+                            <li>Выберите тип вопроса и опишите проблему.</li>
+                            <li>Нажмите «Отправить вопрос».</li>
                         </ol>
-                        
-                        <div class="p_img">
-                            <img src="{{ url_for('static', filename='img/post/askquestion-form-default.png') }}" alt="">
-                            <span>Рисунок 15 - Форма обратной связи</span>
-                        </div>  
-                        
+
+                        {{ faq_img('askquestion-form-default.png', 'Форма обратной связи') }}
+
                         <div class="answer-highlight-second">
                             <div class="highlight-icon">⏱️</div>
-                            <div>
-                                <p><strong>Что происходит после отправки:</strong></p>
-                                <ol>
-                                    <li>Администратор получит ваше сообщение.</li>
-                                    <li>Ответ будет отправлен  (при необходимости) на электронный адрес, указанный в вашем профиле.</li>
-                                    <li>Обычно ответ поступает в течение 1-2 рабочих дней.</li>
-                                </ol>
-                            </div>
-                            <div class="answer-highlight-note">
-                                 <strong>Совет:</strong> Укажите в сообщении все необходимые детали — это поможет администратору быстрее понять и решить вашу проблему.
-                            </div>
+                            <p>Ответ администратора появится в разделе «Сообщения» профиля и придёт на вашу электронную почту. Обычно ответ приходит в течение 1–2 рабочих дней.</p>
+                        </div>
+                        <div class="answer-highlight-note">
+                            Опишите проблему подробно: какой отчёт, за какой период, что именно не получается. Так администратор быстрее поможет.
                         </div>
                     </div>
                 </div>
             </div>
 
-
-
-            <div class="info_page info_faq" data-question-id="8" style="display: none;">
+            <div class="info_page info_faq" data-question-id="8" data-slug="report-filling" style="display: none;">
                 <div class="faq_question_info">
                     <div class="info_page_name">
                         <h1>Особенности заполнения отчета</h1>
                     </div>
-                    
+
                     <div class="faq-section-nav">
                         <h4 class="nav-title">Содержание раздела:</h4>
                         <div class="nav-links">
@@ -572,59 +469,32 @@
                         </div>
                     </div>
 
-                    
                     <div class="infos">
                         <div id="section-defoult" class="title-section">Изначальная продукция</div>
-                        <div class="answer-highlight-second">
-                            <div class="highlight-icon">💡</div>
-                            <p>Строки с кодами <strong>9001</strong> и <strong>9010</strong> являются служебными и <strong>не подлежат удалению</strong>.</p>
+                        <p>В каждом новом отчёте уже есть две служебные строки. Удалить их нельзя.</p>
+                        <div class="opred-text">
+                            <strong>9001</strong> «Всего по нормированному потреблению» — сумма расхода энергоресурсов на производство всей нормируемой продукции.
                         </div>
-                        <div class = "opred-text">
-                            <strong>«Всего по нормированному потреблению» 9001</strong> — сумма расхода энергоресурсов на производство всей продукции, которая подлежит нормированию
+                        <div class="opred-text">
+                            <strong>9010</strong> «Прочее потребление» — энергоресурсы, израсходованные на нужды, не связанные напрямую с выпуском нормируемой продукции.
                         </div>
-                        <div class = "opred-text">
-                            <strong>«Прочее потребление» 9010</strong> — учет энергоресурсов, израсходованных на нужды, не связанные напрямую с выпуском основной нормируемой продукции
-                        </div>
-                        <div class="p_img">
-                            <img src="{{ url_for('static', filename='img/post/table-report.png') }}" alt="Начало работы">
-                            <span>Рисунок 15 - Виды продукции после создания отчета</span>
-                        </div>
+                        {{ faq_img('table-report.png', 'Виды продукции после создания отчета', 'Строки отчёта после создания') }}
 
                         <div id="new-product" class="title-section">Добавление новой продукции</div>
-
-                        <p>Для добавления новой продукции выполните следующие действия:</p>
-
                         <ol class="steps-list">
+                            <li>Откройте страницу <a class="instruction-link" href="/reports">«Отчёты»</a>, выберите нужный отчёт и нажмите «Просмотр».</li>
                             <li>
-                                <strong>Перейдите на страницу отчетов</strong> — нажмите кнопку «Отчеты» или перейдите по ссылке.
+                                В меню над таблицей, в разделе «Продукция», нажмите «Добавить».
+                                {# ЗАМЕНИТЬ СКРИНШОТ: меню отчёта, раздел «Продукция» с кнопкой «Добавить» #}
+                                {{ faq_img('new-product-btn.png', 'Кнопка «Добавить»') }}
                             </li>
                             <li>
-                                <strong>Выберите нужный отчет</strong> — в списке отчетов найдите нужный вам отчет и нажмите <strong>Просмотр.</strong>
+                                В списке выберите нужную продукцию и нажмите «Далее».
+                                {{ faq_img('new-product-list.png', 'Шаг 1, выбор продукции', 'Список продукции') }}
                             </li>
                             <li>
-                                <strong>Слева вверху страницы</strong> — нажмите правой кнопкой мыши на кнопку <strong>Добавить</strong>.
-                                <div class="p_img">
-                                    <img src="{{ url_for('static', filename='img/post/new-product-btn.png') }}" alt="">
-                                    <span>Рисунок 32 - Добавить новую продукцию</span>
-                                </div>
-                            </li>
-                            <li>
-                                <strong>В появившемся списке</strong> выберите нужную продукцию кликнув левой кнопкой мыши по строке.
-                                <div class="p_img">
-                                    <img src="{{ url_for('static', filename='img/post/new-product-list.png') }}" alt="">
-                                    <span>Рисунок 33 - Шаг 1 список продукции</span>
-                                </div>
-
-                            </li>
-                            <li>
-                                <strong>Перейдите на следующий шаг </strong> — нажмите <strong>Далее.</strong>
-                            </li>
-                            <li>
-                                <strong>Заполните необходимые парамметры</strong> и нажмите <strong>Добавить продукцию.</strong> 
-                                <div class="p_img">
-                                    <img src="{{ url_for('static', filename='img/post/add-product-final.png') }}" alt="">
-                                    <span>Рисунок 34 - Шаг 2 заполнение парамметров</span>
-                                </div>
+                                Заполните параметры и нажмите «Добавить продукцию».
+                                {{ faq_img('add-product-final.png', 'Шаг 2, заполнение параметров', 'Параметры продукции') }}
                             </li>
                         </ol>
 
@@ -632,7 +502,7 @@
                         <div class="answer-highlight-second">
                             <div class="highlight-icon">📝</div>
                             <div>
-                                <p>В строке <strong>9010</strong> отражаются данные о расходе энергоресурсов на прочее (ненормируемое) потребление:</p>
+                                <p>В строке 9010 отражается расход энергоресурсов на прочее (ненормируемое) потребление, например:</p>
                                 <ol>
                                     <li>капитальный ремонт зданий и сооружений;</li>
                                     <li>монтаж, наладка и запуск нового оборудования;</li>
@@ -643,65 +513,49 @@
                                 </ol>
                             </div>
                         </div>
-                        <p><strong>Как заполнить «Прочее потребление»:</strong></p>
+                        <p>Чтобы заполнить строку:</p>
                         <ol class="steps-list">
-                            <li>Нажмите <strong>правой кнопкой мыши</strong> на строку <strong>«Прочее потребление»</strong>.</li>
-                            <li>В контекстном меню выберите пункт <strong>«Редактировать»</strong>.</li>
-                            <li>В открывшемся окне заполните:
-                                <div class = "opred-text" style = "margin-top: 15px;">
-                                    <strong>[5] Израсходовано на всю производственную продукцию фактически</strong> — укажите количество;
+                            <li>Нажмите правой кнопкой мыши на строку «Прочее потребление» и выберите «Редактировать».</li>
+                            <li>
+                                В открывшемся окне заполните:
+                                <div class="opred-text" style="margin-top: 15px;">
+                                    <strong>[5]</strong> «Израсходовано на всю производственную продукцию фактически» — количество;
                                 </div>
-                                <div class = "opred-text">
-                                    <strong>Примечание</strong> — напишите, на что именно потрачены ресурсы (например: "Ремонт фасада").
+                                <div class="opred-text">
+                                    <strong>Примечание</strong> — на что потрачены ресурсы, например «Ремонт фасада».
                                 </div>
                             </li>
-                            <li>Нажмите кнопку <strong>«Применить изменения»</strong> для сохранения.</li>
+                            <li>Нажмите «Применить изменения».</li>
                         </ol>
-               
+
                         <div id="section-double-product" class="title-section">Дублирование вида продукции</div>
                         <div class="answer-highlight-second">
                             <div class="highlight-icon">⚠️</div>
-                            <div>
-                                <p>Если вид продукции уже присутствует в отчёте, его повторное добавление возможно только при условии заполнения поля <strong>«Примечание»</strong> с указанием уточняющей информации</p>
-                            </div>
+                            <p>Если вид продукции уже есть в отчёте, добавить его повторно можно только с заполненным полем «Примечание», в котором указано, чем эта строка отличается.</p>
                         </div>
-                        <div class="p_img">
-                            <img src="{{ url_for('static', filename='img/post/double-prod.png') }}" alt="">
-                            <span>Рисунок 11 - Заполнение примечания</span>
-                        </div>
+                        {{ faq_img('double-prod.png', 'Заполнение примечания') }}
 
-
-                        <div id="section-0020–0031" class="title-section">Особенности заполнения строк c кодами 0020–0031 </div>
+                        <div id="section-0020–0031" class="title-section">Особенности заполнения строк c кодами 0020–0031</div>
                         <div class="answer-highlight-second">
                             <div class="highlight-icon">⚠️</div>
-                            <div>
-                                <p>В продукции c кодами строки: <strong>0020, 0021, 0024, 0025, 0026, 0027, 0030, 0031</strong> параметр <strong>ОКЭД не заполняется</strong>.</p>
-                            </div>
+                            <p>Для продукции с кодами строк 0020, 0021, 0024, 0025, 0026, 0027, 0030 и 0031 код ОКЭД не заполняется.</p>
                         </div>
-                        <div class="p_img">
-                            <img src="{{ url_for('static', filename='img/post/dif.jpg') }}" alt="Строки без ОКЭД">
-                            <span>Рисунок 16 - Поле ОКЭД остается пустым</span>
-                        </div>
-
+                        {{ faq_img('dif.jpg', 'Поле ОКЭД остается пустым', 'Строки без ОКЭД') }}
 
                         <div id="section-7000" class="title-section">Особенности заполнения строки с кодом 7000</div>
                         <div class="answer-highlight-second">
                             <div class="highlight-icon">📌</div>
                             <div>
-                                <p>При заполнении кода строки <strong>7000 (предельный уровень)</strong> не требуется указывать значения для следующих параметров:</p>
+                                <p>Для строки 7000 (предельный уровень) не заполняются графы:</p>
                                 <ol>
-                                    <li><strong>[1] Произведено продукции (выполнено работ, услуг) за отчётный период;</strong></li>
-                                    <li><strong>[2] Утверждённая норма на единицу продукции;</strong></li>
-                                    <li><strong>[3] Израсходовано на единицу продукции фактически.</strong></li>
+                                    <li>[1] Произведено продукции (выполнено работ, услуг) за отчётный период;</li>
+                                    <li>[2] Утверждённая норма на единицу продукции;</li>
+                                    <li>[3] Израсходовано на единицу продукции фактически.</li>
                                 </ol>
-                                <p style="margin-top: 10px;">Заполняются только итоговые графы 4 и 5.</p>
+                                <p>Заполняются только итоговые графы 4 и 5.</p>
                             </div>
                         </div>
-                        <div class="p_img">
-                            <img src="{{ url_for('static', filename='img/post/7000code-row.png') }}" alt="Строка 7000">
-                            <span>Рисунок 17 - Поля 1, 2, 3 не заполняются</span>
-                        </div>
-
+                        {{ faq_img('7000code-row.png', 'Графы 1, 2, 3 не заполняются', 'Строка 7000') }}
 
                         <div id="section-grafy" class="title-section">Правила заполнения граф в таблицах</div>
                         <table class="modern-faq-table">
@@ -714,27 +568,27 @@
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td><strong>А, Б, Г</strong></td>
+                                    <td>А, Б, Г</td>
                                     <td>Наименование продукции, код строки, единицы измерения (согласно перечню видов продукции).</td>
                                     <td>Заполняются автоматически в соответствии с приложением 1.</td>
                                 </tr>
                                 <tr>
-                                    <td><strong>В (ОКЭД)</strong></td>
+                                    <td>В (ОКЭД)</td>
                                     <td>Код по общегосударственному классификатору видов экономической деятельности.</td>
                                     <td><span class="table-badge">Важно</span> Не заполняется для строк 0020–0031 и если нормы не утверждены.</td>
                                 </tr>
                                 <tr>
-                                    <td><strong>1</strong></td>
+                                    <td>1</td>
                                     <td>Количество произведенной продукции (работ, услуг) за отчетный период.</td>
                                     <td><span class="table-badge">Исключение</span> Для строки 7000 не заполняется.</td>
                                 </tr>
                                 <tr>
-                                    <td><strong>2</strong></td>
+                                    <td>2</td>
                                     <td>Утвержденные нормы расхода топлива, теплоэнергии и электроэнергии.</td>
                                     <td><span class="table-badge">Важно</span> Для 7000 не заполняется. Если нормы не утверждены — графа пустая.</td>
                                 </tr>
                                 <tr>
-                                    <td><strong>3</strong></td>
+                                    <td>3</td>
                                     <td>Фактический удельный расход на единицу продукции.</td>
                                     <td>
                                         <div>Рассчитывается по формуле:</div>
@@ -744,7 +598,7 @@
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td><strong>4</strong></td>
+                                    <td>4</td>
                                     <td>Расход по норме на произведенную продукцию.</td>
                                     <td>
                                         <div>Рассчитывается по формуле:</div>
@@ -754,7 +608,7 @@
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td><strong>5</strong></td>
+                                    <td>5</td>
                                     <td>Фактический расход на произведенную продукцию.</td>
                                     <td>Заполняется всегда, даже при отсутствии утвержденных норм.</td>
                                 </tr>
@@ -764,8 +618,7 @@
                 </div>
             </div>
 
-
-            <div class="info_page info_faq" data-question-id="9" style="display: none;">
+            <div class="info_page info_faq" data-question-id="9" data-slug="video-guide" style="display: none;">
                 <div class="faq_question_info">
                     <div class="info_page_name">
                         <h1>Процесс работы с отчетом</h1>
@@ -840,7 +693,7 @@
                                 </div>
 
                                 <div class="video-caption">
-                                    <p class="caption-text">Инcтрукция по использованию платформы</p>
+                                    <p class="caption-text">Инструкция по использованию платформы</p>
                                     <div class="caption-meta">
                                         <span class="meta-item">
                                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -887,466 +740,300 @@
                     </div>
                 </div>
             </div>
-            <div class="info_page info_faq" data-question-id="10" style="display: none;">
+            <div class="info_page info_faq" data-question-id="10" data-slug="audit-process" style="display: none;">
                 <div class="faq_question_info">
                     <div class="info_page_name">
                         <h1>Как аудитор проверяет отчет?</h1>
                     </div>
-                
                     <div class="infos">
                         <div class="answer-highlight-second">
                             <div class="highlight-icon">💡</div>
-                            <p>Чтобы проверять отчеты, у вас должен быть статус <strong>"Аудитор"</strong>. Обычно его выдает администратор.</p>
+                            <p>Проверять отчёты могут аудиторы — сотрудники региональных управлений по надзору. Доступ настраивает администратор.</p>
                         </div>
-                        <p>Сначала нужно попасть на страницу проверки отчетов. Для этого:</p>
+
+                        <p>Как открыть страницу проверки:</p>
                         <ol class="steps-list">
                             <li>
-                                <strong>Нажмите на иконку пользователя в правом верхнем углу</strong>
+                                Нажмите на значок пользователя в правом верхнем углу и выберите «Мой профиль».
+                                {# ЗАМЕНИТЬ СКРИНШОТ: меню пользователя в шапке #}
+                                {{ faq_img('8.png', 'Меню пользователя') }}
                             </li>
                             <li>
-                                <strong>В меню выберите «Мой профиль»</strong>
-                                <div class="p_img">
-                                    <img src="{{ url_for('static', filename='img/post/8.png') }}" alt="Меню пользователя">
-                                    <span>Рисунок 16 - Нажмите на себя, чтобы открыть меню</span>
-                                </div>
+                                В профиле нажмите «Проверка отчетов».
+                                {{ faq_img('20.png', 'Кнопка «Проверка отчетов»', 'Кнопка проверки отчетов') }}
                             </li>
-                            <li>
-                                <strong>В профиле нажмите кнопку «Проверка отчетов»</strong>
-                                <div class="p_img">
-                                    <img src="{{ url_for('static', filename='img/post/20.png') }}" alt="Кнопка проверки отчетов">
-                                    <span>Рисунок 17 - Кнопка для перехода к проверке</span>
-                                </div>
-                            </li>
-                            
                         </ol>
 
+                        <p>Откроется список отчётов, которые организации отправили на проверку.</p>
+                        {# ЗАМЕНИТЬ СКРИНШОТ: страница проверки отчётов с меню статусов, фильтрами по региону и сортировкой #}
+                        {{ faq_img('audit-page.png', 'Страница проверки отчетов') }}
 
-                        <p>После этого вы попадете на страницу со списком всех отчетов, которые прислали компании (респонденты) на проверку.</p>
-                        
-                        <div class="p_img">
-                            <img src="{{ url_for('static', filename='img/post/audit-page.png') }}" alt="Страница проверки отчетов">
-                            <span>Рисунок 19 - Вот так выглядит страница проверки</span>
-                        </div>
-
-                        <p><strong>На странице присутствуют две главные части:</strong></p>
+                        <p>На странице есть:</p>
                         <ul>
-                            <li data-number="1">
-                                <strong>Панель управления</strong> — с ее помощью можно фильтровать отчеты по статусу и периоду.
-                            </li>
-                            <li data-number="2">
-                                <strong>Список отчетов</strong> — все присланные отчеты за текущий период и выбранный статус.
-                            </li>
+                            <li data-number="1">меню вверху: период, статусы отчётов («Непросм.», «Удал.», «Замеч.», «Одобр.», «Все») и экспорт;</li>
+                            <li data-number="2">фильтры по наименованию, ОКПО и региону, а также порядок по дате поступления;</li>
+                            <li data-number="3">список отчётов за выбранный период и статус.</li>
                         </ul>
 
-                        <p><strong>Как открыть отчет, чтобы его проверить:</strong></p>
-
+                        <p>Как открыть отчёт:</p>
                         <ol class="steps-list">
                             <li>
-                                <strong>Найдите нужный отчет в списке</strong> — у каждого отчета справа есть кнопка "Просмотр"
+                                Найдите отчёт в списке и нажмите «Просмотр» слева от наименования.
+                                {{ faq_img('view-report-btn.png', 'Кнопка «Просмотр»', 'Кнопка просмотра отчета') }}
                             </li>
                             <li>
-                                <strong>Нажмите на эту кнопку</strong> — вы сразу перейдете на страницу с отчетом
+                                Проверьте разделы отчёта: «Топливо», «Тепло» и «Электро».
+                                {{ faq_img('audit-report-page.png', 'Открытый отчет') }}
                             </li>
                         </ol>
 
-                        <div class="p_img">
-                            <img src="{{ url_for('static', filename='img/post/view-report-btn.png') }}" alt="Меню отчета">
-                            <span>Рисунок 20 - Кнопка "Просмотр отчета"</span>
-                        </div>
-                        <div class="p_img">
-                            <img src="{{ url_for('static', filename='img/post/audit-report-page.png') }}" alt="Открытый отчет">
-                            <span>Рисунок 21 - Так выглядит открытый отчет</span>
-                        </div>
-
-                        <p><strong>Как вынести решение по отчету:</strong></p>
-                        <p>После того как вы проверили все разделы отчета, нужно решить, что с ним делать дальше. У вас есть три варианта:</p>
-                        
+                        <p>После проверки выберите решение:</p>
                         <ul>
-                            <li data-number="1">
-                                <span>✅ Отчет хороший, ошибок нет — <strong>Одобрить</strong></span>
-                            </li>
-                            <li data-number="2">
-                                <span>⚠️ Есть небольшие ошибки, которые нужно исправить — <strong>Есть ошибки</strong></span>
-                            </li>
-                            <li data-number="3">
-                                <span>❌ Отчет совсем неправильный, его нельзя исправить — <strong>К удалению</strong></span>
-                            </li>
+                            <li data-number="1">ошибок нет — «Одобр.»;</li>
+                            <li data-number="2">есть ошибки, которые организация может исправить — «Замеч.»;</li>
+                            <li data-number="3">отчёт заполнен так, что его нельзя исправить, — «Удал.».</li>
                         </ul>
-                        <div class="answer-highlight-second">
-                            <div class="highlight-icon">💡</div>
-                            <p><strong>Как написать замечания:</strong> Если вы выбрали вариант с замечаниями, нужно объяснить респонденту, что не так.</p>
-                            <ol>
-                                <li>Если ошибок нет, сообщение можно не писать.</li>
-                                <li>Все старые переписки по этому отчету доступны для чтения.</li>
-                            </ul>
-                        </div>
-                        <p><strong>Чтобы написать сообщение:</strong></p>
-                        <ol class="steps-list">
-                            <li>
-                                <strong>В панели управления найдите раздел «Сообщение»</strong>
-                            </li>
-                            
-                            <div class="p_img">
-                                <img src="{{ url_for('static', filename='img/post/send-mes-audit.png') }}" alt="Кнопка сообщения">
-                                <span>Рисунок 22 - Кнопка для отправки сообщения</span>
-                            </div>  
-                            <li>
-                                <strong>Нажмите кнопку «Отправить»</strong> — вы сразу переместитесь к форме написания сообщения
-                            </li>
-                        </ol>
-                        <div class="p_img">
-                            <img src="{{ url_for('static', filename='img/post/ticket-cont-audit.png') }}" alt="Форма сообщения">
-                            <span>Рисунок 23 - Форма, в которой нужно написать текст</span>
-                        </div>  
-
-                        <!-- Шаг 4: Как сменить статус -->
-                        <p><strong>Как поменять статус отчета (самый последний шаг):</strong></p>
-                        <p>Когда сообщение отправлено (или вы решили, что оно не нужно), нужно сменить статус отчета. Для этого:</p>
-                        <ol class="steps-list">
-                            <li>Вернитесь на главную страницу со списком всех отчетов.</li>
-                            <li>Найдите в списке нужный отчет (если вы оставляли комментарий, то он подсвечивается оранжевым).</li>
-                            <li><strong>Нажмите на него левой кнопкой мыши и, не отпуская, перетащите</strong> в нужный раздел на панели «Статус отчета».</li>
-                        </ol>
-
-                        <div class="p_img">
-                            <img src="{{ url_for('static', filename='img/post/audit-report.png') }}" alt="Перетаскивание отчета">
-                            <span>Рисунок 24 - Как изменить статус отчета</span>
-                        </div>
-
-                        <p><strong>Что делать, если ошиблись со статусом:</strong></p>
-                        <p>Не волнуйтесь, это можно исправить в 30-ти дней.</p>
-                        <ol class="steps-list">
-                            <li>Нажмите на отчет правой кнопкой мыши.</li>
-                            <li>В меню выберите пункт <strong>«Отменить действие»</strong>.</li>
-                        </ol>
-                        <div class="p_img">
-                            <img src="{{ url_for('static', filename='img/post/cancel-status.png') }}" alt="Отмена действия">
-                            <span>Рисунок 25 - Кнопка для отмены последнего действия</span>
-                        </div>
 
                         <div class="answer-highlight-second">
-                            <div class="highlight-icon">💡</div>
-                            <p><strong>Важно:</strong> После отмены отчет вернется в статус <strong>"Непросмотренный"</strong>, как будто вы его еще не трогали. Но все сообщения, которые вы ему отправляли, сохранятся.</p>
+                            <div class="highlight-icon">💬</div>
+                            <p>Для решений «Замеч.» и «Удал.» сначала напишите организации сообщение с описанием ошибок, без него статус не изменится. Для одобрения сообщение не нужно.</p>
+                        </div>
+
+                        <p>Как написать сообщение:</p>
+                        <ol class="steps-list">
+                            <li>
+                                В меню отчёта, в разделе «Сообщение», нажмите «Отправить».
+                                {{ faq_img('send-mes-audit.png', 'Кнопка отправки сообщения', 'Кнопка сообщения') }}
+                            </li>
+                            <li>
+                                Опишите ошибки и нажмите «Отправить сообщение». Сообщение попадёт в квитанции отчёта, а организация получит уведомление на почту.
+                                {{ faq_img('ticket-cont-audit.png', 'Форма сообщения') }}
+                            </li>
+                        </ol>
+
+                        <p>Как изменить статус отчёта:</p>
+                        <ol class="steps-list">
+                            <li>Вернитесь к списку отчётов. Отчёты, по которым вы уже написали сообщение, подсвечены.</li>
+                            <li>
+                                Зажмите строку отчёта левой кнопкой мыши и перетащите её на нужный статус в меню: «Удал.», «Замеч.» или «Одобр.». Статусы, на которые можно перенести отчёт, подсвечиваются.
+                                {# ЗАМЕНИТЬ СКРИНШОТ: перетаскивание отчёта на статус в меню #}
+                                {{ faq_img('audit-report.png', 'Перетаскивание отчета на статус') }}
+                            </li>
+                        </ol>
+
+                        <p>Если статус выбран ошибочно:</p>
+                        <ol class="steps-list">
+                            <li>Нажмите на отчёт правой кнопкой мыши.</li>
+                            <li>
+                                Выберите «Отменить действие».
+                                {{ faq_img('cancel-status.png', 'Отмена последнего действия', 'Отмена действия') }}
+                            </li>
+                        </ol>
+
+                        <div class="answer-highlight-note">
+                            Отменить решение можно в течение 3 месяцев после проверки. Отчёт вернётся в статус «На рассмотрении», отправленные сообщения сохранятся.
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="info_page info_faq" data-question-id="11" style="display: none;">
+            <div class="info_page info_faq" data-question-id="11" data-slug="ecp-certificate" style="display: none;">
                 <div class="faq_question_info">
                     <div class="info_page_name">
                         <h1>Как пройти проверку сертификата ЭЦП</h1>
                     </div>
-                
                     <div class="infos">
-                        <p>Для осуществления функции <strong>отправить отчет</strong>, предварительно должно быть установленно <strong>ПО "Менеджер сертефикатов"</strong> от <i>Авест</i> с настроенным <strong>сертификатом электронной цифровой подписи  (ЭЦП)</strong>.</p>
+                        <p>Чтобы отправить отчёт, на компьютере должна быть установлена программа «Менеджер сертификатов» от «Авест» с настроенным сертификатом электронной цифровой подписи (ЭЦП).</p>
 
-                        <p><strong>Сертификаты бывают двух видов:</strong></p>
-                        <div class = "opred-text">
-                            <strong>«Действительный»</strong> — срок действия сертификата на текущий момент ещё не истек.
-                        </div>  
-                        <div class = "opred-text">
-                            <strong>«<u>НE</u>действительный»</strong> — срок действия сертификата уже закончился.
+                        <p>Сертификат может быть:</p>
+                        <div class="opred-text">
+                            <strong>Действительный</strong> — срок действия ещё не истёк. Для отправки нужен именно такой сертификат.
                         </div>
-                        
-                        
-                        <p>Для того, чтобы получить <strong>файл сертификата</strong> необходимо открыть ПО <strong>"Менеджер сертефикатов"</strong> (см. рисунок 28).</p>
-                        <div class="p_img">
-                            <img src="{{ url_for('static', filename='img/post/28.jpg') }}" alt="">
-                            <span>Рисунок 28 - ПО Менеджер сертефикатов</span>
+                        <div class="opred-text">
+                            <strong>Недействительный</strong> — срок действия закончился.
                         </div>
 
-                        <p>После чего выбрать ваш <strong>"Действительный"</strong> сертификат и перейти по клавише "✓ Ок" на следующий этап (см. рисунок 29).</p>
-                        <div class="p_img">
-                            <img src="{{ url_for('static', filename='img/post/29.jpg') }}" alt="">
-                            <span>Рисунок 29 - Выбор сертификата</span>
-                        </div>
+                        <p>Как получить файл сертификата:</p>
+                        <ol class="steps-list">
+                            <li>
+                                Откройте программу «Менеджер сертификатов».
+                                {{ faq_img('28.jpg', 'Программа «Менеджер сертификатов»', 'Менеджер сертификатов') }}
+                            </li>
+                            <li>
+                                Выберите действительный сертификат и нажмите «✓ Ок».
+                                {{ faq_img('29.jpg', 'Выбор сертификата') }}
+                            </li>
+                            <li>
+                                В главном окне программы нажмите правой кнопкой мыши на сертификат и выберите «Экспорт сертификата в файл».
+                                {{ faq_img('30.jpg', 'Экспорт сертификата') }}
+                            </li>
+                            <li>
+                                Сохраните файл на компьютере.
+                                {{ faq_img('certificate-file.png', 'Файл сертификата') }}
+                            </li>
+                        </ol>
 
-                        <p>Перед вами отроется главное окно ПО Менеджер сертефикатов, где будет необходимо кликнуть правой клавишей мыши по вашему сертификату и выбрать во всплывающем дополнительном меню <strong>"Экспорт сертификата в файл" </strong>(см. рисунок 30).</p>
-                        <div class="p_img">
-                            <img src="{{ url_for('static', filename='img/post/30.jpg') }}" alt="">
-                            <span>Рисунок 30 - Экспорт сертификата</span>
-                        </div>
-
-
-                        <p>Вам необходимо будет <strong>выбрать место для сохранения</strong> на своем компьютере (см. рисунок 31). Теперь при отправке отчета можно использовать данный файл для подтверждения своей личности, можно просто перенести файл серетификата в контейнер с шрихпунктирной обводкой, или же просто кликнуть на <strong>"нажмите для выбора"</strong> в этом же контейнере, и <strong>выбрать</strong> файл сертификата  (см. рисунок 32).</p>
-                        <div class="p_img">
-                            <img src="{{ url_for('static', filename='img/post/certificate-file.png') }}" alt="">
-                            <span>Рисунок 31 - Файл сертификата</span>
-                        </div>
-                        <div class="p_img">
-                            <img src="{{ url_for('static', filename='img/post/31.png') }}" alt="">
-                            <span>Рисунок 32 - Импорт сертификата</span>
-                        </div>
-
-
+                        <p>При отправке отчёта перетащите файл сертификата в область с пунктирной рамкой или нажмите в ней «нажмите для выбора» и укажите файл.</p>
+                        {{ faq_img('31.png', 'Выбор файла сертификата при отправке', 'Отправка отчета с сертификатом') }}
                     </div>
                 </div>
             </div>
-            <div class="info_page info_faq" data-question-id="12" style="display: none;">
+            <!-- <div class="info_page info_faq" data-question-id="12" data-slug="auditor-login" style="display: none;">
                 <div class="faq_question_info">
-
-
                     <div class="info_page_name">
                         <h1>Вход в аккаунт аудитора</h1>
                     </div>
                     <div class="infos">
-                        <div class="answer-highlight-second">
-                            <div class="highlight-icon">📊</div>
-                            <div>
-                                <p>Процесс <strong>создания аккаунта</strong>  для аудитора включает в себя <strong>2 простых шага</strong>:</p>  
-                                <ol>
-                                    <li><strong>Администратор создаёт</strong> аккаунт аудитора, <strong>указывая</strong> его <strong>адрес электронной почты</strong>.</li>
-                                    <li>Аудитор <strong>на странице входа</strong> вводит в <strong>строку email</strong> свою электронную почту и нажимает на клавишу <strong>«Забыли пароль?»</strong>.</li>
-                                </ol>
-                                
-                                <div class="answer-highlight-note">
-                                    На <strong>указанную почту</strong> придёт письмо с  <strong>паролем</strong>  для входа в систему.
-                                </div>
-                            </div>
-                        </div>
+                        <p>Аккаунт аудитора создаёт администратор: он указывает адрес электронной почты аудитора и привязывает аккаунт к региональному управлению.</p>
 
-                        <div class="p_img">
-                            <img src="{{ url_for('static', filename='img/post/35.png') }}" alt="">
-                            <span>Рисунок 6 - Забыли пароль</span>
-                        </div>
-                        <p>После успешного входа система предложит ввести <strong>ФИО</strong> и <strong>номер телефона</strong> для завершения регистрации (см. рисунок 7).</p>
-                        <div class="p_img">
-                            <img src="{{ url_for('static', filename='img/post/32.jpg') }}" alt="">
-                            <span>Рисунок 7 - Общие параметры</span>
+                        <ol class="steps-list">
+                            <li>
+                                Откройте страницу <a href="/login" class="instruction-link">авторизации</a> и нажмите «Забыли пароль?».
+                                {# ЗАМЕНИТЬ СКРИНШОТ: страница авторизации со ссылкой «Забыли пароль?» #}
+                                {{ faq_img('35.png', 'Ссылка «Забыли пароль?» на странице авторизации') }}
+                            </li>
+                            <li>Введите адрес почты, который указал администратор, и нажмите «Отправить». На почту придёт пароль для входа.</li>
+                            <li>
+                                Войдите в систему. При первом входе заполните фамилию, имя, отчество и номер телефона в разделе «Личные данные» — без них страница проверки отчётов недоступна.
+                                {# ЗАМЕНИТЬ СКРИНШОТ: раздел «Личные данные» у аудитора #}
+                                {{ faq_img('32.jpg', 'Личные данные аудитора') }}
+                            </li>
+                        </ol>
+
+                        <div class="answer-highlight-note">
+                            После входа замените полученный пароль на свой в разделе «Безопасность».
                         </div>
                     </div>
-                </div> 
-            </div>
-            <div class="info_page info_faq" data-question-id="13" style="display: none;">
-                  <div class="faq_question_info">
+                </div>
+            </div> -->
+            <div class="info_page info_faq" data-question-id="13" data-slug="statistics" style="display: none;">
+                <div class="faq_question_info">
                     <div class="info_page_name">
                         <h1>Загрузка статистики</h1>
                     </div>
                     <div class="infos">
-                        <p>Для того, чтобы загрузить отчет с полной статистикой отчитавшихся предприятий, необходимо в профиле пользователя, выбрать "Статистика" и затем указать период за который необходимам статистика (см. рисунок 1).</p>   
-                        <div class="p_img">
-                            <img src="{{ url_for('static', filename='img/post/28.png') }}" alt="">
-                            <span>Рисунок 1 - Выбор статистики</span>
-                        </div>  
-                        <p>Затем выберите период, за который хотите получить статистику и нажмите на "Выбранный период" (см. рисунок 2).</p>
-                        <div class="p_img">
-                            <img src="{{ url_for('static', filename='img/post/35.jpg') }}" alt="">
-                            <span>Рисунок 2 - Выбор статистики</span>
-                        </div>  
-                        <div class="p_img">
-                            <img src="{{ url_for('static', filename='img/post/30.png') }}" alt="">
-                            <span>Рисунок 3 - Отчет со статистикой</span>
-                        </div>  
+                        <p>Статистика — это файл со списком организаций, которые отчитались за выбранный период.</p>
+                        <ol class="steps-list">
+                            <li>
+                                В профиле нажмите «Статистика».
+                                {{ faq_img('28.png', 'Кнопка «Статистика»', 'Кнопка статистики') }}
+                            </li>
+                            <li>
+                                Выберите год и квартал и нажмите «Выбранный период».
+                                {{ faq_img('35.jpg', 'Выбор периода') }}
+                            </li>
+                            <li>
+                                Файл скачается автоматически.
+                                {{ faq_img('30.png', 'Файл со статистикой') }}
+                            </li>
+                        </ol>
                     </div>
-                </div> 
+                </div>
             </div>
-            <div class="info_page info_faq" data-question-id="14" style="display: none;">
+            <div class="info_page info_faq" data-question-id="14" data-slug="export-approved" style="display: none;">
                 <div class="faq_question_info">
                     <div class="info_page_name">
                         <h1>Как скачать все одобренные отчеты?</h1>
                     </div>
                     <div class="infos">
-                        <div class="answer-highlight-second">
-                            <div class="highlight-icon">📊</div>
-                            <div>
-                                <p>Когда отчет успешно проходит проверку, он получает статус <strong>«Одобренный»</strong>.</p>
-                            </div>
-                        </div>
-                        <p><strong>Как это сделать:</strong></p>
+                        <p>Отчёты со статусом «Одобрен» можно скачать одним архивом, а затем загрузить в программу «ПТО».</p>
                         <ol class="steps-list">
                             <li>
-                                <strong>Зайдите в свой профиль</strong> — нажмите на иконку пользователя в правом верхнем углу и выберите «Мой профиль»
-                                <div class="p_img">
-                                    <img src="{{ url_for('static', filename='img/post/8.png') }}" alt="Меню профиля">
-                                    <span>Рисунок 1 - Как зайти в профиль</span>
-                                </div>
+                                В профиле откройте «Проверка отчетов».
+                                {{ faq_img('choose_audit.png', 'Переход к проверке отчетов', 'Раздел проверки отчетов') }}
+                            </li>
+                            <li>Нажмите «Период» в меню и выберите год и квартал.</li>
+                            <li>
+                                Нажмите «Экспорт» в меню.
+                                {{ faq_img('time_export.png', 'Кнопка «Экспорт»', 'Кнопка экспорта') }}
                             </li>
                             <li>
-                                <strong>Откройте раздел «Проверка отчетов»</strong> — он находится в меню вашего профиля
-                                <div class="p_img">
-                                    <img src="{{ url_for('static', filename='img/post/choose_audit.png') }}" alt="Раздел проверки отчетов">
-                                    <span>Рисунок 2 - Нажмите сюда</span>
-                                </div>
-                            </li>
-                            <li>
-                                <strong>Выберите год и квартал</strong> — укажите период, за который хотите скачать отчеты
-                            </li>
-                            <li>
-                                <strong>Найдите меню «Экспорт» и выберите пункт «Отчеты»</strong>
-                                <div class="p_img">
-                                    <img src="{{ url_for('static', filename='img/post/time_export.png') }}" alt="Меню экспорта">
-                                    <span>Рисунок 3 - Сначала выберите период, потом нажмите «Экспорт» → «Отчеты»</span>
-                                </div>
-                            </li>
-                            <li>
-                                <strong>В появившемся окне нажмите на кнопку с типом отчетов, которые хотите скачать</strong> — например, вы хотите скачать отчеты в формате .dbf, вам следует нажать на «Формат .dbf» и после кликнуть на «Экспортировать».
+                                Выберите формат (.dbf или .xml) и нажмите «Экспортировать». Администратор и читатель также могут выбрать регион.
+                                {{ faq_img('export_odobr.png', 'Выбор формата', 'Окно экспорта') }}
+                                {{ faq_img('export_odobr_loader.png', 'Формирование архива') }}
                             </li>
                         </ol>
-                        <div class="p_img">
-                            <img src="{{ url_for('static', filename='img/post/export_odobr.png') }}" alt="Окно выбора отчетов для скачивания">
-                            <span>Рисунок 4 - Здесь выбираете необходимый формат отчетов для скачивания</span>
-                        </div>
-                        <div class="p_img">
-                            <img src="{{ url_for('static', filename='img/post/export_odobr_loader.png') }}">
-                            <span>Рисунок 5 - Формирование архива</span>
-                        </div>
-                        
-                        <div class="answer-highlight-second">
-                            <div class="highlight-icon">💡</div>
-                            <div>
-                                <p><strong>Куда сохраняется файл?</strong> Компьютер сам предложит выбрать папку. Если ничего не менять — файл попадет в папку <strong>«Загрузки»</strong> (на английском может называться <strong>«Downloads»</strong>).</p>
-                            </div>
-                        </div>
-                        <div style="margin-top: 25px;">
-                            <p><strong>Что получается в итоге:</strong></p>
-                            <p>Система соберет все одобренные отчеты за выбранный период и упакует их в один архив.</p>
-                            <div class="p_img">
-                                <img src="{{ url_for('static', filename='img/post/your_arhive.png') }}" alt="Архив с отчетами">
-                                <span>Рисунок 5 - Так выглядит архив с отчетами</span>
-                            </div>
-                        </div>
-                        
-                        <p><strong>Что делать со скачанным архивом:</strong></p>
-                        
-                        <ol class="steps-list" start="6">
-                            <li><strong>Распакуйте архив</strong> — нажмите правой кнопкой мыши → «Извлечь все ..» и укажите путь для распаковки архива.</li>
-                            <li><strong>Откройте программу, в которую нужно загрузить отчеты</strong> — в данном случае «ПТО», приложение которое принимает для загрузки только отчеты формата .dbf</li>
-                            <div class="p_img">
-                                <img src="{{ url_for('static', filename='img/post/pto-app.png') }}">
-                                <span>Рисунок 6 - ПТО</span>
-                            </div>
-                            <li><strong>Перейдите в «Нормирование», а затем «Ввод электронных отчетов по нормам».</strong></li>
-                            <div class="p_img">
-                                <img src="{{ url_for('static', filename='img/post/normir-menu.png') }}">
-                                <span>Рисунок 7 - «Ввод электронных отчетов по нормам»</span>
-                            </div>
-                            <li><strong>Нажмите в программе кнопку «Загрузить все отчеты»</strong> и укажите путь к распакованной папке.</li>
-                            <div class="p_img">
-                                <img src="{{ url_for('static', filename='img/post/import-succes-reports.png') }}">
-                                <span>Рисунок 8 - «Загрузить все отчеты»</span>
-                            </div>
-                            <div class="p_img">
-                                <img src="{{ url_for('static', filename='img/post/choose-rout.png') }}">
-                                <span>Рисунок 9 - Выбор папки с отчетами</span>
-                            </div>
-                            <li><strong>Дождитесь, пока программа обработает все файлы</strong> — отчеты появятся в системе.</li>
-                            <div class="p_img">
-                                <img src="{{ url_for('static', filename='img/post/import-loader.png') }}">
-                                <span>Рисунок 10 - Загрузка отчетов</span>
-                            </div>
-                            <div class="p_img">
-                                <img src="{{ url_for('static', filename='img/post/import-loader-succes.png') }}">
-                                <span>Рисунок 11 - Конец загрузки</span>
-                            </div>
-                            <li><strong>Проверьте, что все загрузилось правильно.</strong></li>
+
+                        <p>Система соберёт одобренные отчёты за период в один архив. Браузер сохранит его в папку «Загрузки», если вы не выберете другую.</p>
+                        {{ faq_img('your_arhive.png', 'Архив с отчетами') }}
+
+                        <p>Как загрузить отчёты в «ПТО» (принимает только формат .dbf):</p>
+                        <ol class="steps-list">
+                            <li>Распакуйте архив: правая кнопка мыши → «Извлечь все…».</li>
+                            <li>
+                                Откройте программу «ПТО».
+                                {{ faq_img('pto-app.png', 'Программа «ПТО»', 'Программа ПТО') }}
+                            </li>
+                            <li>
+                                Перейдите в «Нормирование» → «Ввод электронных отчетов по нормам».
+                                {{ faq_img('normir-menu.png', '«Ввод электронных отчетов по нормам»', 'Меню нормирования') }}
+                            </li>
+                            <li>
+                                Нажмите «Загрузить все отчеты» и укажите распакованную папку.
+                                {{ faq_img('import-succes-reports.png', '«Загрузить все отчеты»', 'Загрузить все отчеты') }}
+                                {{ faq_img('choose-rout.png', 'Выбор папки с отчетами', 'Выбор папки') }}
+                            </li>
+                            <li>
+                                Дождитесь окончания загрузки и проверьте, что все отчёты появились в программе.
+                                {{ faq_img('import-loader.png', 'Загрузка отчетов') }}
+                                {{ faq_img('import-loader-succes.png', 'Загрузка завершена') }}
+                            </li>
                         </ol>
                     </div>
-                </div> 
+                </div>
             </div>
-            <div class="info_page info_faq" data-question-id="15" style="display: none;">
+            <div class="info_page info_faq" data-question-id="15" data-slug="no-organization" style="display: none;">
                 <div class="faq_question_info">
                     <div class="info_page_name">
                         <h1>Что делать, если моей организации нет в списке?</h1>
                     </div>
                     <div class="infos">
-                        
-                        <p>Для добавления организации необходимо быть <strong>авторизованным</strong> в системе. Сначала зарегистрируйтесь и войдите в свой аккаунт.</p>
+                        <p>Отдельного списка организаций, в котором нужно искать свою, больше нет. Организация добавляется в систему автоматически при создании аккаунта.</p>
 
-                        <div class="p_img">
-                            <img src="{{ url_for('static', filename='img/post/no-org.png') }}" alt="Сообщение об отсутствии организации в списке">
-                            <span>Рисунок 1 - Сообщение "Нет организации в списке"</span>
-                        </div>
-
-                        <h3>Инструкция по добавлению организации:</h3>
-                        
                         <ol class="steps-list">
-                            <li>Перейдите на <a class="instruction-link" href="/">главную страницу</a> сайта ErespondentN.</li>
-                            <li>Прокрутите страницу вниз до формы обратной связи или нажмите на кнопку со знаком вопроса <strong>«?»</strong> в правом нижнем углу.</li>
+                            <li>На последнем шаге регистрации введите УНП своей организации.</li>
+                            <li>Система найдёт её в Едином государственном регистре юридических лиц и индивидуальных предпринимателей (ЕГР) и загрузит наименование, адрес и регион.</li>
+                            <li>Если организации ещё нет в системе, она будет добавлена. Если уже есть — её данные обновятся из ЕГР.</li>
                         </ol>
 
-                        <div class="p_img">
-                            <img src="{{ url_for('static', filename='img/post/66.jpg') }}" alt="Кнопка со знаком вопроса">
-                            <span>Рисунок 2 - Кнопка «?» для быстрой прокрутки вниз</span>
-                        </div>
-
-                        <p>В форме обратной связи заполните следующие поля:</p>
-
-                        <ol class="steps-list" start="3">
-                            <li>Выберите тип вопроса — <strong>«Нет организации в списке»</strong>.</li>
-                            <li>Укажите <strong>полное наименование</strong> организации.</li>
-                            <li>Введите <strong>код ОКПО</strong> (12 цифр).</li>
-                            <li>Введите <strong>код УНП</strong> (9 цифр).</li>
-                            <li>Выберите регион принадлежности организации.</li>
-                            <li>Нажмите кнопку <strong>«Отправить вопрос»</strong>.</li>
-                        </ol>
-
-                        <div class="p_img">
-                            <img src="{{ url_for('static', filename='img/post/askquestion-form.png') }}" alt="Форма для добавления организации">
-                            <span>Рисунок 3 - Форма обратной связи для добавления организации</span>
-                        </div>
-
-                        {#<div class="answer-highlight-second">
-                            <div class="highlight-icon">🗺️</div>
-                            <div>
-                                <p><strong>Как определить регион по коду ОКПО:</strong></p>
-                                <p>9-я цифра в 12-значном коде ОКПО указывает на регион организации.</p>
+                        <div class="answer-highlight-second">
+                            <div class="highlight-icon">💡</div>
+                            <p>Выбранную при регистрации организацию изменить нельзя. Обновлять её данные из ЕГР можно в любой момент, см. <a class="instruction-link" href="/FAQ#update-organization">как обновить данные организации</a>.</p>
+                            
+                            <div class="answer-highlight-note">
+                                Если организация не находится по УНП, проверьте номер: УНП состоит из 9 цифр. Если номер верный, а организация всё равно не находится, напишите администратору через <a class="instruction-link" href="/#askquestion-form">форму обратной связи</a>.
                             </div>
                         </div>
 
-                        <table class="region-table">
-                            <thead>
-                                <tr>
-                                    <th>Регион</th>
-                                    <th>9-ая цифра в коде ОКПО</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr><td>Брестское областное управление</td><td>1</td></tr>
-                                <tr><td>Витебское областное управление</td><td>2</td></tr>
-                                <tr><td>Гомельское областное управление</td><td>3</td></tr>
-                                <tr><td>Гродненское областное управление</td><td>4</td></tr>
-                                <tr><td>Управление г. Минск</td><td>5</td></tr>
-                                <tr><td>Минское областное управление</td><td>6</td></tr>
-                                <tr><td>Могилевское областное управление</td><td>7</td></tr>
-                            </tbody>
-                        </table>
-
-                   
-                        <p><strong>Пример:</strong> Код ОКПО <strong>000226971000</strong> — 9-я цифра равна <strong>1</strong>, что соответствует <strong>Брестскому областному управлению</strong>.</p>
-                #}
-
-                        <p>После отправки заявки вы получите уведомление в профиле о том, что сообщение отправлено. Через какое-то время (обычно секунд 10) вам придет ответ на ваше сообщение.</p>
-               
-                        <div class="p_img">
-                            <img src="{{ url_for('static', filename='img/post/edit-org-success.png') }}" alt="Уведомление об успешной отправке">
-                            <span>Рисунок 4 - Ответное сообщение на добавление организации</span>
-                        </div>
-
-                        
+                        {# ЗАМЕНИТЬ СКРИНШОТ: старый поиск организации (был img/post/no-org.png) #}
+                        {{ faq_img('no-org.png', 'Сообщение «Такой организации нет»') }}
+                        {# ЗАМЕНИТЬ СКРИНШОТ: главная страница (был img/post/66.jpg) #}
+                        {{ faq_img('66.jpg', 'Кнопка «?» на главной странице') }}
+                        {# ЗАМЕНИТЬ СКРИНШОТ: форма обратной связи (был img/post/askquestion-form.png) #}
+                        {{ faq_img('askquestion-form.png', 'Форма добавления организации') }}
+                        {# ЗАМЕНИТЬ СКРИНШОТ: ответ администратора (был img/post/edit-org-success.png) #}
+                        {{ faq_img('edit-org-success.png', 'Ответ на заявку') }}
                     </div>
                 </div>
             </div>
-            <div class="info_page info_faq" data-question-id="16" style="display: none;">
+            <div class="info_page info_faq" data-question-id="16" data-slug="no-code" style="display: none;">
                 <div class="faq_question_info">
                     <div class="info_page_name">
                         <h1>Что делать если не приходит код на почту?</h1>
                     </div>
                     <div class="infos">
-                        <div class="p_img">
-                            <img src="{{ url_for('static', filename='img/post/message-code.png') }}" alt="">
-                            <span>Рисунок 4 - Код подтверждения</span>
-                        </div>
-                        <p><strong>Возможные действия</strong> для решения проблемы:</p>
+                        <p>Код подтверждения приходит в письме от ErespondentN. Обычно это занимает от нескольких секунд до нескольких минут.</p>
+                        {{ faq_img('message-code.png', 'Письмо с кодом подтверждения', 'Письмо с кодом') }}
+                        <p>Если письма нет:</p>
                         <ol class="steps-list">
-                            <li>Проверьте <strong>правильно ли вы ввели</strong> свою электронную почту. Чтобы полностью удостовериться в этом, советуем зайти на свой электронный ящик и скопировать адрес отуда.</li>
-                            <li>Проверьте <strong>СПАМ</strong>, нежелательные массово рассылаемые электронные сообщения.</li>
-                            <li>Попробуйте через отложенное время кликнуть на <strong>Отправить ещё раз</strong> - вам должен будет прийти <strong>новый</strong> код активации.</li>
-                            <li>Учитывайте возможную задержку при доставке писем от некоторых почтовых сервисов. Если код активации не приходит вовремя, рекомендуем повторить регистрацию, используя другой электронный адрес (например, Gmail).</li>
+                            <li>Проверьте адрес почты — он показан на странице ввода кода. Если в нём ошибка, начните регистрацию заново.</li>
+                            <li>Проверьте папку «Спам».</li>
+                            <li>Подождите пару минут и нажмите «Отправить ещё раз» — придёт новый код.</li>
+                            <li>Некоторые почтовые сервисы доставляют письма с задержкой. Если код так и не пришёл, зарегистрируйтесь с другим адресом почты.</li>
                         </ol>
                     </div>
                 </div>
             </div>
-            <div class="info_page info_faq" data-question-id="17" style="display: none;">
+            <div class="info_page info_faq" data-question-id="17" data-slug="report-statuses" style="display: none;">
                 <div class="faq_question_info">
                     <div class="info_page_name">
                         <h1>Статусы отчетов, порядок изменения статусов. Жизненный цикл отчета.</h1>
@@ -1362,18 +1049,18 @@
                                     <div class="timeline-stage preparation-stage">
                                         <div class="stage-header">
                                             <div class="stage-icon"></div>
-                                            <h3>ЭТАП 1: ПОДГОТОВКА</h3>
+                                            <h3>Этап 1. Подготовка</h3>
                                             <div class="stage-subtitle">Внутренний цикл у респондента</div>
                                         </div>
                                         
                                         <div class="status-cards">
                                             <div class="status-card draft">
                                                 <div class="status-header">
-                                                    <div class="status-title">В редакции</div>
+                                                    <div class="status-title">Заполнение</div>
                                                     <div class="status-badge">Начальный</div>
                                                 </div>
                                                 <div class="status-body">
-                                                    <p><strong>Описание:</strong> Отчет создан, но находится в процессе заполнения или редактирования.</p>
+                                                    <p>Отчет создан и заполняется. В этот статус отчет возвращается после любого изменения данных.</p>
                                                     <div class="status-features">
                                                         <div class="feature">
                                                             <span class="feature-icon">✓</span>
@@ -1400,11 +1087,11 @@
                                             </div>
                                             <div class="status-card control">
                                                 <div class="status-header">
-                                                    <div class="status-title">Контроль</div>
+                                                    <div class="status-title">Контроль пройден</div>
                                                     <div class="status-badge">Автопроверка</div>
                                                 </div>
                                                 <div class="status-body">
-                                                    <p><strong>Описание:</strong> Система проверяет отчет на ошибки и несоответствия формату.</p>
+                                                    <p>По кнопке «Контроль» система проверяет отчет на ошибки и несоответствия формату.</p>
                                                     <div class="check-list">
                                                         <div class="check-item">
                                                             <span class="check-icon">✅</span>
@@ -1422,11 +1109,11 @@
                                                     <div class="status-conditions">
                                                         <div class="condition success">
                                                             <span class="condition-icon">✓</span>
-                                                            <span>Ошибок нет → <strong>Согласование</strong></span>
+                                                            <span>Ошибок нет → «Контроль пройден»</span>
                                                         </div>
                                                         <div class="condition error">
                                                             <span class="condition-icon">⚠️</span>
-                                                            <span>Есть ошибки → <strong>Редакция</strong></span>
+                                                            <span>Есть ошибки → остается «Заполнение»</span>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1437,11 +1124,11 @@
                                             </div>
                                             <div class="status-card approval">
                                                 <div class="status-header">
-                                                    <div class="status-title">Согласование</div>
+                                                    <div class="status-title">Согласовано</div>
                                                     <div class="status-badge">Внутреннее</div>
                                                 </div>
                                                 <div class="status-body">
-                                                    <p><strong>Описание:</strong> Пользователь согласовывает данные с вышестоящим руководством.</p>
+                                                    <p>Данные подтверждены кнопкой «Согласовать» после согласования с руководством.</p>
                                                     <div class="status-features">
                                                         <div class="feature">
                                                             <span class="feature-icon">👁️</span>
@@ -1453,12 +1140,12 @@
                                                         </div>
                                                         <div class="feature">
                                                             <span class="feature-icon">✅</span>
-                                                            <span>Редактирование разрешено</span>
+                                                            <span>Изменение данных вернет статус «Заполнение»</span>
                                                         </div>
                                                     </div>
                                                     <div class="next-action final">
                                                         <span class="arrow"></span>
-                                                        <span class="action-text">После подтверждения <strong>доступна Отправка</strong></span>
+                                                        <span class="action-text">После согласования доступна кнопка «Отправить»</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -1466,13 +1153,13 @@
                                     </div>
                                     <div class="stage-divider">
                                         <div class="divider-line"></div>
-                                        <div class="divider-text">ОТПРАВКА НА ПРОВЕРКУ</div>
+                                        <div class="divider-text">Отправка на проверку</div>
                                         <div class="divider-line"></div>
                                     </div>
                                     <div class="timeline-stage audit-stage">
                                         <div class="stage-header">
                                             <div class="stage-icon"></div>
-                                            <h3>ЭТАП 2: ПРОВЕРКА АУДИТОРОМ</h3>
+                                            <h3>Этап 2. Проверка аудитором</h3>
                                             <div class="stage-subtitle">Внешний цикл проверки</div>
                                         </div>
                                         
@@ -1480,11 +1167,11 @@
                                             <div class="status-card unviewed">
                                                 <div class="status-header">
                                                     <div class="status-icon">🔵</div>
-                                                    <div class="status-title">Непросмотренный / На рассмотрении</div>
+                                                    <div class="status-title">На рассмотрении</div>
                                                     <div class="status-badge">В очереди</div>
                                                 </div>
                                                 <div class="status-body">
-                                                    <p><strong>Описание:</strong> Отчет отправлен и ожидает проверки аудитором.</p>
+                                                    <p>Отчет отправлен и ожидает проверки аудитором.</p>
                                                     <div class="status-info">
                                                         <div class="info-item">
                                                             <span class="info-icon">⏱️</span>
@@ -1515,7 +1202,7 @@
                                                         <p>Ошибок не найдено, отчет соответствует требованиям</p>
                                                         <div class="option-result">
                                                             <span class="result-arrow"></span>
-                                                            <span class="result-status success">🟢 Одобренный</span>
+                                                            <span class="result-status success">🟢 Одобрен</span>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1531,34 +1218,34 @@
                                                             <span class="result-status warning">🟡 Есть замечания</span>
                                                         </div>
                                                         <div class="option-note">
-                                                            <small>Требуется отправка сообщения респонденту</small>
+                                                            <small>Аудитор сначала пишет сообщение с описанием ошибок</small>
                                                         </div>
                                                     </div>
                                                 </div>
                                                 <div class="decision-option rejected">
                                                     <div class="option-header">
                                                         <div class="option-icon">❌</div>
-                                                        <div class="option-title">Отклонить</div>
+                                                        <div class="option-title">К удалению</div>
                                                     </div>
                                                     <div class="option-body">
                                                         <p>Критические ошибки, отчет не подлежит исправлению</p>
                                                         <div class="option-result">
                                                             <span class="result-arrow"></span>
-                                                            <span class="result-status error">🔴 Подлежит удалению</span>
+                                                            <span class="result-status error">🔴 Готов к удалению</span>
                                                         </div>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
                                         <div class="final-statuses">
-                                            <h4>📋 ФИНАЛЬНЫЕ СТАТУСЫ ОТЧЕТА</h4>
+                                            <h4>Итоговые статусы отчета</h4>
                                             
                                             <div class="final-status-grid">
                                                 <div class="final-status-item success">
                                                     <div class="final-icon">🟢</div>
                                                     <div class="final-content">
-                                                        <h5>Одобренный</h5>
-                                                        <p>Отчет успешно прошел проверку, доступен для загрузки в архив аудитором</p>
+                                                        <h5>Одобрен</h5>
+                                                        <p>Отчет прошел проверку и попадает в архив, который выгружает аудитор</p>
                                                     </div>
                                                 </div>
                                                 
@@ -1566,9 +1253,9 @@
                                                     <div class="final-icon">🟡</div>
                                                     <div class="final-content">
                                                         <h5>Есть замечания</h5>
-                                                        <p>Отчет возвращен на доработку с комментариями аудитора</p>
+                                                        <p>Отчет возвращен на доработку, замечания аудитора — в квитанциях отчета</p>
                                                         <div class="status-cycle">
-                                                            <strong>Цикл: Отчет → Редакция → Повторная отправка</strong>
+                                                            Исправление → Контроль → Согласовать → Отправить
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1576,7 +1263,7 @@
                                                 <div class="final-status-item error">
                                                     <div class="final-icon">🔴</div>
                                                     <div class="final-content">
-                                                        <h5>Подлежит удалению</h5>
+                                                        <h5>Готов к удалению</h5>
                                                         <p>Отчет содержит неустранимые ошибки, требуется создать новый</p>
                                                     </div>
                                                 </div>
@@ -1585,11 +1272,11 @@
                                     </div>
                                 </div>
                                 <div class="timeline-features">
-                                    <h4>🎯 КЛЮЧЕВЫЕ ОСОБЕННОСТИ</h4>
+                                    <h4>Что важно знать</h4>
                                     <div class="features-grid">
                                         <div class="feature-item">
                                             <div class="feature-icon">↩️</div>
-                                            <div class="feature-text">Отмена действия аудитора возможна в течение <strong>30-ти дней</strong></div>
+                                            <div class="feature-text">Аудитор может отменить свое решение в течение 3 месяцев</div>
                                         </div>
                                         <div class="feature-item">
                                             <div class="feature-icon">💬</div>
@@ -1597,11 +1284,11 @@
                                         </div>
                                         <div class="feature-item">
                                             <div class="feature-icon">🔄</div>
-                                            <div class="feature-text">При отмене отчет возвращается в <strong>"Непросмотренный"</strong></div>
+                                            <div class="feature-text">После отмены отчет возвращается в статус «На рассмотрении»</div>
                                         </div>
                                         <div class="feature-item">
                                             <div class="feature-icon">📁</div>
-                                            <div class="feature-text">Только <strong>"Одобренные"</strong> отчеты можно скачать в архив</div>
+                                            <div class="feature-text">В архив для выгрузки попадают только одобренные отчеты</div>
                                         </div>
                                     </div>
                                 </div>
@@ -1611,17 +1298,17 @@
                                 <div class="legend-items">
                                     <div class="legend-item">
                                         <div class="legend-color draft"></div>
-                                        <strong>В редакции</strong>
+                                        <strong>Заполнение</strong>
                                         <span>заполняется пользователем</span>
                                     </div>
                                     <div class="legend-item">
                                         <div class="legend-color control"></div>
-                                        <strong>Контроль</strong>
-                                        <span>проверка системой</span>
+                                        <strong>Контроль пройден</strong>
+                                        <span>ошибок не найдено</span>
                                     </div>
                                     <div class="legend-item">
                                         <div class="legend-color approval"></div>
-                                        <strong>Согласование</strong>
+                                        <strong>Согласовано</strong>
                                         <span>внутреннее подтверждение</span>
                                     </div>
                                     <div class="legend-item">
@@ -1631,7 +1318,7 @@
                                     </div>
                                     <div class="legend-item">
                                         <div class="legend-color success"></div>
-                                        <strong>Одобренный</strong>
+                                        <strong>Одобрен</strong>
                                         <span>успешная проверка</span>
                                     </div>
                                     <div class="legend-item">
@@ -1641,7 +1328,7 @@
                                     </div>
                                     <div class="legend-item">
                                         <div class="legend-color error"></div>
-                                        <strong>Подлежит удалению</strong>
+                                        <strong>Готов к удалению</strong>
                                         <span>критические ошибки</span>
                                     </div>
                                 </div>
@@ -1650,35 +1337,35 @@
                         
                         <div class="status-summary">
                             <div class="summary-header">
-                                <h3>КРАТКОЕ РУКОВОДСТВО</h3>
+                                <h3>Кратко</h3>
                             </div>
                             <div class="summary-content">
                                 <div class="summary-step">
                                     <div class="step-number">1</div>
                                     <div class="step-content">
                                         <h5>Заполните отчет полностью</h5>
-                                        <p>Работайте в статусе <strong>"В редакции"</strong>, пока все данные не будут внесены</p>
+                                        <p>Внесите все данные, пока отчет в статусе «Заполнение»</p>
                                     </div>
                                 </div>
                                 <div class="summary-step">
                                     <div class="step-number">2</div>
                                     <div class="step-content">
                                         <h5>Пройдите контроль системы</h5>
-                                        <p>Убедитесь, что отчет прошел автоматическую проверку без ошибок</p>
+                                        <p>Нажмите «Контроль» и исправьте найденные ошибки</p>
                                     </div>
                                 </div>
                                 <div class="summary-step">
                                     <div class="step-number">3</div>
                                     <div class="step-content">
                                         <h5>Согласуйте с руководством</h5>
-                                        <p>В статусе <strong>"Согласование"</strong> подтвердите правильность данных</p>
+                                        <p>Нажмите «Согласовать», чтобы подтвердить правильность данных</p>
                                     </div>
                                 </div>
                                 <div class="summary-step">
                                     <div class="step-number">4</div>
                                     <div class="step-content">
                                         <h5>Отправьте на проверку</h5>
-                                        <p>После согласования отчет будет отправлен аудитору со статусом <strong>"На рассмотрении"</strong></p>
+                                        <p>Нажмите «Отправить» и подпишите отчет ЭЦП — он получит статус «На рассмотрении»</p>
                                     </div>
                                 </div>
                                 <div class="summary-step">
@@ -1693,215 +1380,131 @@
                     </div>
                 </div>
             </div>
-            <div class="info_page info_faq" data-question-id="18" style="display: none;">
+            <div class="info_page info_faq" data-question-id="18" data-slug="cancel-sending" style="display: none;">
                 <div class="faq_question_info">
                     <div class="info_page_name">
                         <h1>Как отменить отправку или внести изменения в отправленный отчет?</h1>
                     </div>
                     <div class="infos">
-                        
-                        <p>Вы можете отменить отправку и вернуть отчет в режим редактирования. Это позволит внести необходимые изменения и отправить отчет заново.</p>
-                        
+                        <p>Пока аудитор не принял решение по отчёту, отправку можно отменить и исправить отчёт.</p>
+
                         <ol class="steps-list">
-                            <li><strong>Откройте страницу заполнения отчета</strong>, который нужно изменить</li>
-                            <li><strong>Найдите в верхнем меню кнопку «Отменить отправку»</strong></li>
-                            <li><strong>Нажмите на эту кнопку</strong> — отчет вернется в статус «Заполнение»</li>
-                            <li><strong>Внесите необходимые изменения</strong> в данные отчета</li>
-                            <li><strong>Отправьте отчет заново</strong>, когда все исправления будут готовы</li>
+                            <li>Откройте отправленный отчёт.</li>
+                            <li>
+                                В меню, в разделе «Отправка», нажмите «Отменить».
+                                {{ faq_img('cancel-sent.jpg', 'Кнопка «Отменить»', 'Кнопка «Отменить» в меню отчета') }}
+                            </li>
+                            <li>Отчёт вернётся в статус «Заполнение». Внесите исправления — данные сохраняются.</li>
+                            <li>Снова пройдите контроль, согласуйте и отправьте отчёт.</li>
                         </ol>
-                        <div class="p_img">
-                            <img src="{{ url_for('static', filename='img/post/cancel-sent.jpg') }}" alt="Верхнее меню отчета с выделенной кнопкой 'Отменить отправку'">
-                            <span>Рисунок 75 - Кнопка «Отменить отправку» в меню отчета</span>
-                        </div>
-                        <div class="answer-highlight-second">
-                            <div class="highlight-icon">ℹ️</div>
-                            <div>
-                                <p><strong>Важно знать:</strong></p>
-                                <ol>
-                                    <li>Отчет можно отменить только <strong>до того, как он будет обработан</strong></li>
-                                    <li>После отмены все данные сохранятся, вы сможете их редактировать</li>
-                                    <li>Нужно будет заново отправить отчет после внесения изменений</li>
-                                </ul>
-                            </div>
-                            <div class="answer-highlight-note">
-                                <strong>Примечание:</strong> Если кнопка «Отменить отправку» неактивна или отсутствует, значит отчет уже обрабатывается и изменения внести нельзя.
-                            </div>
+
+                        <div class="answer-highlight-note">
+                            Если кнопки «Отменить» нет, аудитор уже проверил отчёт. Если он вернул отчёт с замечаниями, исправьте его и отправьте заново — см. <a class="instruction-link" href="/FAQ#report-statuses">статусы отчетов</a>.
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="info_page info_faq" data-question-id="19" style="display: none;">
+            <div class="info_page info_faq" data-question-id="19" data-slug="report-control" style="display: none;">
                 <div class="faq_question_info">
                     <div class="info_page_name">
                         <h1>Как пройти контроль отчета?</h1>
                     </div>
                     <div class="infos">
-                        <p>Для успешного прохождения контроля необходимо заполнить <strong>поле «Примечание»</strong> в строке <strong>«Прочее потребление» (код 9010)</strong> для каждого из разделов отчета:</p>
-                 
-                        <div class="nav-links" style = "margin-bottom: 20px;">
-                            <li class="nav-link">Тепло</li>
+                        <p>Чтобы отчёт прошёл контроль, в строке «Прочее потребление» (код 9010) должно быть заполнено поле «Примечание» в каждом разделе отчёта:</p>
+
+                        <div class="nav-links" style="margin-bottom: 20px;">
                             <li class="nav-link">Топливо</li>
-                            <li class="nav-link">Электричество</li>
+                            <li class="nav-link">Тепло</li>
+                            <li class="nav-link">Электро</li>
                         </div>
 
-                        <div class="opred-text">
-                            <strong>«Прочее потребление» 9010</strong> — учет энергоресурсов, израсходованных на нужды, не связанные напрямую с выпуском основной нормируемой продукции (например, ремонт, наладка оборудования, хознужды).
-                        </div>
-
-                        <h3>Инструкция по заполнению:</h3>
                         <ol class="steps-list">
                             <li>
-                                <strong>Найдите строку «Прочее потребление» (код 9010)</strong> в любом из разделов (Тепло/Топливо/Электричество).
-                                <div class="p_img">
-                                    <img src="{{ url_for('static', filename='img/post/table-report.png') }}" alt="Строка 'Прочее потребление' в таблице отчета">
-                                    <span>Рисунок 1 - Строка «Прочее потребление» в таблице</span>
-                                </div>
+                                Найдите строку «Прочее потребление» (код 9010) в разделе.
+                                {{ faq_img('table-report.png', 'Строка «Прочее потребление»') }}
                             </li>
                             <li>
-                                <strong>Кликните по строке правой кнопкой мыши</strong>, чтобы открыть контекстное меню.
+                                Нажмите на неё правой кнопкой мыши и выберите «Редактировать».
+                                {{ faq_img('adit-prochee.png', 'Пункт «Редактировать»') }}
                             </li>
                             <li>
-                                В появившемся меню выберите пункт <strong>«Редактировать»</strong>.
-                                <div class="p_img">
-                                    <img src="{{ url_for('static', filename='img/post/adit-prochee.png') }}" alt="Контекстное меню с кнопкой 'Редактировать'">
-                                    <span>Рисунок 2 - Выбор действия «Редактировать»</span>
-                                </div>
+                                В поле «Примечание» укажите, на что израсходованы ресурсы, например «Ремонт оборудования» или «Хозяйственные нужды». Если прочего потребления не было, напишите «Не было» или «Отсутствует».
+                                {{ faq_img('primechanie-prochee.png', 'Поле «Примечание»') }}
                             </li>
-                            <li>
-                                <strong>В открывшемся модальном окне найдите поле «Примечание»</strong>.
-                                <div class="p_img">
-                                    <img src="{{ url_for('static', filename='img/post/primechanie-prochee.png') }}" alt="Модальное окно редактирования с полем 'Примечание'">
-                                    <span>Рисунок 3 - Поле «Примечание» в окне редактирования</span>
-                                </div>
-                            </li>
-                            <li>
-                                <strong>Заполните поле «Примечание»</strong>, указав причину расхода по ненормируемому потреблению (например: «Ремонт оборудования» или «Хозяйственные нужды», а если нет такого потребления - «Не было» или «Отсутствует»).
-                            </li>
-                            <li>
-                                <strong>Нажмите кнопку «Применить изменения»</strong> для сохранения.
-                            </li>
+                            <li>Нажмите «Применить изменения» и повторите для остальных разделов.</li>
+                            <li>В меню отчёта, в разделе «Статус», нажмите «Контроль».</li>
                         </ol>
 
-                        <div class="answer-highlight-second" style = "margin-top: 50px;">
-                            <div class="highlight-icon">ℹ️</div>
-                            <div>
-                                <p><strong>Важно знать:</strong></p>
-                                <ol>
-                                    <li>Поле «Примечание» должно быть заполнено <strong>для каждого раздела</strong> отчета (Тепло, Топливо, Электричество).</li>
-                                    <li>Без заполнения этого поля <strong>контроль отчета не будет пройден</strong>, и вы не сможете отправить его на проверку.</li>
-                                    <li>Если прочего потребления не было, укажите в примечании: «Не было» или «Отсутствует».</li>
-                                </ol>
-                            </div>
-                            <div class="answer-highlight-note">
-                                <strong>Примечание:</strong> Строка «Прочее потребление» является служебной и не подлежит удалению.
-                            </div>
+                        <div class="answer-highlight-note">
+                            Без примечания хотя бы в одном разделе контроль не будет пройден, и отправить отчёт не получится.
                         </div>
-
                     </div>
                 </div>
             </div>
-            <div class="info_page info_faq" data-question-id="20" style="display: none;">
+            <div class="info_page info_faq" data-question-id="20" data-slug="update-organization" style="display: none;">
                 <div class="faq_question_info">
                     <div class="info_page_name">
                         <h1>Как обновить данные организации?</h1>
                     </div>
                     <div class="infos">
-                        <div class="answer-highlight-second">
-                            <div class="highlight-icon">💡</div>
-                            <div>
-                                <p>Данные организации загружаются из <strong>Единого государственного регистра</strong> юридических лиц и индивидуальных предпринимателей (ЕГР) по УНП. Вручную их редактировать и отправлять заявку администратору <strong>не нужно</strong>.</p>
-                            </div>
-                        </div>
-
-                        <p><strong>Как обновить данные:</strong></p>
+                        <p>Данные организации загружаются из Единого государственного регистра юридических лиц и индивидуальных предпринимателей (ЕГР) по УНП. Вручную их редактировать и отправлять заявку администратору не нужно.</p>
 
                         <ol class="steps-list">
                             <li>Откройте профиль и перейдите в раздел <a class="instruction-link" href="/profile/organization">«Организация»</a>.</li>
-                            <li>Проверьте данные: наименование, УНП, ОКПО, регион, юридический адрес, Статус и дату последней сверки.</li>
-                            <li>Нажмите кнопку <strong>«Обновить данные организации»</strong>. Система запросит актуальные сведения в ЕГР и покажет, какие поля изменились, или сообщит, что данные совпадают с ЕГР.</li>
+                            <li>Нажмите «Обновить данные организации».</li>
+                            <li>Система запросит сведения в ЕГР и покажет, какие поля изменились, или сообщит, что данные совпадают.</li>
                         </ol>
+                        {# НОВЫЙ СКРИНШОТ: раздел «Организация» с кнопкой «Обновить данные организации» #}
 
-                        <p><strong>Какие данные обновляются из ЕГР:</strong></p>
+                        <p>Из ЕГР обновляются:</p>
                         <div class="opred-text fit">
-                            <strong>Полное и сокращённое наименование</strong> — как в регистре
+                            <strong>Наименование</strong> полное и сокращённое
                         </div>
                         <div class="opred-text fit">
-                            <strong>Юридический адрес</strong> — индекс, населённый пункт, улица, дом
+                            <strong>Юридический адрес</strong> индекс, населённый пункт, улица, дом
                         </div>
                         <div class="opred-text fit">
-                            <strong>Регион</strong> — определяется по юридическому адресу
+                            <strong>Регион</strong> определяется по юридическому адресу
                         </div>
                         <div class="opred-text fit">
-                            <strong>Состояние</strong> — действующая, в процессе ликвидации, ликвидирована или банкротство
+                            <strong>Состояние</strong> действующая, в процессе ликвидации, ликвидирована или банкротство
                         </div>
                         <p>УНП и ОКПО при обновлении не меняются.</p>
 
-                        <p><strong>Если вы отчитываетесь за другую организацию</strong>, нажмите в том же разделе <strong>«Сменить организацию»</strong>, введите УНП и выберите организацию из ЕГР. Сменить организацию можно, пока у вас нет созданных отчётов.</p>
-
-                        <div class="answer-highlight-second" style="margin-top: 40px;">
-                            <div class="highlight-icon">✅</div>
-                            <div>
-                                <p>Если у организации не указан УНП, кнопка обновления недоступна. В этом случае напишите администратору через <a class="instruction-link" href="/#askquestion-form">форму обратной связи</a>, выбрав тип вопроса <strong>«Другое»</strong>, и укажите УНП организации.</p>
-                            </div>
+                        <div class="answer-highlight-second">
+                            <div class="highlight-icon">💡</div>
+                            <p>Сменить организацию, выбранную при регистрации, нельзя. Если у организации не указан УНП, кнопка обновления недоступна — напишите администратору через <a class="instruction-link" href="/#askquestion-form">форму обратной связи</a> и укажите УНП.</p>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="info_page info_faq" data-question-id="21" style="display: none;">
+            <div class="info_page info_faq" data-question-id="21" data-slug="copy-report" style="display: none;">
                 <div class="faq_question_info">
                     <div class="info_page_name">
                         <h1>Как скопировать отчет?</h1>
                     </div>
                     <div class="infos">
-                        <p>Функция <strong>копирования отчета</strong> позволяет создать новый отчет на основе уже существующего. Это удобно, если вы заполняете отчеты за разные периоды с похожими данными.</p>
-
-                        <p><strong>Когда может пригодиться копирование:</strong></p>
-                        <ul>
-                            <li data-number="1">Создание отчета за следующий квартал/год на основе предыдущего</li>
-                            <li data-number="2">Сохранение структуры отчета без необходимости вводить все данные заново</li>
-                            <li data-number="3">Перенос данных между разными периодами</li>
-                        </ul>
-
-                        <h3>Инструкция по копированию отчета:</h3>
+                        <p>Копирование создаёт новый отчёт на основе существующего. Это удобно, когда отчёты за разные периоды похожи: не нужно заново добавлять всю продукцию.</p>
 
                         <ol class="steps-list">
+                            <li>Откройте страницу <a class="instruction-link" href="/reports">«Отчёты»</a>.</li>
                             <li>
-                                <strong>Перейдите на страницу отчетов</strong> — нажмите кнопку «Отчеты» или перейдите по ссылке.
+                                Нажмите правой кнопкой мыши на строку отчёта и выберите «Скопировать».
+                                {{ faq_img('report-area.png', 'Меню действий отчета') }}
                             </li>
                             <li>
-                                <strong>Найдите отчет, который хотите скопировать</strong> — в списке отчетов найдите нужный вам отчет.
-                            </li>
-                            <li>
-                                <strong>Откройте меню действий отчета</strong> — нажмите <strong>правой кнопкой мыши</strong> по строке отчета.
-                                <div class="p_img">
-                                    <img src="{{ url_for('static', filename='img/post/report-area.png') }}" alt="Меню действий отчета">
-                                    <span>Рисунок 2 - Меню действий отчета</span>
-                                </div>
-                            </li>
-                            <li>
-                                <strong>Выберите пункт «Скопировать»</strong> — в открывшемся контекстном меню кликните на соответствующий пункт.
-                            </li>
-                            <li>
-                                <strong>Заполните параметры копирования</strong> — укажите год и квартал для нового отчета.
-                                <div class="p_img">
-                                    <img src="{{ url_for('static', filename='img/post/copy-modal.png') }}" alt="Форма копирования отчета">
-                                    <span>Рисунок 3 - Форма копирования отчета</span>
-                                </div>
-                            </li>
-                            <li>
-                                <strong>Нажмите кнопку «Скопировать отчет»</strong> — система создаст новый отчет на основе выбранного.
+                                Выберите год и квартал для нового отчёта и нажмите «Скопировать отчет».
+                                {{ faq_img('copy-modal.png', 'Окно копирования отчета') }}
                             </li>
                         </ol>
 
-                        <div class="answer-highlight-second" style="margin-top: 40px;">
+                        <div class="answer-highlight-second">
                             <div class="highlight-icon">⚠️</div>
                             <div>
-                                <p><strong>Особенности:</strong></p>
+                                <p>Что важно знать:</p>
                                 <ol>
-                                    <li><strong>Актуальность продукции</strong> — при копировании проверяется, есть ли продукция в справочнике на текущий момент</li>
-                                    <li><strong>Истекшие продукты</strong> — продукты с истекшим сроком действия не копируются</li>
-                                    <li><strong>Служебные строки</strong> — строки с кодами 9001, 9010, 9100 пересчитываются автоматически</li>
-                                    <li><strong>Агрегированные данные</strong> — суммарные данные пересчитываются после копирования</li>
+                                    <li>Копируется только продукция, которая есть в справочнике на текущий момент. Продукция с истёкшим сроком действия не переносится.</li>
+                                    <li>Служебные строки 9001, 9010 и 9100 и итоговые суммы пересчитываются автоматически.</li>
                                 </ol>
                             </div>
                         </div>
@@ -1909,119 +1512,63 @@
                 </div>
             </div>
 
-            <div class="info_page info_faq" data-question-id="22" style="display: none;">
+            <div class="info_page info_faq" data-question-id="22" data-slug="change-email" style="display: none;">
                 <div class="faq_question_info">
                     <div class="info_page_name">
                         <h1>Как изменить электронный адрес?</h1>
                     </div>
                     <div class="infos">
-                        <div class="answer-highlight-second">
-                            <div class="highlight-icon">📧</div>
-                            <div>
-                                <p><strong>Важное правило:</strong> Изменение email доступно только <strong>авторизованным</strong> пользователям. Новый email не должен совпадать с текущим и быть свободным.</p>
-                            </div>
-                        </div>
-
-                        <p>Для изменения электронного адреса выполните следующие шаги:</p>
+                        <p>Новый адрес подтверждается кодом. Он должен отличаться от текущего и не быть занят другим аккаунтом.</p>
 
                         <ol class="steps-list">
                             <li>
-                                <strong>Перейдите в свой профиль</strong> — нажмите на иконку пользователя в правом верхнем углу и выберите «Мой профиль».
-                                <div class="p_img">
-                                    <img src="{{ url_for('static', filename='img/post/8.png') }}" alt="Переход в профиль">
-                                    <span>Рисунок 1 - Переход на страницу профиля</span>
-                                </div>
+                                Откройте «Параметры профиля» и в разделе «Личные данные» нажмите на значок карандаша рядом с полем E-mail. Ту же кнопку можно найти в разделе «Опасная зона».
+                                {# ЗАМЕНИТЬ СКРИНШОТ: раздел «Личные данные», кнопка изменения e-mail #}
+                                {{ faq_img('edit-email-btn.jpg', 'Кнопка изменения e-mail') }}
                             </li>
                             <li>
-                                <strong>Откройте параметры профиля</strong> — нажмите кнопку «Параметры профиля».
-                                <div class="p_img">
-                                    <img src="{{ url_for('static', filename='img/post/9.png') }}" alt="Настройки профиля">
-                                    <span>Рисунок 2 - Переход в настройки профиля</span>
-                                </div>
+                                Введите новый адрес и текущий пароль и нажмите «Отправить код».
+                                {{ faq_img('change-email-form.png', 'Форма изменения email') }}
                             </li>
                             <li>
-                                <strong>Перейдите на страницу изменения email</strong> — нажмите на иконку измененения профиля.
-                                <div class="p_img">
-                                    <img src="{{ url_for('static', filename='img/post/edit-email-btn.jpg') }}" alt="Кнопка изменения email">
-                                    <span>Рисунок 3 - Кнопка «Перейти к изменению email»</span>
-                                </div>
-                            </li>
-                            <li>
-                                <strong>Введите новый email и текущий пароль</strong> — заполните оба поля и нажмите «Отправить код».
-                                <div class="p_img">
-                                    <img src="{{ url_for('static', filename='img/post/change-email-form.png') }}" alt="Форма изменения email">
-                                    <span>Рисунок 4 - Форма изменения email</span>
-                                </div>
-                            </li>
-                            <li>
-                                <strong>Введите проверочный код</strong> — код будет отправлен на новый email. Введите его в поле подтверждения.
-                                <div class="p_img">
-                                    <img src="{{ url_for('static', filename='img/post/change-email-code.png') }}" alt="Ввод кода подтверждения">
-                                    <span>Рисунок 5 - Ввод кода подтверждения</span>
-                                </div>
-                            </li>
-                            <li>
-                                <strong>Подтвердите изменение</strong> — нажмите кнопку «Подтвердить». Если код введен верно, email будет изменен.
+                                Введите код из письма, которое придёт на новый адрес, и нажмите «Подтвердить».
+                                {{ faq_img('change-email-code.png', 'Ввод кода подтверждения') }}
                             </li>
                         </ol>
 
-                        <div class="answer-highlight-second" style="margin-top: 60px;">
-                            <div class="highlight-icon">📌</div>
-                            <div>
-                                <p><strong>Важно знать:</strong></p>
-                                <ol>
-                                    <li>Код подтверждения действителен <strong>10 минут</strong></li>
-                                    <li>Можно запросить новый код, нажав «Отправить повторно»</li>
-                                    <li>Если вы передумали менять email, нажмите «Назад» — сессия очистится</li>
-                                </ol>
-                            </div>
+                        <div class="answer-highlight-note">
+                            Код действует 10 минут. Новый код можно запросить кнопкой «Отправить повторно». Чтобы отменить смену адреса, нажмите «Назад».
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="info_page info_faq" data-question-id="23" style="display: none;">
+            <div class="info_page info_faq" data-question-id="23" data-slug="who-checks" style="display: none;">
                 <div class="faq_question_info">
                     <div class="info_page_name">
                         <h1>Кто проверяет мой отчет?</h1>
                     </div>
-                    <div class="infos">   
-                        <p>Проверка отчетов осуществляется уполномоченными сотрудниками, которые назначены для работы с отчетами вашего региона.</p>
-                        <p>Как узнать, кто проверяет ваш отчет:</p>
-                        
+                    <div class="infos">
+                        <p>Отчёты проверяют сотрудники управления по надзору за рациональным использованием ТЭР вашего региона.</p>
+
                         <ol class="steps-list">
                             <li>
-                                <strong>Откройте страницу отчета</strong> — перейдите в раздел «Мои отчеты» и выберите нужный отчет.
-                                <div class="p_img">
-                                    <img src="{{ url_for('static', filename='img/post/my-reports.png') }}" alt="Список отчетов">
-                                    <span>Рисунок 1 - Список отчетов</span>
-                                </div>
+                                Откройте страницу <a class="instruction-link" href="/reports">«Отчёты»</a> и нажмите «Просмотр» у нужного отчёта.
+                                {# ЗАМЕНИТЬ СКРИНШОТ: страница «Отчёты» с текущим меню #}
+                                {{ faq_img('my-reports.png', 'Список отчетов') }}
                             </li>
                             <li>
-                                Перейдите на страницу <strong>Квитанции</strong>
-                                <div class="p_img">
-                                    <img src="{{ url_for('static', filename='img/post/tickets-link.png') }}" alt="Квитанции отчета">
-                                    <span>Рисунок 2 - Квитанции отчета</span>
-                                </div>
+                                В меню отчёта нажмите «Квитанции».
+                                {{ faq_img('tickets-link.png', 'Кнопка «Квитанции»') }}
                             </li>
                             <li>
-                                Прокрутите страницу вниз до раздела «Проверяющий отчет» — там указаны контактные данные аудитора.
-                                <div class="p_img">
-                                    <img src="{{ url_for('static', filename='img/post/auditor-info-block.png') }}" alt="Блок с информацией о проверяющем">
-                                    <span>Рисунок 3 - Информация о проверяющем</span>
-                                </div>
+                                Найдите блок «Проверяющий отчет».
+                                {# ЗАМЕНИТЬ СКРИНШОТ: блок «Проверяющий отчет» без ФИО, с организацией и ссылкой «Показать контакты» #}
+                                {{ faq_img('auditor-info-block.png', 'Информация о проверяющем') }}
                             </li>
                         </ol>
 
-                        <div class="opred-text fit">
-                            <strong>ФИО проверяющего</strong> — персональные данные сотрудника, осуществляющего проверку
-                        </div>
-                        <div class="opred-text fit">
-                            <strong>Организация</strong> — управление по надзору за рациональным использованием ТЭР вашего региона
-                        </div>
-                        <div class="opred-text fit">
-                            <strong>Контактный телефон</strong> — номер для связи по вопросам отчета можно найти при переходе по ссылке <strong>Показать контакты</strong>
-                        </div>
+                        <p>В блоке указано управление, которое проверяет отчёт. Телефоны проверяющих открываются по ссылке «Показать контакты» — она ведёт на <a class="instruction-link" href="https://energoeffect.gov.by/contact" target="_blank" rel="noopener">страницу контактов Департамента по энергоэффективности</a>.</p>
                     </div>
                 </div>
             </div>

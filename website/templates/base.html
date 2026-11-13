@@ -201,7 +201,7 @@
                   {{ icons.icon_close() }}
               </div>
               <div class="glass-info-block" style = "max-width: 550px;">
-                  <p>Перетащите файл сертификата ЭЦП для отправки отчета. Если у вас возникнут вопросы, пожалуйста, ознакомьтесь с <a href="/FAQ#faq11" class="instruction-link">инструкцией</a> по работе.</p>
+                  <p>Перетащите файл сертификата ЭЦП для отправки отчета. Если у вас возникнут вопросы, пожалуйста, ознакомьтесь с <a href="/FAQ#ecp-certificate" class="instruction-link">инструкцией</a> по работе.</p>
               </div>
               <form id="sentForm" style = "text-align: center;" method="POST" enctype="multipart/form-data">
                   <div id="drop-area" class="drop-area" role="button" tabindex="0" aria-labelledby="file-upload-label">
@@ -288,8 +288,21 @@
             {{ icons.icon_close() }}
             <div class="info-modal-content">
                 <div class="modal-slides-container">
-
                     {# ---------- Слайды для респондентов ---------- #}
+                    <div class="modal-slide" data-role="respondent">
+                        <div class="slide-counter"></div>
+                        <div class="slide-layout">
+                            <div class="slide-info">
+                                <h3>Добро пожаловать</h3>
+                                <p>Если есть необходимость изменить персональные данные перейдите на страницу в личном кабинете <strong>«Общее»</strong>. Для этого нажмите кнопку <strong>«Параметры профиля»</strong>.</p>
+                            </div>
+                            <div class="slide-image">
+                                <div class="image-placeholder">
+                                    <img src="{{ url_for('static', filename='img/info-news/welcome-slide.png')}}" alt="welcome">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <div class="modal-slide active" data-role="respondent">
                         <div class="slide-counter"></div>
                         <div class="slide-layout">
@@ -314,7 +327,7 @@
                             <div class="slide-image">
                                 <div class="image-placeholder">
                                     <img src="{{ url_for('static', filename='img/info-news/info-modal-new2.png')}}" alt="Новые функции">
-                                    <button onclick="window.location.href='/FAQ#faq9'" class="video-play-button" aria-label="Воспроизвести видео">
+                                    <button onclick="window.location.href='/FAQ#video-guide'" class="video-play-button" aria-label="Воспроизвести видео">
                                         <svg viewBox="0 0 24 24" width="24" height="24">
                                             <path d="M8 5v14l11-7z" fill="currentColor"/>
                                         </svg>
@@ -362,32 +375,18 @@
                         <div class="slide-layout">
                             <div class="slide-info">
                                 <h3>Обновленная документация</h3>
-                                <p>В обновленной <a class="instruction-link" href="/FAQ#faq8">документации</a> детально рассмотрены все аспекты заполнения таблиц, а материал изложен в понятной для пользователей форме.</p>
+                                <p>В обновленной <a class="instruction-link" href="/FAQ#report-filling">документации</a> детально рассмотрены все аспекты заполнения таблиц, а материал изложен в понятной для пользователей форме.</p>
                             </div>
                             <div class="slide-image">
                                 <div class="image-placeholder">
-                                    <a href="/FAQ#faq8">
+                                    <a href="/FAQ#report-filling">
                                         <img style="transform: scale(1.2);" src="{{ url_for('static', filename='img/info-news/info-report-2.png') }}" alt="Новые функции">
                                     </a>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="modal-slide" data-role="respondent">
-                        <div class="slide-counter"></div>
-                        <div class="slide-layout">
-                            <div class="slide-info">
-                                <h3>Добро пожаловать</h3>
-                                <p>Для доступа к заполнению отчетов, пожалуйста, заполните свой профиль: укажите персональные данные и выберите организацию. Для этого нажмите кнопку <strong>«Параметры профиля»</strong>.</p>
-                            </div>
-                            <div class="slide-image">
-                                <div class="image-placeholder">
-                                    <img src="{{ url_for('static', filename='img/info-news/welcome-slide.png')}}" alt="welcome">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="modal-slide" data-role="respondent">
+                    <!-- <div class="modal-slide" data-role="respondent">
                         <div class="slide-counter"></div>
                         <div class="slide-layout">
                             <div class="slide-info">
@@ -415,7 +414,7 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </div> -->
 
                     {# ---------- Слайды для проверяющих (аудитор / читатель) ---------- #}
                     <div class="modal-slide" data-role="auditor">
@@ -437,7 +436,7 @@
                         <div class="slide-layout">
                             <div class="slide-info">
                                 <h3>Новые возможности</h3>
-                                <p>Мы обновили <a class="instruction-link" href="/FAQ#faq10">документацию</a>, чтобы вы быстрее освоились в программе, подробно разобрали каждый этап работы, добавили наглядные примеры и пояснения, которые помогут вам уверенно пользоваться всеми функциями.</p>
+                                <p>Была обновлена <a class="instruction-link" href="/FAQ#audit-process">документация</a>, чтобы вы быстрее освоились в программе, подробно разобрали каждый этап работы, добавили наглядные примеры и пояснения, которые помогут вам уверенно пользоваться всеми функциями.</p>
                             </div>
                             <div class="slide-image">
                                 <div class="image-placeholder">
@@ -519,7 +518,7 @@
                       <li onclick="window.location.href='/news'"><a>Новости</a></li>
                       <li onclick="window.location.href='/contacts'"><a>Контакты</a></li>
                       <li onclick="window.location.href='/FAQ'"><a>Помощь</a></li>
-                      <li onclick="window.location.href='/FAQ#faq4'"><a>О приложении</a></li>
+                      <li onclick="window.location.href='/FAQ#about'"><a>О приложении</a></li>
                   </ul>
               </div>
               <div class="footer-col">

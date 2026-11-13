@@ -17,23 +17,23 @@
                         <p>Укажите данные лица, которое будет заполнять отчёты. Их можно изменить позже в профиле.</p>
                     </div>
                     <div class="reg-fields">
-                        <div class="egr-field">
-                            <label class="egr-field-label" for="regLastName">Фамилия <span class="required-mark">&#42;</span></label>
-                            <input class="pf-input" id="regLastName" name="last_name" type="text" maxlength="50" required
-                                   placeholder="Введите фамилию" value="{{ personal.last_name or '' }}" autocomplete="family-name">
+                        <div class="float-label-container">
+                            <input class="float-input" id="regLastName" name="last_name" type="text" maxlength="50" required
+                                   placeholder=" " value="{{ personal.last_name or '' }}" autocomplete="family-name">
+                            <label class="float-label" for="regLastName">Фамилия <span class="required-mark">&#42;</span></label>
                         </div>
-                        <div class="egr-field">
-                            <label class="egr-field-label" for="regFirstName">Имя <span class="required-mark">&#42;</span></label>
-                            <input class="pf-input" id="regFirstName" name="first_name" type="text" maxlength="50" required
-                                   placeholder="Введите имя" value="{{ personal.first_name or '' }}" autocomplete="given-name">
+                        <div class="float-label-container">
+                            <input class="float-input" id="regFirstName" name="first_name" type="text" maxlength="50" required
+                                   placeholder=" " value="{{ personal.first_name or '' }}" autocomplete="given-name">
+                            <label class="float-label" for="regFirstName">Имя <span class="required-mark">&#42;</span></label>
                         </div>
-                        <div class="egr-field egr-field-wide">
-                            <label class="egr-field-label" for="regPatronymic">Отчество <span class="required-mark">&#42;</span></label>
-                            <input class="pf-input" id="regPatronymic" name="patronymic_name" type="text" maxlength="50" required
-                                   placeholder="Введите отчество" value="{{ personal.patronymic_name or '' }}" autocomplete="additional-name">
+                        <div class="float-label-container reg-field-wide">
+                            <input class="float-input" id="regPatronymic" name="patronymic_name" type="text" maxlength="50" required
+                                   placeholder=" " value="{{ personal.patronymic_name or '' }}" autocomplete="additional-name">
+                            <label class="float-label" for="regPatronymic">Отчество <span class="required-mark">&#42;</span></label>
                         </div>
-                        <div class="egr-field egr-field-wide">
-                            <span class="egr-field-label">Номер телефона <span class="required-mark">&#42;</span></span>
+                        <div class="reg-phone-field reg-field-wide">
+                            <span class="reg-phone-label">Номер телефона <span class="required-mark">&#42;</span></span>
                             {{ content.phone_group('reg', personal.telephone) }}
                         </div>
                     </div>
@@ -62,7 +62,7 @@
         document.getElementById('reg-phone-list'),
         document.getElementById('reg-telephone'),
         null,
-        { maxCount: 1, inputClass: 'pf-input', onChange: check }
+        { maxCount: 1, inputClass: 'float-input', onChange: check }
     );
 
     [last, first, patronymic].forEach(function (el) {

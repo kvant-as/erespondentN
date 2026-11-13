@@ -474,7 +474,7 @@
             </span>
             <span class="status-badge video-check" 
                 title="Перейти к видео-инструкции" 
-                onclick="window.open('/FAQ#faq9', '_blank'); return false;">
+                onclick="window.open('/FAQ#video-guide', '_blank'); return false;">
                 {{ icons.icon_video_redirect() }} 
                 <span>Видео-инструкция</span>
             </span>
@@ -735,10 +735,12 @@
 
 {% macro egr_lookup(prefix) %}
 <div class="egr-lookup" data-egr-lookup>
-    <label class="egr-lookup-label" for="{{ prefix }}-unp">УНП организации</label>
     <div class="egr-lookup-row">
-        <input id="{{ prefix }}-unp" class="egr-lookup-input" type="text" inputmode="numeric" autocomplete="off"
-               maxlength="9" placeholder="9 цифр" data-egr-input>
+        <div class="float-label-container egr-lookup-field">
+            <input id="{{ prefix }}-unp" class="float-input egr-lookup-input" type="text" inputmode="numeric" autocomplete="off"
+                   maxlength="9" placeholder=" " data-egr-input>
+            <label class="float-label" for="{{ prefix }}-unp">УНП организации, 9 цифр</label>
+        </div>
         <button type="button" class="app-btn app-btn--secondary egr-lookup-btn" data-egr-search disabled>
             {{ icons.icon_search() }}
             <span>Найти в ЕГР</span>

@@ -8723,31 +8723,18 @@ a.news_pager_btn:active {
   margin-bottom: 18px;
   text-align: left;
 }
-.egr-lookup-label {
-  font-size: 13px;
-  font-weight: 600;
-  color: #374151;
-}
 .egr-lookup-row {
   display: flex;
-  gap: 8px;
+  align-items: flex-end;
+  gap: 12px;
 }
-.egr-lookup-input {
+.egr-lookup-field {
   flex: 1 1 auto;
   min-width: 0;
-  height: 42px;
-  padding: 0 14px;
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
-  font-size: 16px;
-  letter-spacing: 1px;
-  background: #ffffff;
-  box-sizing: border-box;
 }
-.egr-lookup-input:focus {
-  outline: none;
-  border-color: var(--blue-back);
-  box-shadow: 0 0 0 3px rgba(0, 115, 192, 0.12);
+.float-label-container .egr-lookup-input {
+  padding-right: 15px;
+  letter-spacing: 1px;
 }
 .egr-lookup-hint {
   margin: 0;
@@ -8922,7 +8909,6 @@ h2.security-head {
   display: flex;
   flex-direction: column;
   gap: 18px;
-  margin: 20px 0 30px;
 }
 .pf-row {
   display: grid;
@@ -9224,20 +9210,54 @@ h2.security-head {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px 14px;
 }
-.egr-field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 0;
-  text-align: left;
-}
-.egr-field-wide {
+.reg-field-wide {
   grid-column: 1 / -1;
 }
-.egr-field-label {
-  font-size: 13px;
+.reg-phone-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding-top: 4px;
+  text-align: left;
+}
+.reg-phone-label {
+  padding-left: 15px;
+  font-size: 11px;
   font-weight: 500;
-  color: #374151;
+  color: var(--blue-back);
+}
+.reg-phone-field .phone-row {
+  gap: 12px;
+}
+.reg-phone-field .phone-code-trigger,
+.reg-phone-field .phone-digits-input {
+  height: 40px;
+  border: none;
+  border-bottom: 1px solid rgb(56, 56, 56);
+  border-radius: 0;
+  background: transparent;
+  transition: border-color 0.3s ease;
+}
+.reg-phone-field .phone-digits-input {
+  width: 100%;
+  padding: 0 15px;
+  font-size: 14px;
+  line-height: 1.5;
+  box-sizing: border-box;
+}
+.reg-phone-field .phone-code-trigger:hover,
+.reg-phone-field .phone-digits-input:hover {
+  border-color: #259dff;
+}
+.reg-phone-field .phone-digits-input:focus,
+.reg-phone-field .phone-code-select.open .phone-code-trigger {
+  border-color: var(--blue-back);
+  outline: none;
+}
+.reg-phone-field .phone-row.invalid .phone-digits-input {
+  border-color: #e53935;
+  box-shadow: none;
 }
 .reg-hint {
   margin: 10px 0 0;
@@ -9535,6 +9555,10 @@ h2.security-head {
   line-height: 1.55 !important;
   color: #1f2937 !important;
 }
+
+.answer-highlight-second p:first-of-type {
+  margin-top: 5px;
+}
 .answer-highlight-second p + p,
 .answer-highlight-second p + ul,
 .answer-highlight-second p + ol {
@@ -9601,6 +9625,7 @@ h2.security-head {
   font-size: 13px;
   line-height: 1.5;
   color: #374151;
+  width: fit-content;
 }
 .content-pod-menu .menu_audit > li {
   box-sizing: border-box;
@@ -9731,4 +9756,22 @@ h2.security-head {
   .content-pod-menu .menu_audit.is-drop-mode > li.drop-target {
     animation: none;
   }
+}
+.faq_question_info .infos {
+  line-height: 1.65;
+}
+.faq_question_info .infos > p {
+  color: #374151;
+}
+.faq_question_info .steps-list li {
+  font-size: 15px;
+  line-height: 1.65;
+  color: #374151;
+}
+.info_faq {
+  counter-reset: faq-figure;
+}
+.info_faq .p_img > span::before {
+  counter-increment: faq-figure;
+  content: 'Рисунок ' counter(faq-figure) ' - ';
 }
