@@ -46,6 +46,16 @@ def inject_online_users():
     from common_models import count_online
     return dict(online_users_count=count_online(current_app.config.get('APP_NAME')))
 
+def _can_review_reports(user):
+    return bool(user.is_admin or user.is_region_auditor or user.is_reader)
+
+
+def _is_reviewer(user, report):
+    """Отчёт открыл не автор, а проверяющий (аудитор, читатель, администратор):
+    на тех же страницах разделов ему показываются свои кнопки и квитанции."""
+    return report.user_id != user.id and _can_review_reports(user)
+
+
 def owner_only(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -55,7 +65,7 @@ def owner_only(f):
             flash('Версия отчета не найдена', 'error')
             return redirect(url_for('views.report_area', user=current_user))
         report = version.report
-        if report.user_id != current_user.id and current_user.is_admin == False and current_user.is_region_auditor == False:
+        if report.user_id != current_user.id and not _can_review_reports(current_user):
             flash('Недостаточно прав для доступа к этому отчёту', 'error')
             return redirect(url_for('views.report_area', user=current_user))
         return f(*args, **kwargs)
@@ -472,9 +482,10 @@ def get_auditor_info_by_user(current_user):
 def report_section(report_type, id):
     current_version = Version_report.query.filter_by(id=id).first()
     current_report = Report.query.filter_by(id=current_version.report_id).first()
-    
-    auditor_info = get_auditor_info_by_user(current_user)
-    
+    is_reviewer = _is_reviewer(current_user, current_report)
+
+    auditor_info = None if is_reviewer else get_auditor_info_by_user(current_user)
+
     report_config = {
         'fuel': {'section_number': 1, 'product_filter': DirProduct.IsFuel},
         'heat': {'section_number': 2, 'product_filter': DirProduct.IsHeat},
@@ -488,7 +499,7 @@ def report_section(report_type, id):
     section_number = config['section_number']
     product_filter = config['product_filter']
 
-    dirProduct = DirProduct.query.filter(
+    dirProduct = [] if is_reviewer else DirProduct.query.filter(
         product_filter == True,
         ~DirProduct.CodeProduct.in_(['9001', '9010', '9100']),
         DirProduct.DateEnd.is_(None)
@@ -512,9 +523,10 @@ def report_section(report_type, id):
         current_user=current_user, 
         current_report=current_report,
         current_version=current_version,
-        SentModal = True,
+        SentModal = not is_reviewer,
         auditor_info=auditor_info,
-        report_type=report_type
+        report_type=report_type,
+        is_reviewer=is_reviewer
     )
 
 
@@ -556,10 +568,12 @@ def report_section_rows(report_type, id):
 def report_info(id):
     current_version = Version_report.query.filter_by(id=id).first()
     current_report = Report.query.filter_by(id=current_version.report_id).first()
-    
+    if _is_reviewer(current_user, current_report):
+        return redirect(url_for('views.report_section', report_type='fuel', id=id, tickets_cont='true'))
+
     auditor_info = get_auditor_info_by_user(current_user)
-    
-    return render_template('report_review.html', 
+
+    return render_template('report_review.html',
         current_user=current_user, 
         current_report=current_report,
         current_version=current_version,
@@ -663,35 +677,6 @@ def api_audit_data():
         'count': len(reports_data),
         'sort': sort
     })  
-
-@views.route('/audit-area/report/<int:id>', methods=['GET'])
-@login_required
-@session_required
-@profile_complete
-@auditors_only
-def audit_report(id):
-    dirUnit = DirUnit.query.filter_by().all()
-    dirProduct = DirProduct.query.filter_by().all()
-    current_version = Version_report.query.filter_by(id=id).first()
-    current_report = Report.query.filter_by(id=current_version.report_id).first()
-    tickets = Ticket.query.filter_by(version_report_id = current_version.id).all()
-    sections_fuel = Sections.query.filter_by(id_version=current_version.id, section_number=1).order_by(asc(Sections.code_product)).all()
-    sections_heat = Sections.query.filter_by(id_version=current_version.id, section_number=2).order_by(asc(Sections.code_product)).all()
-    sections_electro = Sections.query.filter_by(id_version=current_version.id, section_number=3).order_by(asc(Sections.code_product)).all()
-
-    return render_template('audit_report.html', 
-        id_report = id,
-        sections_fuel=sections_fuel,   
-        sections_heat=sections_heat,  
-        sections_electro=sections_electro,      
-        dirUnit=dirUnit,
-        dirProduct=dirProduct,
-        current_user=current_user, 
-        current_report=current_report,
-        current_version=current_version,
-        tickets=tickets
-    )
-
 
 @views.route('/FAQ', methods=['GET'])
 def FAQ():
@@ -1348,7 +1333,7 @@ def change_category_report():
         
         if not current_version.hasNot and action != 'to_download':
             flash('Необходимо уточнить о каких ошибках идет речь', 'error')
-            return redirect(url_for('views.audit_report', id=current_version.id, tickets_cont='true'))
+            return redirect(url_for('views.report_section', report_type='fuel', id=current_version.id, tickets_cont='true'))
         
         status_itog = None
         

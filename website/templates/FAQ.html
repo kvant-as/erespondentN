@@ -60,20 +60,15 @@
                     </li>
                 </ul> -->
 
-                <li data-content="org_faq">
+                <!-- <li data-content="org_faq">
                     <a>Организации</a>
                     <svg fill="#002762" height="12" viewBox="0 0 7 12" width="7" xmlns="http://www.w3.org/2000/svg">
                         <path d="{{ svg_path }}"></path>
                     </svg>
                 </li>
                 <ul class="content" id="org_faq" style="display: none;">
-                    <li data-question="15">
-                        <a href="javascript:void(0)">- Нет моей организации в списке</a> 
-                    </li>
-                    <li data-question="20">
-                        <a href="javascript:void(0)">- Как обновить данные организации?</a> 
-                    </li>
-                </ul> 
+
+                </ul>  -->
               
                 <li data-content="profile_faq"> 
                     <a>Личный кабинет</a>
@@ -82,21 +77,21 @@
                     </svg>
                 </li>
                 <ul class="content" id="profile_faq" style="display: none;">
-                    <li data-question="6">  
-                        <a href="javascript:void(0)">- Как изменить личные данные?</a>
-                    </li>
-                    <li data-question="5">    
-                        <a href="javascript:void(0)">- Какие данные можно изменить?</a>
+                    <li data-question="6">
+                        <a href="javascript:void(0)">- Как изменить данные учетной записи?</a>
                     </li>
                     <li data-question="3">
                         <a href="javascript:void(0)">- Как изменить пароль?</a>
                     </li>
-                    <li data-question="22">
-                        <a href="javascript:void(0)">- Как изменить электронный адрес?</a>
+                    <li data-question="20">
+                        <a href="javascript:void(0)">- Как обновить данные организации?</a> 
                     </li>
-                          <li data-question="2">
+                    <li data-question="2">
                         <a href="javascript:void(0)">- Что делать если забыл пароль?</a>
                     </li>
+                    <!-- <li data-question="15">
+                        <a href="javascript:void(0)">- Нет моей организации в списке</a> 
+                    </li> -->
                 </ul>
                 
                 <li data-content="reports_faq">
@@ -258,17 +253,14 @@
                         <ol class="steps-list">
                             <li>
                                 Нажмите на значок пользователя в правом верхнем углу и выберите «Параметры профиля».
-                                {# ЗАМЕНИТЬ СКРИНШОТ: меню пользователя в шапке #}
                                 {{ faq_img('8.png', 'Меню пользователя') }}
                             </li>
                             <li>
                                 В меню слева откройте раздел «Безопасность».
-                                {# ЗАМЕНИТЬ СКРИНШОТ: меню профиля с разделом «Безопасность» #}
                                 {{ faq_img('10.png', 'Раздел «Безопасность»') }}
                             </li>
                             <li>
                                 Введите текущий пароль, затем новый пароль и повторите его. Нажмите «Изменить пароль».
-                                {# ЗАМЕНИТЬ СКРИНШОТ: раздел «Безопасность», форма изменения пароля #}
                                 {{ faq_img('18.png', 'Изменение пароля') }}
                             </li>
                         </ol>
@@ -341,22 +333,22 @@
                     </div>
                 </div>
             </div>
-            <div class="info_page info_faq" data-question-id="5" data-slug="account-data" style="display: none;">
+            <div class="info_page info_faq" data-question-id="6" data-slug="personal-data" data-slug-aliases="account-data faq5 change-email faq22" style="display: none;">
                 <div class="faq_question_info">
                     <div class="info_page_name">
-                        <h1>Какие данные учетной записи можно изменить?</h1>
+                        <h1>Как изменить данные учетной записи?</h1>
                     </div>
                     <div class="infos">
-                        <p>Большую часть данных можно изменить в любой момент, в том числе после создания отчётов.</p>
+                        <p>Данные учетной записи можно изменить в любой момент, в том числе после создания отчётов.</p>
 
                         <div class="opred-text">
-                            <strong>Личные данные</strong> фамилия, имя, отчество и номер телефона меняются в разделе <a class="instruction-link" href="/profile/common">«Личные данные»</a>.
+                            <strong>Личные данные</strong> фамилия, имя, отчество и номер телефона меняются в разделе <a class="instruction-link" href="/profile/common">«Личные данные»</a>, см. ниже.
                         </div>
                         <div class="opred-text">
-                            <strong>Электронная почта</strong> меняется с подтверждением кодом, см. <a class="instruction-link" href="/FAQ#change-email">как изменить электронный адрес</a>.
+                            <strong>Электронная почта</strong> меняется с подтверждением кодом, см. ниже.
                         </div>
                         <div class="opred-text">
-                            <strong>Пароль</strong> меняется в разделе <a class="instruction-link" href="/profile/password">«Безопасность»</a>.
+                            <strong>Пароль</strong> меняется в разделе <a class="instruction-link" href="/profile/password">«Безопасность»</a>, см. <a class="instruction-link" href="/FAQ#change-password">как изменить пароль</a>.
                         </div>
                         <div class="opred-text">
                             <strong>Данные организации</strong> обновляются из ЕГР кнопкой в разделе <a class="instruction-link" href="/profile/organization">«Организация»</a>, см. <a class="instruction-link" href="/FAQ#update-organization">как обновить данные организации</a>.
@@ -366,30 +358,17 @@
                             <div class="highlight-icon">💡</div>
                             <p>Саму организацию, выбранную при регистрации, изменить нельзя. Если она выбрана ошибочно, напишите администратору через <a class="instruction-link" href="/#askquestion-form">форму обратной связи</a>.</p>
                         </div>
-                        {# ЗАМЕНИТЬ СКРИНШОТ: страница «Отчёты» (был img/post/11.png) #}
                         {{ faq_img('11.png', 'Меню страницы отчетов') }}
-                    </div>
-                </div>
-            </div>
-            <div class="info_page info_faq" data-question-id="6" data-slug="personal-data" style="display: none;">
-                <div class="faq_question_info">
-                    <div class="info_page_name">
-                        <h1>Как изменить личные данные?</h1>
-                    </div>
-                    <div class="infos">
-                        <p>Фамилия, имя, отчество и номер телефона указываются при регистрации. Изменить их можно в профиле.</p>
+
+                        <div id="section-personal" class="title-section">Личные данные</div>
                         <ol class="steps-list">
                             <li>
                                 Нажмите на значок пользователя в правом верхнем углу и выберите «Параметры профиля».
-                                {# ЗАМЕНИТЬ СКРИНШОТ: меню пользователя в шапке #}
                                 {{ faq_img('8.png', 'Меню пользователя') }}
                             </li>
                             <li>
                                 Откроется раздел «Личные данные». Исправьте нужные поля и нажмите «Применить изменения».
-                                {# ЗАМЕНИТЬ СКРИНШОТ: раздел «Личные данные» #}
                                 {{ faq_img('14.png', 'Личные данные') }}
-                                {{ faq_img('19.png', 'Поиск организации') }}
-                                {{ faq_img('12.png', 'Профиль пользователя') }}
                             </li>
                         </ol>
 
@@ -405,6 +384,26 @@
                             <div class="highlight-icon">💡</div>
                             <p>Без заполненных личных данных и выбранной организации создавать отчёты нельзя: система перенаправит в профиль.
                                 </p>
+                        </div>
+
+                        <div id="section-email" class="title-section">Электронная почта</div>
+                        <p>Новый адрес подтверждается кодом. Он должен отличаться от текущего и не быть занят другим аккаунтом.</p>
+                        <ol class="steps-list">
+                            <li>
+                                В разделе «Личные данные» нажмите на значок карандаша рядом с полем E-mail. Ту же кнопку можно найти в разделе «Опасная зона».
+                                {{ faq_img('edit-email-btn.png', 'Кнопка изменения e-mail') }}
+                            </li>
+                            <li>
+                                Введите новый адрес и текущий пароль и нажмите «Отправить код».
+                                {{ faq_img('change-email-form.png', 'Форма изменения email') }}
+                            </li>
+                            <li>
+                                Введите код из письма, которое придёт на новый адрес, и нажмите «Подтвердить».
+                                {{ faq_img('change-email-code.png', 'Ввод кода подтверждения') }}
+                            </li>
+                        </ol>
+                        <div class="answer-highlight-note">
+                            Код действует 10 минут. Новый код можно запросить кнопкой «Отправить повторно». Чтобы отменить смену адреса, нажмите «Назад».
                         </div>
                     </div>
                 </div>
@@ -485,7 +484,6 @@
                             <li>Откройте страницу <a class="instruction-link" href="/reports">«Отчёты»</a>, выберите нужный отчёт и нажмите «Просмотр».</li>
                             <li>
                                 В меню над таблицей, в разделе «Продукция», нажмите «Добавить».
-                                {# ЗАМЕНИТЬ СКРИНШОТ: меню отчёта, раздел «Продукция» с кнопкой «Добавить» #}
                                 {{ faq_img('new-product-btn.png', 'Кнопка «Добавить»') }}
                             </li>
                             <li>
@@ -540,7 +538,7 @@
                             <div class="highlight-icon">⚠️</div>
                             <p>Для продукции с кодами строк 0020, 0021, 0024, 0025, 0026, 0027, 0030 и 0031 код ОКЭД не заполняется.</p>
                         </div>
-                        {{ faq_img('dif.jpg', 'Поле ОКЭД остается пустым', 'Строки без ОКЭД') }}
+                        {{ faq_img('0020-0031-product-final.png', 'Поле ОКЭД остается пустым', 'Строки без ОКЭД') }}
 
                         <div id="section-7000" class="title-section">Особенности заполнения строки с кодом 7000</div>
                         <div class="answer-highlight-second">
@@ -755,12 +753,11 @@
                         <ol class="steps-list">
                             <li>
                                 Нажмите на значок пользователя в правом верхнем углу и выберите «Мой профиль».
-                                {# ЗАМЕНИТЬ СКРИНШОТ: меню пользователя в шапке #}
                                 {{ faq_img('8.png', 'Меню пользователя') }}
                             </li>
                             <li>
                                 В профиле нажмите «Проверка отчетов».
-                                {{ faq_img('20.png', 'Кнопка «Проверка отчетов»', 'Кнопка проверки отчетов') }}
+                                {{ faq_img('choose_audit.png', 'Кнопка «Проверка отчетов»', 'Кнопка проверки отчетов') }}
                             </li>
                         </ol>
 
@@ -789,9 +786,9 @@
 
                         <p>После проверки выберите решение:</p>
                         <ul>
-                            <li data-number="1">ошибок нет — «Одобр.»;</li>
-                            <li data-number="2">есть ошибки, которые организация может исправить — «Замеч.»;</li>
-                            <li data-number="3">отчёт заполнен так, что его нельзя исправить, — «Удал.».</li>
+                            <li data-number="1">ошибок нет — «Одобрить»;</li>
+                            <li data-number="2">есть ошибки, которые организация может исправить — «Замечания»;</li>
+                            <li data-number="3">отчёт заполнен так, что его нельзя исправить, — «Удаление».</li>
                         </ul>
 
                         <div class="answer-highlight-second">
@@ -803,19 +800,19 @@
                         <ol class="steps-list">
                             <li>
                                 В меню отчёта, в разделе «Сообщение», нажмите «Отправить».
-                                {{ faq_img('send-mes-audit.png', 'Кнопка отправки сообщения', 'Кнопка сообщения') }}
+                                {{ faq_img('send-mes-audit-btn.png', 'Кнопка отправки сообщения', 'Кнопка сообщения') }}
                             </li>
                             <li>
                                 Опишите ошибки и нажмите «Отправить сообщение». Сообщение попадёт в квитанции отчёта, а организация получит уведомление на почту.
-                                {{ faq_img('ticket-cont-audit.png', 'Форма сообщения') }}
+                                {{ faq_img('send-mes-audit.png', 'Форма сообщения') }}
                             </li>
                         </ol>
 
                         <p>Как изменить статус отчёта:</p>
                         <ol class="steps-list">
-                            <li>Вернитесь к списку отчётов. Отчёты, по которым вы уже написали сообщение, подсвечены.</li>
+                            <li>Вернитесь к списку отчётов. Отчёты, по которым вы уже написали сообщение, отмечены синей точкой слева от кнопки «Просмотр».</li>
                             <li>
-                                Зажмите строку отчёта левой кнопкой мыши и перетащите её на нужный статус в меню: «Удал.», «Замеч.» или «Одобр.». Статусы, на которые можно перенести отчёт, подсвечиваются.
+                                Зажмите строку отчёта левой кнопкой мыши и перетащите её на нужный статус в меню: «Удал.», «Замеч.» или «Одобр.». Статусы, на которые можно перенести отчёт, подсвечиваются. Отчёт без синей точки можно перенести только в «Одобр.».
                                 {# ЗАМЕНИТЬ СКРИНШОТ: перетаскивание отчёта на статус в меню #}
                                 {{ faq_img('audit-report.png', 'Перетаскивание отчета на статус') }}
                             </li>
@@ -830,8 +827,11 @@
                             </li>
                         </ol>
 
-                        <div class="answer-highlight-note">
-                            Отменить решение можно в течение 3 месяцев после проверки. Отчёт вернётся в статус «На рассмотрении», отправленные сообщения сохранятся.
+                        <div class="answer-highlight-second">
+                            <div class="highlight-icon">💡</div>
+                            <p>
+                                Отменить решение можно в течение 3 месяцев после проверки. Отчёт вернётся в статус «На рассмотрении», отправленные сообщения сохранятся.
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -915,11 +915,11 @@
                         <ol class="steps-list">
                             <li>
                                 В профиле нажмите «Статистика».
-                                {{ faq_img('28.png', 'Кнопка «Статистика»', 'Кнопка статистики') }}
+                                {{ faq_img('stat-btn.png', 'Кнопка «Статистика»', 'Кнопка статистики') }}
                             </li>
                             <li>
                                 Выберите год и квартал и нажмите «Выбранный период».
-                                {{ faq_img('35.jpg', 'Выбор периода') }}
+                                {{ faq_img('download-stat.png', 'Выбор периода') }}
                             </li>
                             <li>
                                 Файл скачается автоматически.
@@ -1036,346 +1036,80 @@
             <div class="info_page info_faq" data-question-id="17" data-slug="report-statuses" style="display: none;">
                 <div class="faq_question_info">
                     <div class="info_page_name">
-                        <h1>Статусы отчетов, порядок изменения статусов. Жизненный цикл отчета.</h1>
+                        <h1>Статусы отчетов</h1>
                     </div>
                     <div class="infos">
-                        <div class="status-flow-container">
-                            <div class="status-timeline">
-                                <div class="timeline-header">
-                                    <div class="timeline-subtitle">От создания до финального статуса</div>
+                        <p>Статус показывает, на каком этапе находится отчёт и что с ним можно делать. Сначала отчёт готовит организация, затем его проверяет аудитор.</p>
+
+                        <div class="sf-diagram" role="img" aria-label="Порядок смены статусов отчёта">
+                            <div class="sf-lane">
+                                <div class="sf-lane-title">У организации</div>
+                                <div class="sf-track">
+                                    <div class="sf-step">{{ content.status_report({'status': 'Заполнение'}) }}</div>
+                                    <div class="sf-link"><span class="sf-link-label">«Контроль»</span><span class="sf-link-line"></span></div>
+                                    <div class="sf-step">{{ content.status_report({'status': 'Контроль пройден'}) }}</div>
+                                    <div class="sf-link"><span class="sf-link-label">«Согласовать»</span><span class="sf-link-line"></span></div>
+                                    <div class="sf-step">{{ content.status_report({'status': 'Согласовано'}) }}</div>
                                 </div>
-                                
-                                <div class="timeline-content">
-                                    <div class="timeline-stage preparation-stage">
-                                        <div class="stage-header">
-                                            <div class="stage-icon"></div>
-                                            <h3>Этап 1. Подготовка</h3>
-                                            <div class="stage-subtitle">Внутренний цикл у респондента</div>
-                                        </div>
-                                        
-                                        <div class="status-cards">
-                                            <div class="status-card draft">
-                                                <div class="status-header">
-                                                    <div class="status-title">Заполнение</div>
-                                                    <div class="status-badge">Начальный</div>
-                                                </div>
-                                                <div class="status-body">
-                                                    <p>Отчет создан и заполняется. В этот статус отчет возвращается после любого изменения данных.</p>
-                                                    <div class="status-features">
-                                                        <div class="feature">
-                                                            <span class="feature-icon">✓</span>
-                                                            <span>Редактирование всех полей</span>
-                                                        </div>
-                                                        <div class="feature">
-                                                            <span class="feature-icon">✓</span>
-                                                            <span>Добавление/удаление строк</span>
-                                                        </div>
-                                                        <div class="feature">
-                                                            <span class="feature-icon">✓</span>
-                                                            <span>Сохранение без ограничений</span>
-                                                        </div>
-                                                    </div>
-                                                    <div class="next-action">
-                                                        <span class="arrow"></span>
-                                                        <span class="action-text"></span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="transition-arrow">
-                                                <div class="arrow-line"></div>
-                                                <div class="arrow-head"></div>
-                                            </div>
-                                            <div class="status-card control">
-                                                <div class="status-header">
-                                                    <div class="status-title">Контроль пройден</div>
-                                                    <div class="status-badge">Автопроверка</div>
-                                                </div>
-                                                <div class="status-body">
-                                                    <p>По кнопке «Контроль» система проверяет отчет на ошибки и несоответствия формату.</p>
-                                                    <div class="check-list">
-                                                        <div class="check-item">
-                                                            <span class="check-icon">✅</span>
-                                                            <span>Обязательные поля</span>
-                                                        </div>
-                                                        <div class="check-item">
-                                                            <span class="check-icon">🔢</span>
-                                                            <span>Числовые данные</span>
-                                                        </div>
-                                                        <div class="check-item">
-                                                            <span class="check-icon">📋</span>
-                                                            <span>Форматы и коды</span>
-                                                        </div>
-                                                    </div>
-                                                    <div class="status-conditions">
-                                                        <div class="condition success">
-                                                            <span class="condition-icon">✓</span>
-                                                            <span>Ошибок нет → «Контроль пройден»</span>
-                                                        </div>
-                                                        <div class="condition error">
-                                                            <span class="condition-icon">⚠️</span>
-                                                            <span>Есть ошибки → остается «Заполнение»</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="transition-arrow">
-                                                <div class="arrow-line"></div>
-                                                <div class="arrow-head"></div>
-                                            </div>
-                                            <div class="status-card approval">
-                                                <div class="status-header">
-                                                    <div class="status-title">Согласовано</div>
-                                                    <div class="status-badge">Внутреннее</div>
-                                                </div>
-                                                <div class="status-body">
-                                                    <p>Данные подтверждены кнопкой «Согласовать» после согласования с руководством.</p>
-                                                    <div class="status-features">
-                                                        <div class="feature">
-                                                            <span class="feature-icon">👁️</span>
-                                                            <span>Просмотр данных</span>
-                                                        </div>
-                                                        <div class="feature">
-                                                            <span class="feature-icon">📊</span>
-                                                            <span>Сравнение с исходными данными</span>
-                                                        </div>
-                                                        <div class="feature">
-                                                            <span class="feature-icon">✅</span>
-                                                            <span>Изменение данных вернет статус «Заполнение»</span>
-                                                        </div>
-                                                    </div>
-                                                    <div class="next-action final">
-                                                        <span class="arrow"></span>
-                                                        <span class="action-text">После согласования доступна кнопка «Отправить»</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="stage-divider">
-                                        <div class="divider-line"></div>
-                                        <div class="divider-text">Отправка на проверку</div>
-                                        <div class="divider-line"></div>
-                                    </div>
-                                    <div class="timeline-stage audit-stage">
-                                        <div class="stage-header">
-                                            <div class="stage-icon"></div>
-                                            <h3>Этап 2. Проверка аудитором</h3>
-                                            <div class="stage-subtitle">Внешний цикл проверки</div>
-                                        </div>
-                                        
-                                        <div class="status-cards audit-cards">
-                                            <div class="status-card unviewed">
-                                                <div class="status-header">
-                                                    <div class="status-icon">🔵</div>
-                                                    <div class="status-title">На рассмотрении</div>
-                                                    <div class="status-badge">В очереди</div>
-                                                </div>
-                                                <div class="status-body">
-                                                    <p>Отчет отправлен и ожидает проверки аудитором.</p>
-                                                    <div class="status-info">
-                                                        <div class="info-item">
-                                                            <span class="info-icon">⏱️</span>
-                                                            <span>Ожидание в очереди</span>
-                                                        </div>
-                                                        <div class="info-item">
-                                                            <span class="info-icon">👁️</span>
-                                                            <span>Аудитор еще не смотрел</span>
-                                                        </div>
-                                                    </div>
-                                                    <div class="time-note">
-                                                        <span class="note-icon">📌</span>
-                                                        <span>Статус присваивается автоматически при отправке</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="audit-decision-center">
-                                                <div class="center-title">Решение аудитора</div>
-                                                <div class="center-subtitle">Выбор одного из трёх вариантов</div>
-                                            </div>
-                                            <div class="decision-options">
-                                                <div class="decision-option approved">
-                                                    <div class="option-header">
-                                                        <div class="option-icon">✅</div>
-                                                        <div class="option-title">Одобрить</div>
-                                                    </div>
-                                                    <div class="option-body">
-                                                        <p>Ошибок не найдено, отчет соответствует требованиям</p>
-                                                        <div class="option-result">
-                                                            <span class="result-arrow"></span>
-                                                            <span class="result-status success">🟢 Одобрен</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div class="decision-option comments">
-                                                    <div class="option-header">
-                                                        <div class="option-icon">⚠️</div>
-                                                        <div class="option-title">Вернуть с замечаниями</div>
-                                                    </div>
-                                                    <div class="option-body">
-                                                        <p>Найдены ошибки, требующие исправления</p>
-                                                        <div class="option-result">
-                                                            <span class="result-arrow"></span>
-                                                            <span class="result-status warning">🟡 Есть замечания</span>
-                                                        </div>
-                                                        <div class="option-note">
-                                                            <small>Аудитор сначала пишет сообщение с описанием ошибок</small>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div class="decision-option rejected">
-                                                    <div class="option-header">
-                                                        <div class="option-icon">❌</div>
-                                                        <div class="option-title">К удалению</div>
-                                                    </div>
-                                                    <div class="option-body">
-                                                        <p>Критические ошибки, отчет не подлежит исправлению</p>
-                                                        <div class="option-result">
-                                                            <span class="result-arrow"></span>
-                                                            <span class="result-status error">🔴 Готов к удалению</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="final-statuses">
-                                            <h4>Итоговые статусы отчета</h4>
-                                            
-                                            <div class="final-status-grid">
-                                                <div class="final-status-item success">
-                                                    <div class="final-icon">🟢</div>
-                                                    <div class="final-content">
-                                                        <h5>Одобрен</h5>
-                                                        <p>Отчет прошел проверку и попадает в архив, который выгружает аудитор</p>
-                                                    </div>
-                                                </div>
-                                                
-                                                <div class="final-status-item warning">
-                                                    <div class="final-icon">🟡</div>
-                                                    <div class="final-content">
-                                                        <h5>Есть замечания</h5>
-                                                        <p>Отчет возвращен на доработку, замечания аудитора — в квитанциях отчета</p>
-                                                        <div class="status-cycle">
-                                                            Исправление → Контроль → Согласовать → Отправить
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                
-                                                <div class="final-status-item error">
-                                                    <div class="final-icon">🔴</div>
-                                                    <div class="final-content">
-                                                        <h5>Готов к удалению</h5>
-                                                        <p>Отчет содержит неустранимые ошибки, требуется создать новый</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="timeline-features">
-                                    <h4>Что важно знать</h4>
-                                    <div class="features-grid">
-                                        <div class="feature-item">
-                                            <div class="feature-icon">↩️</div>
-                                            <div class="feature-text">Аудитор может отменить свое решение в течение 3 месяцев</div>
-                                        </div>
-                                        <div class="feature-item">
-                                            <div class="feature-icon">💬</div>
-                                            <div class="feature-text">Сообщения сохраняются при всех изменениях статуса</div>
-                                        </div>
-                                        <div class="feature-item">
-                                            <div class="feature-icon">🔄</div>
-                                            <div class="feature-text">После отмены отчет возвращается в статус «На рассмотрении»</div>
-                                        </div>
-                                        <div class="feature-item">
-                                            <div class="feature-icon">📁</div>
-                                            <div class="feature-text">В архив для выгрузки попадают только одобренные отчеты</div>
-                                        </div>
-                                    </div>
+                                <div class="sf-note">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>
+                                    <span>Любое изменение данных возвращает отчёт в «Заполнение»</span>
                                 </div>
                             </div>
-                            <div class="status-legend">
-                                <h4></h4>
-                                <div class="legend-items">
-                                    <div class="legend-item">
-                                        <div class="legend-color draft"></div>
-                                        <strong>Заполнение</strong>
-                                        <span>заполняется пользователем</span>
+                            <div class="sf-lane">
+                                <div class="sf-lane-title">У аудитора</div>
+                                <div class="sf-track">
+                                    <div class="sf-link sf-link-start"><span class="sf-link-label">«Отправить» и ЭЦП</span><span class="sf-link-line"></span></div>
+                                    <div class="sf-step">{{ content.status_report({'status': 'Отправлен'}) }}</div>
+                                    <div class="sf-link"><span class="sf-link-label">Решение аудитора</span><span class="sf-link-line"></span></div>
+                                    <div class="sf-outcomes">
+                                        <div class="sf-outcome">{{ content.status_report({'status': 'Одобрен'}) }}</div>
+                                        <div class="sf-outcome">{{ content.status_report({'status': 'Есть замечания'}) }}</div>
+                                        <div class="sf-outcome">{{ content.status_report({'status': 'Готов к удалению'}) }}</div>
                                     </div>
-                                    <div class="legend-item">
-                                        <div class="legend-color control"></div>
-                                        <strong>Контроль пройден</strong>
-                                        <span>ошибок не найдено</span>
-                                    </div>
-                                    <div class="legend-item">
-                                        <div class="legend-color approval"></div>
-                                        <strong>Согласовано</strong>
-                                        <span>внутреннее подтверждение</span>
-                                    </div>
-                                    <div class="legend-item">
-                                        <div class="legend-color unviewed"></div>
-                                        <strong>На рассмотрении</strong>
-                                        <span>ожидает аудитора</span>
-                                    </div>
-                                    <div class="legend-item">
-                                        <div class="legend-color success"></div>
-                                        <strong>Одобрен</strong>
-                                        <span>успешная проверка</span>
-                                    </div>
-                                    <div class="legend-item">
-                                        <div class="legend-color warning"></div>
-                                        <strong>Есть замечания</strong>
-                                        <span>требуется доработка</span>
-                                    </div>
-                                    <div class="legend-item">
-                                        <div class="legend-color error"></div>
-                                        <strong>Готов к удалению</strong>
-                                        <span>критические ошибки</span>
-                                    </div>
+                                </div>
+                                <div class="sf-note">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>
+                                    <span>Пока решения нет, отправку можно отменить — отчёт вернётся в «Заполнение»</span>
                                 </div>
                             </div>
                         </div>
-                        
-                        <div class="status-summary">
-                            <div class="summary-header">
-                                <h3>Кратко</h3>
+
+                        <div class="title-section">Что делать в каждом статусе</div>
+                        <div class="sf-guide">
+                            <div class="sf-guide-row">
+                                <div class="sf-guide-status">{{ content.status_report({'status': 'Заполнение'}) }}</div>
+                                <p>Отчёт создан, продукцию и данные можно добавлять и менять. Когда всё заполнено, нажмите «Контроль».</p>
                             </div>
-                            <div class="summary-content">
-                                <div class="summary-step">
-                                    <div class="step-number">1</div>
-                                    <div class="step-content">
-                                        <h5>Заполните отчет полностью</h5>
-                                        <p>Внесите все данные, пока отчет в статусе «Заполнение»</p>
-                                    </div>
-                                </div>
-                                <div class="summary-step">
-                                    <div class="step-number">2</div>
-                                    <div class="step-content">
-                                        <h5>Пройдите контроль системы</h5>
-                                        <p>Нажмите «Контроль» и исправьте найденные ошибки</p>
-                                    </div>
-                                </div>
-                                <div class="summary-step">
-                                    <div class="step-number">3</div>
-                                    <div class="step-content">
-                                        <h5>Согласуйте с руководством</h5>
-                                        <p>Нажмите «Согласовать», чтобы подтвердить правильность данных</p>
-                                    </div>
-                                </div>
-                                <div class="summary-step">
-                                    <div class="step-number">4</div>
-                                    <div class="step-content">
-                                        <h5>Отправьте на проверку</h5>
-                                        <p>Нажмите «Отправить» и подпишите отчет ЭЦП — он получит статус «На рассмотрении»</p>
-                                    </div>
-                                </div>
-                                <div class="summary-step">
-                                    <div class="step-number">5</div>
-                                    <div class="step-content">
-                                        <h5>Следите за статусом</h5>
-                                        <p>Отслеживайте изменения статуса и оперативно реагируйте на замечания</p>
-                                    </div>
-                                </div>
+                            <div class="sf-guide-row">
+                                <div class="sf-guide-status">{{ content.status_report({'status': 'Контроль пройден'}) }}</div>
+                                <p>Система не нашла ошибок. Сверьте данные с руководителем и нажмите «Согласовать». Если ошибки есть, отчёт останется в «Заполнении», а система покажет, что исправить — см. <a class="instruction-link" href="/FAQ#report-control">как пройти контроль</a>.</p>
                             </div>
+                            <div class="sf-guide-row">
+                                <div class="sf-guide-status">{{ content.status_report({'status': 'Согласовано'}) }}</div>
+                                <p>Отчёт готов к отправке. Нажмите «Отправить» и выберите файл сертификата ЭЦП — см. <a class="instruction-link" href="/FAQ#ecp-certificate">сертификат ЭЦП</a>.</p>
+                            </div>
+                            <div class="sf-guide-row">
+                                <div class="sf-guide-status">{{ content.status_report({'status': 'Отправлен'}) }}</div>
+                                <p>Отчёт у аудитора, редактировать его нельзя. Пока аудитор не принял решение, отправку можно отменить — см. <a class="instruction-link" href="/FAQ#cancel-sending">как отменить отправку</a>.</p>
+                            </div>
+                            <div class="sf-guide-row">
+                                <div class="sf-guide-status">{{ content.status_report({'status': 'Одобрен'}) }}</div>
+                                <p>Проверка пройдена, больше ничего делать не нужно.</p>
+                            </div>
+                            <div class="sf-guide-row">
+                                <div class="sf-guide-status">{{ content.status_report({'status': 'Есть замечания'}) }}</div>
+                                <p>Аудитор нашёл ошибки и описал их в квитанциях отчёта. Исправьте данные — статус станет «Заполнение» — и снова пройдите контроль, согласование и отправку.</p>
+                            </div>
+                            <div class="sf-guide-row">
+                                <div class="sf-guide-status">{{ content.status_report({'status': 'Готов к удалению'}) }}</div>
+                                <p>Отчёт нельзя исправить. Причина указана в квитанциях. Создайте новый отчёт за этот период.</p>
+                            </div>
+                        </div>
+
+                        <div class="answer-highlight-second">
+                            <div class="highlight-icon">💬</div>
+                            <p>О каждом решении аудитора приходит уведомление на почту и в раздел «Сообщения» профиля. Аудитор может отменить своё решение в течение 3 месяцев — тогда отчёт вернётся в «На рассмотрении».</p>
                         </div>
                     </div>
                 </div>
@@ -1392,15 +1126,16 @@
                             <li>Откройте отправленный отчёт.</li>
                             <li>
                                 В меню, в разделе «Отправка», нажмите «Отменить».
-                                {{ faq_img('cancel-sent.jpg', 'Кнопка «Отменить»', 'Кнопка «Отменить» в меню отчета') }}
+                                {{ faq_img('cancel-sent.png', 'Кнопка «Отменить»', 'Кнопка «Отменить» в меню отчета') }}
+                                <div class="answer-highlight-second">
+                                    <div class="highlight-icon">⚠️</div>
+                                    <p>Если кнопки «Отменить» нет, аудитор уже проверил отчёт. Если он вернул отчёт с замечаниями, исправьте его и отправьте заново — см. <a class="instruction-link" href="/FAQ#report-statuses">статусы отчетов</a>.</p>
+                                </div>
                             </li>
                             <li>Отчёт вернётся в статус «Заполнение». Внесите исправления — данные сохраняются.</li>
                             <li>Снова пройдите контроль, согласуйте и отправьте отчёт.</li>
                         </ol>
 
-                        <div class="answer-highlight-note">
-                            Если кнопки «Отменить» нет, аудитор уже проверил отчёт. Если он вернул отчёт с замечаниями, исправьте его и отправьте заново — см. <a class="instruction-link" href="/FAQ#report-statuses">статусы отчетов</a>.
-                        </div>
                     </div>
                 </div>
             </div>
@@ -1430,14 +1165,16 @@
                             <li>
                                 В поле «Примечание» укажите, на что израсходованы ресурсы, например «Ремонт оборудования» или «Хозяйственные нужды». Если прочего потребления не было, напишите «Не было» или «Отсутствует».
                                 {{ faq_img('primechanie-prochee.png', 'Поле «Примечание»') }}
+                                
+                                <div class="answer-highlight-second">
+                                    <div class="highlight-icon">⚠️</div>
+                                    <p>Без примечания хотя бы в одном разделе контроль не будет пройден, и отправить отчёт не получится.</p>
+                                </div>
                             </li>
                             <li>Нажмите «Применить изменения» и повторите для остальных разделов.</li>
                             <li>В меню отчёта, в разделе «Статус», нажмите «Контроль».</li>
                         </ol>
 
-                        <div class="answer-highlight-note">
-                            Без примечания хотя бы в одном разделе контроль не будет пройден, и отправить отчёт не получится.
-                        </div>
                     </div>
                 </div>
             </div>
@@ -1507,37 +1244,6 @@
                                     <li>Служебные строки 9001, 9010 и 9100 и итоговые суммы пересчитываются автоматически.</li>
                                 </ol>
                             </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="info_page info_faq" data-question-id="22" data-slug="change-email" style="display: none;">
-                <div class="faq_question_info">
-                    <div class="info_page_name">
-                        <h1>Как изменить электронный адрес?</h1>
-                    </div>
-                    <div class="infos">
-                        <p>Новый адрес подтверждается кодом. Он должен отличаться от текущего и не быть занят другим аккаунтом.</p>
-
-                        <ol class="steps-list">
-                            <li>
-                                Откройте «Параметры профиля» и в разделе «Личные данные» нажмите на значок карандаша рядом с полем E-mail. Ту же кнопку можно найти в разделе «Опасная зона».
-                                {# ЗАМЕНИТЬ СКРИНШОТ: раздел «Личные данные», кнопка изменения e-mail #}
-                                {{ faq_img('edit-email-btn.jpg', 'Кнопка изменения e-mail') }}
-                            </li>
-                            <li>
-                                Введите новый адрес и текущий пароль и нажмите «Отправить код».
-                                {{ faq_img('change-email-form.png', 'Форма изменения email') }}
-                            </li>
-                            <li>
-                                Введите код из письма, которое придёт на новый адрес, и нажмите «Подтвердить».
-                                {{ faq_img('change-email-code.png', 'Ввод кода подтверждения') }}
-                            </li>
-                        </ol>
-
-                        <div class="answer-highlight-note">
-                            Код действует 10 минут. Новый код можно запросить кнопкой «Отправить повторно». Чтобы отменить смену адреса, нажмите «Назад».
                         </div>
                     </div>
                 </div>

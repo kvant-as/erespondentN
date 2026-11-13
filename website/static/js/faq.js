@@ -126,6 +126,9 @@ function questionIdFromHash(hash) {
     const page = Array.from(document.querySelectorAll('.info_page[data-slug]'))
         .find(item => item.dataset.slug === hash);
     if (page) return page.dataset.questionId;
+    const alias = Array.from(document.querySelectorAll('.info_page[data-slug-aliases]'))
+        .find(item => item.dataset.slugAliases.split(' ').includes(hash));
+    if (alias) return alias.dataset.questionId;
     const legacy = hash.match(/^faq(\d+)$/);
     return legacy ? legacy[1] : null;
 }

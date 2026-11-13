@@ -261,6 +261,7 @@ class AuditModule {
         if (statusText === 'Непросмотренный') {
             event.dataTransfer.setData('text/plain', reportId);
             event.dataTransfer.effectAllowed = 'move';
+            this.dragHasTicket = row.dataset.hasTicket === 'true';
             this.setDragGhost(event, row);
             row.classList.add('dragging');
             this.setDraggingState(true);
@@ -287,7 +288,9 @@ class AuditModule {
         title.textContent = name;
         const hint = document.createElement('span');
         hint.className = 'report-drag-ghost-hint';
-        hint.textContent = 'Перенесите на статус в меню';
+        hint.textContent = this.dragHasTicket
+            ? 'Перенесите на статус в меню'
+            : 'Можно только одобрить: для замечаний сначала напишите сообщение';
         ghost.append(title, hint);
         document.body.appendChild(ghost);
         event.dataTransfer.setDragImage(ghost, 18, 18);
@@ -344,8 +347,11 @@ class AuditModule {
         const menu = document.querySelector('.menu_audit');
         if (!menu) return;
         menu.classList.toggle('is-drop-mode', isDragging);
+        // «Удал.» и «Замеч.» доступны только отчётам с квитанцией (синяя точка):
+        // без сообщения аудитора сервер такую смену статуса не примет.
+        const allowed = this.dragHasTicket ? ['remarks', 'to_download', 'to_delete'] : ['to_download'];
         menu.querySelectorAll('li[data-action]').forEach(item => {
-            const isTarget = ['remarks', 'to_download', 'to_delete'].includes(item.dataset.action);
+            const isTarget = allowed.includes(item.dataset.action);
             item.classList.toggle('drop-target', isDragging && isTarget);
             if (!isDragging) item.classList.remove('is-drop-hover');
         });
@@ -376,10 +382,12 @@ class AuditModule {
     }
 
     handleDragOver(event) {
+        if (!event.currentTarget.classList.contains('drop-target')) return;
         event.preventDefault();
     }
 
     handleDragEnter(event) {
+        if (!event.currentTarget.classList.contains('drop-target')) return;
         event.preventDefault();
         event.currentTarget.classList.add('is-drop-hover');
     }
@@ -393,8 +401,9 @@ class AuditModule {
     }
 
     handleDrop(event) {
-        event.preventDefault();
         const targetItem = event.currentTarget;
+        if (!targetItem.classList.contains('drop-target')) return;
+        event.preventDefault();
         targetItem.classList.remove('is-drop-hover');
         this.setDraggingState(false);
         const reportId = event.dataTransfer.getData('text/plain');
@@ -827,11 +836,12 @@ class AuditModule {
     getReportRowHTML(report) {
         const formattedDate = this.formatDate(report.sent_time);
         return `
-            <tr class="report_row ${report.has_not ? 'hascomment-row' : ''}" data-id="${report.id}" draggable="true">
-                <td>
+            <tr class="report_row" data-id="${report.id}" data-has-ticket="${report.has_not ? 'true' : 'false'}" draggable="true">
+                <td class="report-ticket-cell">
+                    ${report.has_not ? '<span class="report-ticket-dot" title="Есть квитанция — отчёт можно перенести в другой статус" aria-label="Есть квитанция"></span>' : ''}
                 </td>
                 <td style="padding: 4px;">
-                    <button class="open-report-btn" onclick="window.location.href='/audit-area/report/${report.version_id}'">   
+                    <button class="open-report-btn" onclick="window.location.href='/reports/fuel/${report.version_id}'">   
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                             <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />

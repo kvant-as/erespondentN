@@ -11,7 +11,11 @@
 {% block content %}
 
 <div class = "report-area_page">
-    {{ content.report_menu(current_version, section_number) }}
+    {% if is_reviewer %}
+        {{ content.review_menu(current_version, section_number, can_message=not current_user.is_reader) }}
+    {% else %}
+        {{ content.report_menu(current_version, section_number) }}
+    {% endif %}
     <div class = "report-area">
         <table class = "table-report-area" id = "fuel-table-report" data-report-type="{{ report_type }}" data-version-id="{{ current_version.id }}">
             <thead class="table-title">
@@ -64,16 +68,14 @@
                     </th>
                     <th class="resizable" colspan="2">
                         <span class="sort-label">
-                            Израсходовано на единицу продукции (работы, услуги) за отчетный период, 
-                            {%if section_number == 1 %}кг у.т.{%elif section_number == 2 %}Мкал{%elif section_number == 3 %}кВтч{%endif%}
+                            <span>Израсходовано на единицу продукции (работы, услуги) за отчетный период, <span data-unit-label="per">{%if section_number == 1 %}кг у.т.{%elif section_number == 2 %}Мкал{%elif section_number == 3 %}кВтч{%endif%}</span></span>
                         </span>
                         <div class="resizer"></div>
                     </th>
                     </th>
                     <th class="resizable" colspan="3">
                         <span class="sort-label">
-                            Израсходовано на всю произведенную продукцию (работу, услугу) за отчетный период, 
-                            {%if section_number == 1 %} т у.т.{%elif section_number == 2 %}Гкал{%elif section_number == 3 %}тыс.кВтч{%endif%}
+                            <span>Израсходовано на всю произведенную продукцию (работу, услугу) за отчетный период, <span data-unit-label="total">{%if section_number == 1 %}т у.т.{%elif section_number == 2 %}Гкал{%elif section_number == 3 %}тыс.кВтч{%endif%}</span></span>
                         </span>
                         <div class="resizer"></div>
                     </th>
@@ -155,10 +157,22 @@
             <tbody id="sections-tbody">
                 {% include 'partials/_section_rows.html' %}
             </tbody>
-        </table>  
+        </table>
     </div>
+    {% if is_reviewer %}
+        {{ content.tickets_area(
+            current_report=current_report,
+            current_version=current_version,
+            tickets=None,
+            auditor_info=None,
+            csrf_token=csrf_token,
+            content=content,
+            current_user=current_user
+        ) }}
+    {% endif %}
 </div>
 
+{% if not is_reviewer %}
 <div id="addSection_modal" class="modal">
     <div class="modal-content">
         <div class = "modal-header">
@@ -208,7 +222,6 @@
                         </tbody>
                     </table>
                 </div>
-                <div class="add-section-chosen" id="addSectionChosen">Продукция не выбрана</div>
                 <div class="add-step-actions">
                     <button type="button" class="add-step-btn" id="addSectionNextBtn" disabled>
                         <span>Далее</span>
@@ -463,6 +476,7 @@
         </button>
     </form>
 </div>
- 
+{% endif %}
+
 <script type="module" src="{{ url_for('static', filename='js/report.js') }}"></script>
 {% endblock %}

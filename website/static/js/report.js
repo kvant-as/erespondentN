@@ -392,7 +392,6 @@ document.addEventListener('DOMContentLoaded', function() {
     var addStep2 = document.getElementById('addSectionStep2');
     var addNextBtn = document.getElementById('addSectionNextBtn');
     var addBackBtn = document.getElementById('addSectionBackBtn');
-    var addChosen = document.getElementById('addSectionChosen');
     var chooseProdTableBody = document.getElementById('chooseProdTableBody');
     var nameOfProductInput = addSectionForm ? addSectionForm.querySelector('input[name="name_of_product"]') : null;
     var addIdProductInput = document.getElementById('add_id_product');
@@ -497,10 +496,6 @@ document.addEventListener('DOMContentLoaded', function() {
             nameOfProductInput.value = name;
             nameOfProductInput.title = name;
         }
-        if (addChosen) {
-            addChosen.textContent = code + ' — ' + name;
-            addChosen.classList.add('is-set');
-        }
         if (addNextBtn) addNextBtn.disabled = false;
     }
 
@@ -532,10 +527,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (addUnitNameInput) addUnitNameInput.value = '';
         if (addProductCodeInput) addProductCodeInput.value = '';
         if (addNextBtn) addNextBtn.disabled = true;
-        if (addChosen) {
-            addChosen.textContent = 'Продукция не выбрана';
-            addChosen.classList.remove('is-set');
-        }
         if (chooseProdTableBody) {
             chooseProdTableBody.querySelectorAll('tr.chosen-product').forEach(function(r) {
                 r.classList.remove('chosen-product');
@@ -612,6 +603,87 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // ------------------------------------------------------------------
+    //  Переключение разделов Топливо / Тепло / Электро без перезагрузки:
+    //  страница раздела загружается в фоне, из неё берутся строки таблицы,
+    //  единицы измерения, список продукции для «Добавить» и заголовок.
+    // ------------------------------------------------------------------
+    var sectionLoading = false;
+
+    function markActiveSection(type) {
+        document.querySelectorAll('[data-report-section]').forEach(function(li) {
+            li.classList.toggle('active_functions_menu', li.dataset.reportSection === type);
+        });
+    }
+
+    async function switchSection(type, href, pushHistory) {
+        var table = document.getElementById('fuel-table-report');
+        var tbody = document.getElementById('sections-tbody');
+        if (!table || !tbody) {
+            window.location.href = href;
+            return;
+        }
+        if (sectionLoading) return;
+        if (pushHistory && table.dataset.reportType === type) return;
+
+        sectionLoading = true;
+        table.classList.add('is-loading');
+        try {
+            var resp = await fetch(href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+            if (!resp.ok || resp.redirected) throw new Error('bad response');
+            var doc = new DOMParser().parseFromString(await resp.text(), 'text/html');
+            var newTable = doc.getElementById('fuel-table-report');
+            var newTbody = doc.getElementById('sections-tbody');
+            if (!newTable || !newTbody) throw new Error('no table');
+
+            tbody.innerHTML = newTbody.innerHTML;
+            table.dataset.reportType = type;
+            table.querySelectorAll('[data-unit-label]').forEach(function(el) {
+                var fresh = newTable.querySelector('[data-unit-label="' + el.dataset.unitLabel + '"]');
+                if (fresh) el.textContent = fresh.textContent;
+            });
+
+            var chooseBody = document.getElementById('chooseProdTableBody');
+            var newChooseBody = doc.getElementById('chooseProdTableBody');
+            if (chooseBody && newChooseBody) chooseBody.innerHTML = newChooseBody.innerHTML;
+            var sectionInput = document.getElementById('section_number');
+            var newSectionInput = doc.getElementById('section_number');
+            if (sectionInput && newSectionInput) sectionInput.value = newSectionInput.value;
+
+            document.title = doc.title;
+            markActiveSection(type);
+            if (pushHistory) {
+                history.pushState({ reportSection: type }, '', href);
+            }
+
+            if (contextMenu_report) contextMenu_report.style.display = 'none';
+            selectedfuelId = null;
+            previousfuelRow = null;
+            if (remove_section) remove_section.disabled = true;
+            if (link_changefuel_modal) link_changefuel_modal.disabled = true;
+            bindSectionRows();
+            syncPodRowActions();
+        } catch (e) {
+            window.location.href = href;
+        } finally {
+            sectionLoading = false;
+            table.classList.remove('is-loading');
+        }
+    }
+
+    document.querySelectorAll('[data-report-section]').forEach(function(li) {
+        li.addEventListener('click', function() {
+            switchSection(li.dataset.reportSection, li.dataset.href, true);
+        });
+    });
+
+    window.addEventListener('popstate', function() {
+        var m = window.location.pathname.match(/\/reports\/(fuel|heat|electro)\/(\d+)/);
+        if (m && document.getElementById('fuel-table-report')) {
+            switchSection(m[1], window.location.pathname, false);
+        }
+    });
+
+    // ------------------------------------------------------------------
     //  Инициализация
     // ------------------------------------------------------------------
     bindSectionRows();
@@ -646,9 +718,60 @@ function filterProducts(searchText) {
     }
 }
 
+// Функции ниже вызываются из разметки (onclick/oninput), а report.js
+// подключается и как модуль, поэтому они публикуются в window.
 function scrollToTickets() {
     const formElement = document.getElementById('ticket-area');
     if (formElement) {
         formElement.scrollIntoView({ behavior: 'smooth' });
     }
 }
+
+// Счётчик символов в сообщении проверяющего; кнопка отправки активна,
+// только когда текст введён.
+function updateCounter(textarea) {
+    const counter = document.getElementById('messageCounter');
+    const form = textarea.closest('form');
+    const submitBtn = form ? form.querySelector('button[type="submit"]') : null;
+    const currentLength = textarea.value.length;
+    const maxLength = parseInt(textarea.getAttribute('maxlength'), 10);
+
+    if (counter) {
+        counter.textContent = currentLength + '/' + maxLength;
+        if (currentLength > maxLength * 0.9) {
+            counter.style.color = '#ef4444';
+        } else if (currentLength > maxLength * 0.7) {
+            counter.style.color = '#f59e0b';
+        } else {
+            counter.style.color = '#a0aec0';
+        }
+    }
+    if (submitBtn) {
+        submitBtn.disabled = currentLength === 0;
+    }
+}
+
+// «Вернуться к отчетам» у проверяющего: назад в список проверки, а если
+// страница открылась после редиректа на квитанции — на шаг дальше.
+function smartBack() {
+    const ref = document.referrer;
+    if (ref.includes('tickets_cont=true') && history.length > 2) {
+        history.go(-2);
+    } else if (history.length > 1) {
+        history.back();
+    } else {
+        window.location.href = '/audit-area/not_viewed';
+    }
+}
+
+window.scrollToTickets = scrollToTickets;
+window.updateCounter = updateCounter;
+window.smartBack = smartBack;
+
+document.addEventListener('DOMContentLoaded', function() {
+    const textarea = document.querySelector('.message-field__textarea');
+    if (textarea) updateCounter(textarea);
+    if (new URLSearchParams(window.location.search).get('tickets_cont') === 'true') {
+        scrollToTickets();
+    }
+});
