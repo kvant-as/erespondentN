@@ -82,7 +82,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (table && table.dataset.reportType && table.dataset.versionId) {
             return { type: table.dataset.reportType, id: table.dataset.versionId };
         }
-        var m = window.location.pathname.match(/\/reports\/(fuel|heat|electro)\/(\d+)/);
+        var m = window.location.pathname.match(/\/(?:reports|audit-area)\/(fuel|heat|electro)\/(\d+)/);
         return m ? { type: m[1], id: m[2] } : null;
     }
 
@@ -273,7 +273,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // ------------------------------------------------------------------
     //  Удаление продукции (AJAX)
     // ------------------------------------------------------------------
-    function submitRemoveSection() {
+    async function submitRemoveSection() {
         var activeRow = document.querySelector('.section_row.active-report');
         if (activeRow === null) {
             alert('Выберите продукцию для удаления');
@@ -283,9 +283,19 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!section_id) return;
         var deleteForm = document.getElementById('remove_section_form');
         if (!deleteForm) return;
+        if (contextMenu_report) contextMenu_report.style.display = 'none';
+
+        var codeInput = activeRow.querySelector('.product-cod_fuel');
+        var nameInput = activeRow.querySelector('.product-name_fuel');
+        var product = [codeInput && codeInput.value, nameInput && nameInput.value].filter(Boolean).join(' — ');
+        var text = (product ? 'Строка «' + product + '»' : 'Строка') + ' будет удалена из раздела вместе с её данными. Это действие нельзя отменить.';
+        var ok = window.appConfirm
+            ? await window.appConfirm({ title: 'Удалить продукцию?', text: text, confirmText: 'Удалить строку' })
+            : window.confirm(text);
+        if (!ok) return;
+
         deleteForm.action = '/remove_section/' + section_id;
         addCsrfTokenToForm(deleteForm);
-        if (contextMenu_report) contextMenu_report.style.display = 'none';
         ajaxSubmit(deleteForm, refreshSectionsTable);
     }
 
@@ -592,7 +602,12 @@ document.addEventListener('DOMContentLoaded', function() {
         handleModal(document.getElementById('SentModal'), document.getElementById('sent-report-btn'));
     }
     if (document.getElementById('cancel-sending-btn')) {
-        document.getElementById('cancel-sending-btn').addEventListener('click', function() {
+        document.getElementById('cancel-sending-btn').addEventListener('click', async function() {
+            var text = 'Отчёт будет снят с проверки и вернётся в статус «Заполнение». Чтобы отправить его снова, нужно заново пройти контроль, согласовать и подписать ЭЦП.';
+            var ok = window.appConfirm
+                ? await window.appConfirm({ title: 'Отменить отправку?', text: text, confirmText: 'Отменить отправку', icon: false })
+                : window.confirm(text);
+            if (!ok) return;
             document.getElementById('cancel-sending-form').submit();
         });
     }
@@ -677,11 +692,167 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     window.addEventListener('popstate', function() {
-        var m = window.location.pathname.match(/\/reports\/(fuel|heat|electro)\/(\d+)/);
+        var m = window.location.pathname.match(/\/(?:reports|audit-area)\/(fuel|heat|electro)\/(\d+)/);
         if (m && document.getElementById('fuel-table-report')) {
             switchSection(m[1], window.location.pathname, false);
         }
     });
+
+    // ------------------------------------------------------------------
+    //  Выбор строки с клавиатуры: ↑/↓ — соседняя строка, Home/End — первая
+    //  и последняя, Esc — снять выбор. Не мешает вводу текста и модалкам.
+    // ------------------------------------------------------------------
+    document.addEventListener('keydown', function(e) {
+        if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+        if (['ArrowUp', 'ArrowDown', 'Home', 'End', 'Escape'].indexOf(e.key) === -1) return;
+        var el = document.activeElement;
+        if (el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName))) return;
+        if (document.querySelector('.modal.active')) return;
+        var tbody = document.getElementById('sections-tbody');
+        if (!tbody) return;
+        var rows = Array.from(tbody.querySelectorAll('tr.section_row'));
+        if (!rows.length) return;
+        var current = tbody.querySelector('tr.section_row.active-report');
+        var i = current ? rows.indexOf(current) : -1;
+
+        if (e.key === 'Escape') {
+            if (current) selectRow(current, i);
+            return;
+        }
+        var next;
+        if (e.key === 'ArrowDown') next = i < 0 ? 0 : Math.min(i + 1, rows.length - 1);
+        else if (e.key === 'ArrowUp') next = i < 0 ? rows.length - 1 : Math.max(i - 1, 0);
+        else if (e.key === 'Home') next = 0;
+        else next = rows.length - 1;
+        e.preventDefault();
+        if (next === i) return;
+        selectRow(rows[next], next);
+        rows[next].scrollIntoView({ block: 'nearest' });
+    });
+
+    // ------------------------------------------------------------------
+    //  Порядок строк: перетаскивание за ручку (.section-grip) или Alt+↑/↓
+    //  у выбранной строки. Служебные строки 9001/9010/9100 не перемещаются
+    //  и всегда остаются внизу. Порядок сохраняется на сервере.
+    // ------------------------------------------------------------------
+    var reorderTbody = document.getElementById('sections-tbody');
+    var draggedRow = null;
+    var saveTimer = null;
+
+    function reorderableRows() {
+        return Array.from(reorderTbody.querySelectorAll('tr.section_row.is-reorderable'));
+    }
+
+    function clearDropMarks() {
+        reorderTbody.querySelectorAll('.drop-before, .drop-after').forEach(function(tr) {
+            tr.classList.remove('drop-before', 'drop-after');
+        });
+    }
+
+    function flashRow(row) {
+        row.classList.remove('is-moved');
+        void row.offsetWidth;
+        row.classList.add('is-moved');
+    }
+
+    function saveOrder() {
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(async function() {
+            var route = currentReportRoute();
+            if (!route) return;
+            var csrf = document.querySelector('meta[name="csrf-token"]');
+            try {
+                var resp = await fetch('/reports/' + route.type + '/' + route.id + '/reorder', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': csrf ? csrf.content : ''
+                    },
+                    body: JSON.stringify({ ids: reorderableRows().map(function(tr) { return tr.dataset.id; }) })
+                });
+                var json = await resp.json().catch(function() { return null; });
+                if (!json || !json.success) {
+                    notify((json && json.message) || 'Не удалось сохранить порядок строк', false);
+                    refreshSectionsTable();
+                }
+            } catch (e) {
+                notify('Не удалось сохранить порядок строк', false);
+                refreshSectionsTable();
+            }
+        }, 300);
+    }
+
+    if (reorderTbody) {
+        reorderTbody.addEventListener('dragstart', function(e) {
+            var grip = e.target.closest && e.target.closest('.section-grip');
+            if (!grip) return;
+            draggedRow = grip.closest('tr');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', draggedRow.dataset.id);
+            if (e.dataTransfer.setDragImage) e.dataTransfer.setDragImage(draggedRow, 24, 20);
+            setTimeout(function() { if (draggedRow) draggedRow.classList.add('is-dragging'); }, 0);
+        });
+
+        reorderTbody.addEventListener('dragover', function(e) {
+            if (!draggedRow) return;
+            var target = e.target.closest('tr.section_row');
+            if (!target || target === draggedRow) return;
+            var isService = !target.classList.contains('is-reorderable');
+            var firstService = reorderTbody.querySelector('tr.section_row:not(.is-reorderable)');
+            if (isService && target !== firstService) return;
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            clearDropMarks();
+            if (isService) {
+                target.classList.add('drop-before');
+            } else {
+                var rect = target.getBoundingClientRect();
+                target.classList.add(e.clientY < rect.top + rect.height / 2 ? 'drop-before' : 'drop-after');
+            }
+        });
+
+        reorderTbody.addEventListener('drop', function(e) {
+            if (!draggedRow) return;
+            var target = reorderTbody.querySelector('.drop-before, .drop-after');
+            e.preventDefault();
+            if (target && target !== draggedRow) {
+                if (target.classList.contains('drop-before')) {
+                    target.parentNode.insertBefore(draggedRow, target);
+                } else {
+                    target.parentNode.insertBefore(draggedRow, target.nextSibling);
+                }
+                flashRow(draggedRow);
+                saveOrder();
+            }
+            clearDropMarks();
+        });
+
+        reorderTbody.addEventListener('dragend', function() {
+            if (draggedRow) draggedRow.classList.remove('is-dragging');
+            draggedRow = null;
+            clearDropMarks();
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (!e.altKey || (e.key !== 'ArrowUp' && e.key !== 'ArrowDown')) return;
+            var row = reorderTbody.querySelector('tr.section_row.active-report.is-reorderable');
+            if (!row) return;
+            e.preventDefault();
+            var rows = reorderableRows();
+            var i = rows.indexOf(row);
+            if (e.key === 'ArrowUp' && i > 0) {
+                row.parentNode.insertBefore(row, rows[i - 1]);
+            } else if (e.key === 'ArrowDown' && i < rows.length - 1) {
+                row.parentNode.insertBefore(row, rows[i + 1].nextSibling);
+            } else {
+                return;
+            }
+            flashRow(row);
+            row.scrollIntoView({ block: 'nearest' });
+            saveOrder();
+        });
+    }
 
     // ------------------------------------------------------------------
     //  Инициализация
@@ -720,12 +891,39 @@ function filterProducts(searchText) {
 
 // Функции ниже вызываются из разметки (onclick/oninput), а report.js
 // подключается и как модуль, поэтому они публикуются в window.
+// У проверяющего квитанции и сообщение организации — во весь экран
+// модальном окне #reviewModal; без окна — прокрутка к квитанциям.
+function openReviewModal() {
+    const modal = document.getElementById('reviewModal');
+    if (!modal) return false;
+    modal.classList.add('active');
+    const textarea = modal.querySelector('.message-field__textarea');
+    if (textarea) setTimeout(function() { textarea.focus(); }, 50);
+    return true;
+}
+
 function scrollToTickets() {
+    if (openReviewModal()) return;
     const formElement = document.getElementById('ticket-area');
     if (formElement) {
         formElement.scrollIntoView({ behavior: 'smooth' });
     }
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('reviewModal');
+    if (!modal) return;
+    const close = function() { modal.classList.remove('active'); };
+    const closeBtn = modal.querySelector('.modal-header .close');
+    if (closeBtn) closeBtn.addEventListener('click', close);
+    modal.addEventListener('click', function(e) { if (e.target === modal) close(); });
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && modal.classList.contains('active')) close();
+    });
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('[data-review-modal]')) openReviewModal();
+    });
+});
 
 // Счётчик символов в сообщении проверяющего; кнопка отправки активна,
 // только когда текст введён.
@@ -765,6 +963,7 @@ function smartBack() {
 }
 
 window.scrollToTickets = scrollToTickets;
+window.openReviewModal = openReviewModal;
 window.updateCounter = updateCounter;
 window.smartBack = smartBack;
 

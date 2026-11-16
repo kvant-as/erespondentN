@@ -42,6 +42,28 @@ def to_decimal(value):
     except (ValueError, InvalidOperation, TypeError, AttributeError):
         return Decimal('0.00')
 
+SERVICE_PRODUCT_CODES = ('9001', '9010', '9100')
+
+
+def ordered_section_rows(version_id, section_number):
+    """Строки раздела отчёта в порядке показа — одинаковом на странице и в
+    Excel: обычные строки сверху (сначала без заданного порядка — новые, по
+    убыванию id, затем по sort_order из перетаскивания), служебные
+    9001/9010/9100 всегда внизу по коду."""
+    from sqlalchemy import case, desc
+    is_service = Sections.code_product.in_(SERVICE_PRODUCT_CODES)
+    return Sections.query.filter_by(
+        id_version=version_id,
+        section_number=section_number
+    ).order_by(
+        case((is_service, 1), else_=0).asc(),
+        case((is_service, Sections.code_product), else_=None).asc(),
+        case((Sections.sort_order.is_(None), 0), else_=1).asc(),
+        Sections.sort_order.asc(),
+        desc(Sections.id)
+    ).all()
+
+
 def check_version_editable(version):
     if not version:
         flash('Версия не найдена.', 'error')

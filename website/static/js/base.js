@@ -13,6 +13,101 @@
 // }
 
 // setInterval(updateOnlineCount, 30000);
+
+// Окно подтверждения (#confirmModal в base.html). Возвращает Promise:
+// true — пользователь нажал кнопку подтверждения, false — отменил
+// (кнопка «Отмена», крестик, клик по фону или Esc).
+var confirmModalCleanup = null;
+
+function appConfirm(options) {
+    options = options || {};
+    var modal = document.getElementById('confirmModal');
+    if (!modal) {
+        return Promise.resolve(window.confirm(options.text || 'Подтвердите действие'));
+    }
+    if (confirmModalCleanup) confirmModalCleanup(false);
+
+    var okBtn = modal.querySelector('[data-confirm-ok]');
+    var cancelBtn = modal.querySelector('[data-confirm-cancel]');
+    var closeBtn = modal.querySelector('.modal-header .close');
+    modal.querySelector('#confirmModalTitle').textContent = options.title || 'Подтвердите удаление';
+    modal.querySelector('#confirmModalText').textContent = options.text || '';
+    okBtn.querySelector('span').textContent = options.confirmText || 'Удалить';
+    var okIcon = okBtn.querySelector('svg');
+    if (okIcon) okIcon.style.display = options.icon === false ? 'none' : '';
+
+    return new Promise(function(resolve) {
+        function finish(result) {
+            okBtn.removeEventListener('click', onOk);
+            cancelBtn.removeEventListener('click', onCancel);
+            if (closeBtn) closeBtn.removeEventListener('click', onCancel);
+            modal.removeEventListener('click', onBackdrop);
+            document.removeEventListener('keydown', onKey);
+            modal.classList.remove('active');
+            confirmModalCleanup = null;
+            resolve(result);
+        }
+        function onOk() { finish(true); }
+        function onCancel() { finish(false); }
+        function onBackdrop(e) { if (e.target === modal) finish(false); }
+        function onKey(e) { if (e.key === 'Escape') finish(false); }
+
+        okBtn.addEventListener('click', onOk);
+        cancelBtn.addEventListener('click', onCancel);
+        if (closeBtn) closeBtn.addEventListener('click', onCancel);
+        modal.addEventListener('click', onBackdrop);
+        document.addEventListener('keydown', onKey);
+        confirmModalCleanup = finish;
+
+        modal.classList.add('active');
+        setTimeout(function() { cancelBtn.focus(); }, 0);
+    });
+}
+window.appConfirm = appConfirm;
+
+// Квитанции отчёта у автора — модальное окно (#ticketsModal в base.html),
+// содержимое подгружается с /reports/<id>/tickets.
+function openTicketsModal(versionId) {
+    var modal = document.getElementById('ticketsModal');
+    if (!modal || !versionId) return;
+    var body = modal.querySelector('[data-tickets-body]');
+    body.innerHTML = '<div class="tickets-modal-loading">Загрузка квитанций…</div>';
+    modal.classList.add('active');
+    fetch('/reports/' + versionId + '/tickets', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(function(r) {
+            if (!r.ok || r.redirected) throw new Error('bad response');
+            return r.text();
+        })
+        .then(function(html) { body.innerHTML = html; })
+        .catch(function() {
+            body.innerHTML = '<div class="tickets-modal-loading">Не удалось загрузить квитанции. Обновите страницу и попробуйте ещё раз.</div>';
+        });
+}
+window.openTicketsModal = openTicketsModal;
+
+document.addEventListener('DOMContentLoaded', function() {
+    var modal = document.getElementById('ticketsModal');
+    if (!modal) return;
+    function closeTickets() { modal.classList.remove('active'); }
+    var closeBtn = modal.querySelector('.modal-header .close');
+    if (closeBtn) closeBtn.addEventListener('click', closeTickets);
+    modal.addEventListener('click', function(e) { if (e.target === modal) closeTickets(); });
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && modal.classList.contains('active')) closeTickets();
+    });
+    document.addEventListener('click', function(e) {
+        var opener = e.target.closest('[data-tickets-modal]');
+        if (opener) openTicketsModal(opener.dataset.ticketsModal);
+    });
+    var params = new URLSearchParams(window.location.search);
+    var m = window.location.pathname.match(/\/reports\/(fuel|heat|electro)\/(\d+)/);
+    if (params.get('tickets') === '1' && m) {
+        openTicketsModal(m[2]);
+        params.delete('tickets');
+        var query = params.toString();
+        history.replaceState(history.state, '', window.location.pathname + (query ? '?' + query : ''));
+    }
+});
 // document.addEventListener('DOMContentLoaded', updateOnlineCount);
 
 // messageFlash теперь общий модуль из common-models (один источник для
@@ -1472,7 +1567,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (activeRow !== null) {
                 var id = activeRow.dataset.versionId;
                 if (id) {
-                    window.location.href = '/reports/report-info/' + id;
+                    openTicketsModal(id);
                 }
             } else {
                 event.preventDefault();
@@ -1506,7 +1601,9 @@ document.addEventListener('DOMContentLoaded', function () {
     //       отчётов, позиция прокрутки сохраняется (как в enPlans). =====
     (function() {
         var tbody = document.getElementById('reports-tbody');
-        if (!tbody) return;
+        // Только страница «Отчёты» автора: на странице проверки тоже есть
+        // #reports-tbody и форма #deleteReport (там это «Отменить действие»).
+        if (!tbody || !document.getElementById('add_report_modal')) return;
 
         function refreshReportsTable() {
             return fetch('/reports/partial/rows', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
@@ -1531,39 +1628,61 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
         }
 
-        function ajaxReportForm(form, closeModalId) {
+        function ajaxReportForm(form, closeModalId, confirmFn) {
             form.addEventListener('submit', function(e) {
                 e.preventDefault();
-                var scrollY = window.scrollY;
-                var submitBtn = form.querySelector('button[type="submit"]');
-                var action = (submitBtn && submitBtn.getAttribute('formaction')) || form.getAttribute('action') || form.action;
-                if (submitBtn) submitBtn.disabled = true;
-
-                fetch(action, {
-                    method: 'POST',
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                    body: new FormData(form)
-                }).then(function(r) {
-                    return r.json().catch(function() { return null; });
-                }).then(function(json) {
-                    if (submitBtn) submitBtn.disabled = false;
-                    if (json && typeof json.success === 'boolean') {
-                        if (json.message) messageFlash.addMessage(json.message, json.success ? 'success' : 'error');
-                        if (json.success) {
-                            if (closeModalId) {
-                                var m = document.getElementById(closeModalId);
-                                if (m) m.classList.remove('active');
-                            }
-                            refreshReportsTable().then(function() { window.scrollTo(0, scrollY); });
-                        }
-                    } else {
-                        window.location.reload();
-                    }
-                }).catch(function(err) {
-                    if (submitBtn) submitBtn.disabled = false;
-                    console.error('[reports] ajax form error', err);
-                    messageFlash.addMessage('Не удалось выполнить операцию', 'error');
+                var confirmed = confirmFn ? confirmFn() : Promise.resolve(true);
+                confirmed.then(function(ok) {
+                    if (ok) sendReportForm(form, closeModalId);
                 });
+            });
+        }
+
+        function confirmReportDelete() {
+            var row = document.querySelector('.report_row.active-report');
+            var contextMenu = document.getElementById('contextMenu_report');
+            if (contextMenu) contextMenu.style.display = 'none';
+            var org = row ? (row.querySelector('#report_organization_name') || {}).value : '';
+            var year = row ? (row.querySelector('#report_year') || {}).value : '';
+            var quarter = row ? (row.querySelector('#report_quarter') || {}).value : '';
+            var what = year && quarter ? 'Отчёт за ' + quarter + ' квартал ' + year + ' года' : 'Отчёт';
+            return appConfirm({
+                title: 'Удалить отчёт?',
+                text: what + (org ? ' (' + org + ')' : '') + ' будет удалён вместе со всеми данными. Это действие нельзя отменить.',
+                confirmText: 'Удалить отчёт'
+            });
+        }
+
+        function sendReportForm(form, closeModalId) {
+            var scrollY = window.scrollY;
+            var submitBtn = form.querySelector('button[type="submit"]');
+            var action = (submitBtn && submitBtn.getAttribute('formaction')) || form.getAttribute('action') || form.action;
+            if (submitBtn) submitBtn.disabled = true;
+
+            fetch(action, {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                body: new FormData(form)
+            }).then(function(r) {
+                return r.json().catch(function() { return null; });
+            }).then(function(json) {
+                if (submitBtn) submitBtn.disabled = false;
+                if (json && typeof json.success === 'boolean') {
+                    if (json.message) messageFlash.addMessage(json.message, json.success ? 'success' : 'error');
+                    if (json.success) {
+                        if (closeModalId) {
+                            var m = document.getElementById(closeModalId);
+                            if (m) m.classList.remove('active');
+                        }
+                        refreshReportsTable().then(function() { window.scrollTo(0, scrollY); });
+                    }
+                } else {
+                    window.location.reload();
+                }
+            }).catch(function(err) {
+                if (submitBtn) submitBtn.disabled = false;
+                console.error('[reports] ajax form error', err);
+                messageFlash.addMessage('Не удалось выполнить операцию', 'error');
             });
         }
 
@@ -1574,7 +1693,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (addForm) ajaxReportForm(addForm, 'add_report_modal');
         if (changeForm) ajaxReportForm(changeForm, 'change_period_report_modal');
         if (copyForm) ajaxReportForm(copyForm, 'copy_report_modal');
-        if (deleteForm) ajaxReportForm(deleteForm, null);
+        if (deleteForm) ajaxReportForm(deleteForm, null, confirmReportDelete);
     })();
 });
 

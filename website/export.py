@@ -117,27 +117,14 @@ def create_archive_async(export_format, task_id, user_id, region_value, year_fil
 
 
 def generate_excel_report(version_id):
+    from .report import ordered_section_rows
+
     current_report = Report.query.filter_by(id=version_id).first()
-    
-    priority = case(
-        {
-            "9001": 1,
-            "9010": 1,
-            "9100": 1
-        },
-        value=Sections.code_product,
-        else_=0
-    )
 
-    sections1 = Sections.query.filter_by(id_version=version_id, section_number=1)\
-        .order_by(priority, asc(Sections.code_product)).all()
+    sections1 = ordered_section_rows(version_id, 1)
+    sections2 = ordered_section_rows(version_id, 2)
+    sections3 = ordered_section_rows(version_id, 3)
 
-    sections2 = Sections.query.filter_by(id_version=version_id, section_number=2)\
-        .order_by(priority, asc(Sections.code_product)).all()
-
-    sections3 = Sections.query.filter_by(id_version=version_id, section_number=3)\
-    .order_by(priority, asc(Sections.code_product)).all()
-    
 
     regular_font_9 = Font(name="Times New Roman", size=9)
     regular_font_9_italic = Font(name="Times New Roman", size=9, italic=True)

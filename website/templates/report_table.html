@@ -159,7 +159,17 @@
             </tbody>
         </table>
     </div>
-    {% if is_reviewer %}
+</div>
+
+{% if is_reviewer %}
+<div id="reviewModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="reviewModalTitle">
+    <div class="modal-content review-modal">
+        <div class="modal-header">
+            <h3 class="change-position" id="reviewModalTitle">
+                {% if current_user.is_reader %}Квитанции отчёта{% else %}Квитанции и сообщение организации{% endif %}
+            </h3>
+            {{ icons.icon_close() }}
+        </div>
         {{ content.tickets_area(
             current_report=current_report,
             current_version=current_version,
@@ -169,8 +179,9 @@
             content=content,
             current_user=current_user
         ) }}
-    {% endif %}
+    </div>
 </div>
+{% endif %}
 
 {% if not is_reviewer %}
 <div id="addSection_modal" class="modal">

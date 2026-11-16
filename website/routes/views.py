@@ -18,8 +18,10 @@ from website.report import (
     to_decimal, 
     update_aggregated_sections, 
     update_section_fields, 
-    update_version_status, 
-    get_reports_by_status 
+    update_version_status,
+    get_reports_by_status,
+    ordered_section_rows,
+    SERVICE_PRODUCT_CODES
     )
 
 from website.organization import create_new_organization, get_current_quarter, update_organization_data_with_delay, validate_okpo, validate_ynp
@@ -45,6 +47,19 @@ views = Blueprint('views', __name__)
 def inject_online_users():
     from common_models import count_online
     return dict(online_users_count=count_online(current_app.config.get('APP_NAME')))
+
+@views.app_template_global()
+def report_review_org(report):
+    """Организация, которая проверяет отчёт, — региональное управление по
+    надзору региона организации отчёта (для таблицы квитанций)."""
+    org = report.organization if report else None
+    if not org or not org.region_id:
+        return None
+    return Organization.query.filter(
+        Organization.region_id == org.region_id,
+        Organization.is_region_management == True
+    ).first()
+
 
 def _can_review_reports(user):
     return bool(user.is_admin or user.is_region_auditor or user.is_reader)
@@ -474,12 +489,44 @@ def get_auditor_info_by_user(current_user):
         'organization': region_management_org.full_name or 'Не указано',
     }
 
+_section_rows = ordered_section_rows
+
+
+def _can_reorder(version, report):
+    """Менять порядок строк может только автор и только пока отчёт можно
+    редактировать (не отправлен и не одобрен)."""
+    return bool(version and report and report.user_id == current_user.id
+                and version.status not in ('Отправлен', 'Одобрен'))
+
+
 @views.route('/reports/<string:report_type>/<int:id>', methods=['GET'])
 @profile_complete
 @login_required
 @session_required
 @owner_only
 def report_section(report_type, id):
+    """Раздел отчёта у автора. Проверяющий (аудитор, читатель, администратор
+    на чужом отчёте) работает с тем же разделом по /audit-area/<раздел>/<id>."""
+    current_version = Version_report.query.filter_by(id=id).first()
+    if _is_reviewer(current_user, current_version.report):
+        return redirect(url_for('views.audit_section', report_type=report_type, id=id, **request.args))
+    return _render_report_section(report_type, id)
+
+
+@views.route('/audit-area/<string:report_type>/<int:id>', methods=['GET'])
+@profile_complete
+@login_required
+@session_required
+@owner_only
+def audit_section(report_type, id):
+    """Раздел отчёта у проверяющего: те же таблицы, свои кнопки и квитанции."""
+    current_version = Version_report.query.filter_by(id=id).first()
+    if not _is_reviewer(current_user, current_version.report):
+        return redirect(url_for('views.report_section', report_type=report_type, id=id, **request.args))
+    return _render_report_section(report_type, id)
+
+
+def _render_report_section(report_type, id):
     current_version = Version_report.query.filter_by(id=id).first()
     current_report = Report.query.filter_by(id=current_version.report_id).first()
     is_reviewer = _is_reviewer(current_user, current_report)
@@ -505,16 +552,7 @@ def report_section(report_type, id):
         DirProduct.DateEnd.is_(None)
     ).order_by(asc(DirProduct.CodeProduct)).all()
 
-    sections = Sections.query.filter_by(
-        id_version=current_version.id, 
-        section_number=section_number
-    ).order_by(
-        case(
-            (Sections.code_product.in_(['9001', '9010', '9100']), 1),
-            else_=0
-        ).asc(),
-        desc(Sections.id)
-    ).all()
+    sections = _section_rows(current_version.id, section_number)
     return render_template('report_table.html', 
         id_report = id,
         section_number=section_number,
@@ -526,7 +564,8 @@ def report_section(report_type, id):
         SentModal = not is_reviewer,
         auditor_info=auditor_info,
         report_type=report_type,
-        is_reviewer=is_reviewer
+        is_reviewer=is_reviewer,
+        can_reorder=_can_reorder(current_version, current_report)
     )
 
 
@@ -545,19 +584,47 @@ def report_section_rows(report_type, id):
     section_number = report_config[report_type]
     current_version = Version_report.query.filter_by(id=id).first()
 
-    sections = Sections.query.filter_by(
-        id_version=current_version.id,
-        section_number=section_number
-    ).order_by(
-        case(
-            (Sections.code_product.in_(['9001', '9010', '9100']), 1),
-            else_=0
-        ).asc(),
-        desc(Sections.id)
-    ).all()
+    sections = _section_rows(current_version.id, section_number)
     return render_template('partials/_section_rows.html',
                            sections=sections,
-                           section_number=section_number)
+                           section_number=section_number,
+                           can_reorder=_can_reorder(current_version, current_version.report))
+
+
+@views.route('/reports/<string:report_type>/<int:id>/reorder', methods=['POST'])
+@login_required
+@session_required
+@owner_only
+def report_section_reorder(report_type, id):
+    """Сохраняет порядок строк раздела, заданный перетаскиванием. Приходит
+    список id строк сверху вниз; служебные строки (9001/9010/9100) в нём не
+    участвуют — они всегда внизу."""
+    report_config = {'fuel': 1, 'heat': 2, 'electro': 3}
+    if report_type not in report_config:
+        return jsonify({'success': False, 'message': 'Неизвестный раздел'}), 404
+    current_version = Version_report.query.get(id)
+    if not _can_reorder(current_version, current_version.report):
+        return jsonify({'success': False, 'message': 'Порядок строк этого отчёта сейчас изменить нельзя'}), 403
+
+    payload = request.get_json(silent=True) or {}
+    try:
+        ordered_ids = [int(x) for x in payload.get('ids', [])]
+    except (TypeError, ValueError):
+        return jsonify({'success': False, 'message': 'Некорректные данные'}), 400
+
+    rows = Sections.query.filter(
+        Sections.id_version == current_version.id,
+        Sections.section_number == report_config[report_type],
+        ~Sections.code_product.in_(SERVICE_PRODUCT_CODES)
+    ).all()
+    by_id = {row.id: row for row in rows}
+    if len(ordered_ids) != len(set(ordered_ids)) or set(ordered_ids) != set(by_id):
+        return jsonify({'success': False, 'message': 'Список строк устарел, обновите страницу'}), 409
+
+    for position, row_id in enumerate(ordered_ids, start=1):
+        by_id[row_id].sort_order = position
+    db.session.commit()
+    return jsonify({'success': True})
 
 
 @views.route('/reports/report-info/<int:id>', methods=['GET'])
@@ -566,21 +633,24 @@ def report_section_rows(report_type, id):
 @session_required
 @owner_only
 def report_info(id):
+    """Отдельной страницы квитанций больше нет: у автора они открываются
+    модальным окном, у проверяющего — под таблицей раздела. Старый адрес
+    ведёт туда же."""
     current_version = Version_report.query.filter_by(id=id).first()
-    current_report = Report.query.filter_by(id=current_version.report_id).first()
-    if _is_reviewer(current_user, current_report):
-        return redirect(url_for('views.report_section', report_type='fuel', id=id, tickets_cont='true'))
+    if _is_reviewer(current_user, current_version.report):
+        return redirect(url_for('views.audit_section', report_type='fuel', id=id, tickets_cont='true'))
+    return redirect(url_for('views.report_section', report_type='fuel', id=id, tickets='1'))
 
-    auditor_info = get_auditor_info_by_user(current_user)
 
-    return render_template('report_review.html',
-        current_user=current_user, 
-        current_report=current_report,
-        current_version=current_version,
-        SentModal = True,
-        auditor_info=auditor_info,
-        section_number = 4
-    )
+@views.route('/reports/<int:id>/tickets', methods=['GET'])
+@profile_complete
+@login_required
+@session_required
+@owner_only
+def report_tickets(id):
+    """Содержимое модального окна «Квитанции отчета» (подгружается через fetch)."""
+    current_version = Version_report.query.filter_by(id=id).first()
+    return render_template('partials/_tickets_modal.html', version=current_version)
 
 
 @views.route('/audit-area/<status>', methods=['GET'])
@@ -1333,7 +1403,7 @@ def change_category_report():
         
         if not current_version.hasNot and action != 'to_download':
             flash('Необходимо уточнить о каких ошибках идет речь', 'error')
-            return redirect(url_for('views.report_section', report_type='fuel', id=current_version.id, tickets_cont='true'))
+            return redirect(url_for('views.audit_section', report_type='fuel', id=current_version.id, tickets_cont='true'))
         
         status_itog = None
         
@@ -1464,8 +1534,12 @@ def send_comment():
         
         cleaned_text = ' '.join(text.split())
         current_version = Version_report.query.filter_by(id=version_id).first()
-        current_report = Report.query.get_or_404(version_id)
-        
+        current_report = current_version.report if current_version else None
+
+        if current_version and current_version.hasNot:
+            flash('Сообщение по этому отчёту уже отправлено. Смените статус отчёта, прежде чем писать снова', 'error')
+            return redirect(request.referrer or url_for('views.audit_area', status='not_viewed'))
+
         if current_version:
             new_comment = Ticket(
                 note = cleaned_text,

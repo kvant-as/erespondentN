@@ -246,8 +246,35 @@
         {% endif %}
       {% endwith %}#}
 
-    {% block content %} 
+    {% block content %}
     {% endblock %}
+
+    <div id="ticketsModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="ticketsModalTitle">
+        <div class="modal-content tickets-modal">
+            <div class="modal-header">
+                <h3 class="change-position" id="ticketsModalTitle">Квитанции отчета</h3>
+                {{ icons.icon_close() }}
+            </div>
+            <div class="tickets-modal-body" data-tickets-body></div>
+        </div>
+    </div>
+
+    <div id="confirmModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle">
+        <div class="modal-content confirm-modal">
+            <div class="modal-header">
+                <h3 class="change-position" id="confirmModalTitle">Подтвердите удаление</h3>
+                {{ icons.icon_close() }}
+            </div>
+            <p class="confirm-modal-text" id="confirmModalText"></p>
+            <div class="confirm-modal-actions">
+                <button type="button" class="app-btn app-btn--secondary" data-confirm-cancel>Отмена</button>
+                <button type="button" class="app-btn app-btn--danger" data-confirm-ok>
+                    {{ icons.icon_delete() }}
+                    <span>Удалить</span>
+                </button>
+            </div>
+        </div>
+    </div>
 
     {% block javascript %}
       <script src="{{ url_for('cm_assets.static', filename='js/message-flash.js') }}"></script>

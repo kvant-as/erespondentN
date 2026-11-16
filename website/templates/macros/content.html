@@ -3,116 +3,6 @@
 <div class="blurred-background"></div>
 {% endmacro %}
 
-{% macro report_dop_info(report, version) %}
-<section class="form-panel">
-    <div class="form-grid">
-        <div class="form-row">
-            <label class="form-label">Предприятие</label>
-            <div class="input-wrapper">
-                {{ icons.icon_building() }}
-                <input class="form-input" value="{{ report.organization.full_name }}" readonly disabled>
-            </div>
-        </div>
-        
-        <div class="form-row form-row--two-columns">
-            <div class="form-col">
-                <label class="form-label">ОКПО</label>
-                <div class="input-wrapper">
-                    {{ icons.icon_okpo() }}
-                    <input class="form-input" value="{{ report.organization.okpo }}" readonly disabled>
-                </div>
-            </div>
-            
-            <div class="form-col">
-                <label class="form-label">УНП</label>
-                <div class="input-wrapper">
-                    {{ icons.icon_okpo() }}
-                    <input class="form-input" value="{{ report.organization.ynp if report.organization.ynp else 'Нет данных' }}" readonly disabled>
-                </div>
-            </div>
-        </div>
-
-        <div class="form-row">
-            <label class="form-label">Регион</label>
-            <div class="input-wrapper">
-                {{ icons.icon_region() }}
-                <input class="form-input" value="{{ report.organization.region.name }}" readonly disabled>
-            </div>
-        </div>
-        <div class="form-row">
-            <label class="form-label">Отчетный период</label>
-            <div class="input-wrapper">
-                {{ icons.icon_calendar() }}
-                <input class="form-input" value="{{ report.year }} г. {{ report.quarter|string + ' квартал' }}" readonly disabled>
-            </div>
-        </div>
-    </div>
-</section>
-{% endmacro %}
-
-{% macro report_time_info(report, version) %}
-<section class="report-dop-info">
-    <div class="report-details">
-        <div class="detail-item">
-            {{ icons.icon_time() }}
-            <div class="detail-content">
-                <div class="detail-label">Начало заполнения</div>
-                <div class="detail-value">
-                    {% if version.begin_time %}
-                        <div class="time-large">{{ version.begin_time.strftime('%d.%m.%Y') }}</div>
-                        <div class="date-small">{{ version.begin_time.strftime('%H:%M') }}</div>
-                    {% else %}
-                        Не указано
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-        <div class="detail-item">
-            {{ icons.icon_edit() }}
-            <div class="detail-content">
-                <div class="detail-label">Последнее изменение</div>
-                <div class="detail-value">
-                    {% if version.change_time %}
-                        <div class="time-large">{{ version.change_time.strftime('%d.%m.%Y') }}</div>
-                        <div class="date-small">{{ version.change_time.strftime('%H:%M') }}</div>
-                    {% else %}
-                        -
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-        <div class="detail-item main-element">
-            {{ icons.icon_send() }}
-            <div class="detail-content">
-                <div class="detail-label">Дата отправки</div>
-                <div class="detail-value">
-                    {% if version.sent_time %}
-                        <div class="time-large">{{ version.sent_time.strftime('%d.%m.%Y') }}</div>
-                        <div class="date-small">{{ version.sent_time.strftime('%H:%M') }}</div>
-                    {% else %}
-                        -
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-        <div class="detail-item">
-            {{ icons.icon_time() }}
-            <div class="detail-content">
-                <div class="detail-label">Дата проверки</div>
-                <div class="detail-value">
-                    {% if version.audit_time %}
-                        <div class="time-large">{{ version.audit_time.strftime('%d.%m.%Y') }}</div>
-                        <div class="date-small">{{ version.audit_time.strftime('%H:%M') }}</div>
-                    {% else %}
-                        -
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-{% endmacro %}
-
 {% macro google_btn() %}
     <hr style = "border: none; border-bottom: 1px solid rgb(56, 56, 56); width: 100%;"/> 
     <div class = "log_with"> 
@@ -385,10 +275,7 @@
 
                         <section>
                             <div class="functions_menu">                       
-                                <li onclick="window.location.href='/reports/report-info/{{current_version.id}}'"
-                                    {% if section_number == 4 %} 
-                                        class="active_functions_menu"
-                                    {% endif %}>
+                                <li data-tickets-modal="{{ current_version.id }}">
                                     <img src="/static/img/icon_print_file.svg" alt="">
                                     <a class="li-title"><span>Квитанции</span></a>
                                 </li>    
@@ -489,28 +376,33 @@
             <div class="content-pod-menu">
                 <nav>
                     <ul>
-                        {% if can_message %}
                         <section>
                             <div class="functions_menu">
-                                <li onclick="scrollToTickets()">
+                                {% if can_message %}
+                                <li data-review-modal>
                                     <img src="{{ url_for('static', filename='img/icon_send.svg')}}" alt="">
                                     <a class="li-title"><span>Отправить</span></a>
                                 </li>
+                                {% else %}
+                                <li data-review-modal>
+                                    <img src="{{ url_for('static', filename='img/icon_print_file.svg')}}" alt="">
+                                    <a class="li-title"><span>Квитанции</span></a>
+                                </li>
+                                {% endif %}
                             </div>
-                            <a class="functions_menu_name">Сообщение</a>
+                            <a class="functions_menu_name">{{ 'Сообщение' if can_message else 'Отчет' }}</a>
                         </section>
-                        {% endif %}
                         <section>
                             <div class="functions_menu">
-                                <li data-report-section="fuel" data-href="/reports/fuel/{{current_version.id}}" {% if section_number == 1 %}class="active_functions_menu"{% endif %}>
+                                <li data-report-section="fuel" data-href="/audit-area/fuel/{{current_version.id}}" {% if section_number == 1 %}class="active_functions_menu"{% endif %}>
                                     <img src="{{ url_for('static', filename='img/Toplivo.png')}}" alt="">
                                     <a class="li-title"><span>Топливо</span></a>
                                 </li>
-                                <li data-report-section="heat" data-href="/reports/heat/{{current_version.id}}" {% if section_number == 2 %}class="active_functions_menu"{% endif %}>
+                                <li data-report-section="heat" data-href="/audit-area/heat/{{current_version.id}}" {% if section_number == 2 %}class="active_functions_menu"{% endif %}>
                                     <img src="{{ url_for('static', filename='img/Teplo.png')}}" alt="">
                                     <a class="li-title"><span>Тепло</span></a>
                                 </li>
-                                <li data-report-section="electro" data-href="/reports/electro/{{current_version.id}}" {% if section_number == 3 %}class="active_functions_menu"{% endif %}>
+                                <li data-report-section="electro" data-href="/audit-area/electro/{{current_version.id}}" {% if section_number == 3 %}class="active_functions_menu"{% endif %}>
                                     <img src="{{ url_for('static', filename='img/Electro.png')}}" alt="">
                                     <a class="li-title"><span>Электро</span></a>
                                 </li>
@@ -552,204 +444,233 @@
 {% endmacro %}
 
 
-{% macro tickets_area(current_report=None, current_version=None, tickets=None, auditor_info=None, csrf_token=None, content=None, current_user=None) %}
-<div class="ticket-area" {% if current_report and not tickets %}id="report-info-area"{% endif %}>
-    <div class="ticket-header" {% if current_report and not tickets %}id="ticket-area"{% endif %}>
-        <div class="messages-container">
-            <div class="messages-header">
-                <div class="messages-header__left">
-                    <h2 class="messages-header__title">
-                        <span>Квитанции отчета</span>
-                    </h2>
-                    {% if tickets %}
-                        <div class="messages-header__info">
-                            <span class="messages-header__badge">{{ tickets|length }}-квитанций</span>
-                        </div>
-                    {% elif current_report and current_report.versions[0].tickets %}
-                        <div class="messages-header__info">
-                            <span class="messages-header__badge">{{ current_report.versions[0].tickets|length }}-квитанций</span>
-                        </div>
-                    {% endif %}
-                </div>
-                {% if tickets or (current_report and current_report.versions[0].tickets) %}
-                    <form method="POST" action="/print-version-tickets" class="print-form">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">  
-                        <input type="hidden" name="version_id" value="{{ current_version.id if current_version else '' }}">
-                        <button type="submit" class="print-btn">
-                            {{ icons.icon_print() }}
-                            <span>Печать всех квитанций</span>
-                        </button>
-                    </form>
+{% macro tickets_track(version, tickets_list) %}
+{#  Квитанции в виде пути проверки (как «Подписи плана» в enPlans):
+    направление на проверку → решения проверяющего по времени → текущее
+    состояние проверки. Вид решения определяется по тексту квитанции:
+    одобрение и отмена решения пишутся сервером фиксированными фразами,
+    всё остальное — сообщение проверяющего с замечаниями. #}
+{% set report = version.report %}
+{% set org = report.organization if report else None %}
+{% set author = report.user if report else None %}
+{% set review_org = report_review_org(report) %}
+{% set review_org_name = review_org.full_name if review_org else 'Региональное управление по надзору' %}
+{% set sorted_tickets = tickets_list|sort(attribute='id') %}
+{% set ns = namespace(has_decision_ticket=False, pending_merged=False) %}
+{% set icon_send %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>{% endset %}
+{% set icon_check %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>{% endset %}
+{% set icon_remark %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 7v6"/><path d="M12 17h.01"/></svg>{% endset %}
+{% set icon_back %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>{% endset %}
+{% set icon_clock %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>{% endset %}
+{% set icon_cross %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>{% endset %}
+
+{% macro track_row(kind, type_label, icon, org_name, person, badge_cls, badge_label, date_str, note) %}
+<tr class="track-row track-row-{{ kind }}">
+    <td class="track-row-type"><div class="track-row-type-inner"><span class="track-row-icon">{{ icon }}</span>{{ type_label }}</div></td>
+    <td class="track-row-org">{{ org_name }}</td>
+    <td class="track-row-person{% if not person %} is-empty{% endif %}">{{ person or '—' }}</td>
+    <td><span class="status-badge track-badge {{ badge_cls }}">{{ icon }}<span>{{ badge_label }}</span></span></td>
+    <td class="track-row-date{% if not date_str %} is-empty{% endif %}">{{ date_str or '—' }}</td>
+    <td class="track-row-note{% if not note %} is-empty{% endif %}">{{ note or '—' }}</td>
+</tr>
+{% endmacro %}
+
+<div class="track-wrap">
+    <div class="track-table-scroll">
+        <table class="track-table">
+            <thead>
+                <tr>
+                    <th>Тип действия</th>
+                    <th>Организация</th>
+                    <th>ФИО, телефон</th>
+                    <th>Статус</th>
+                    <th>Дата</th>
+                    <th>Замечания</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if version.sent_time %}
+                    {% set person %}{% if author %}{{ author.last_name or '' }} {{ author.first_name or '' }} {{ author.patronymic_name or '' }}{% if author.telephone %}, {{ author.telephone }}{% endif %}{% endif %}{% endset %}
+                    {{ track_row('sent', 'Направление на проверку', icon_send, org.full_name if org else '—', person|trim, 'status-draft', 'Отправлен', version.sent_time.strftime('%d.%m.%Y %H:%M'), None) }}
                 {% endif %}
-            </div>
-            <div class="messages-timeline">
-            {% set tickets_list = tickets if tickets else (current_report.versions[0].tickets if current_report and current_report.versions[0].tickets else []) %}
-            {% if tickets_list %}
-                {% for row in tickets_list %}
-                    <div class="tickets-message {% if auditor_info %}tickets-message-left{% else %}tickets-message-right{% endif %}">
-                        <div class="tickets-message-content">
-                            <div class="message-header">
-                                <span class="message-sender">
-                                    {{ _('Проверяющий') }}
-                                </span>
-                                <span class="message-time">
-                                    {{ row.begin_time.strftime('%H:%M') if row.begin_time else '--:--' }}
 
-                                    
-                                </span>
-                            </div>
-                            
-                            <div class="message-bubble">
-                                <p class="text-ticket">{{ row.note }}</p>
-                                <div class="bubble-status">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="#34B7F1"/>
-                                    </svg>
-                                    {#{% if row.luck %}
-                                    {% else %}
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                                            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="#FF5252"/>
-                                        </svg>
-                                    {% endif %}#}
-                                </div>
-                            </div>
-                            
-                            <div class="message-date">
-                                {{ (row.begin_time) | ru_date }}
-                            </div>
-                        </div>
-                    </div>
-                {% endfor %}
-            {% else %}
-                <div class="empty-state-container">
-                    <div class="empty-state">
-                        {{ icons.icon_tickets() if icons else '<span class="empty-icon"></span>'|safe }}
-                        <h3>Нет квитанций</h3>
-                        <p>Квитанции появятся после проверки отчета</p>
-                    </div>
-                </div>
-            {% endif %}
-            </div>
-        </div>
+                {#  Своего статуса у замечания нет: пока отчёт на рассмотрении,
+                    последнее замечание показывается в строке «На рассмотрении»;
+                    после переноса отчёта в «Есть замечания» / «Готов к удалению»
+                    — с этим статусом. Более ранние замечания (после них отчёт
+                    исправляли и отправляли снова) — «Есть замечания». #}
+                {% set last_ticket = sorted_tickets|last if sorted_tickets else None %}
+                {% set last_note = (last_ticket.note or '')|trim if last_ticket else '' %}
+                {% set last_is_remark = last_ticket and not last_ticket.luck
+                    and last_note not in ['Ошибок нет, отчет одобрен.', 'Возвращён в исходное состояние.'] %}
+                {% set merge_decision = last_is_remark and version.status in ['Есть замечания', 'Готов к удалению'] %}
 
-        <div class="form-container">
-            <form method="POST" action="/send-comment" class="comment-form">
-                <div class="comment-form__grid {% if auditor_info %}comment-form__grid_respondent{% endif %}">
-                    <div class="comment-form__section comment-form__section--info">
-                        <div class="section-header">
-                            <h3 class="section-title">{{ 'Проверяющий отчет' if auditor_info else 'Кому' }}</h3>
-                        </div>
-                        <div class="recipient-info">
-                            {% if auditor_info %}
-                                <div class="detail-item">   
-                                    {{ icons.icon_building() }}
-                                    <div class="detail-content">
-                                        <div class="detail-label">Организация</div>
-                                        <div class="detail-value">{{ auditor_info.organization if auditor_info.organization else '---' }}</div>
-                                    </div>
-                                </div>
-                                <!-- <div class="detail-item">    
-                                    {{ icons.icon_profile() }}
-                                    <div class="detail-content">
-                                        <div class="detail-label">Проверяющий</div>
-                                        <div class="detail-value">{{ auditor_info.fio if auditor_info.fio else 'Не указано' }}</div>
-                                    </div>
-                                </div> -->
-                                <a class="detail-item-link" href="https://energoeffect.gov.by/contact" target="_blank">
-                                    {{ icons.icon_phone() }}
-                                    <div class="detail-content">
-                                        <div class="detail-label">Номер телефона</div>
-                                        <div class="detail-value">
-                                            <span>Показать контакты</span>
-                                            <span class="click-hint">Нажмите</span>
-                                        </div>
-                                    </div>
-                                </a>
-                            {% elif current_version %}
-                                <div class="detail-item">   
-                                    {{ icons.icon_email() }}
-                                    <div class="detail-content">
-                                        <div class="detail-label">Email</div>
-                                        <div class="detail-value">{{ current_version.report.user.email }}</div>
-                                    </div>
-                                </div>
-                                <div class="detail-item">    
-                                    {{ icons.icon_profile() }}
-                                    <div class="detail-content">
-                                        <div class="detail-label">ФИО</div>
-                                        <div class="detail-value">{{ current_version.report.user.last_name }} {{ current_version.report.user.first_name }} {{ current_version.report.user.patronymic_name or '' }}</div>
-                                    </div>
-                                </div>
-                                <div class="detail-item">
-                                    {{ icons.icon_phone() }}
-                                    <div class="detail-content">
-                                        <div class="detail-label">Номер телефона</div>
-                                        <div class="detail-value">{{ current_version.report.user.telephone }}</div>
-                                    </div>
-                                </div>
-                            {% endif %}
-                        </div>
-                    </div>
-                    
-                    {% if not auditor_info %}
-                    <div class="comment-form__section comment-form__section--message">
-                        <div class="message-field">
-                            <div class="section-header">
-                                <h3 class="section-title">Текст сообщения</h3>
-                            </div>
-                            <div class="glass-info-block">
-                                <p>При наличии ошибок в отчете укажите их. Если ошибки отсутствуют, измените статус на <strong>«Одобренный»</strong></p>
-                            </div>
-                            <textarea name="text" maxlength="399" required class="message-field__textarea" placeholder="Введите ваше сообщение..." oninput="updateCounter(this)"></textarea>
-                            <div class="message-field__counter" id="messageCounter">0/399</div>
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
-                            <input type="hidden" name="version_id" value="{{ current_version.id if current_version else '' }}">
-                            
-                            {% if current_version and current_version.status not in ['Одобрен', 'Готов к удалению', 'Есть замечания'] and current_user and not current_user.is_reader %}
-                            <div class="model_but_area right">
-                                <button type="submit" class="app-btn">
-                                    {{ icons.icon_send() }}
-                                    <span>Отправить сообщение</span>
-                                </button>
-                            </div>
-                            {% endif %}
-                        </div>
-                    </div>
+                {% for t in sorted_tickets %}
+                    {% set note = (t.note or '')|trim %}
+                    {% set date_str = t.begin_time.strftime('%d.%m.%Y %H:%M') if t.begin_time else None %}
+                    {% if t.luck or note == 'Ошибок нет, отчет одобрен.' %}
+                        {% set ns.has_decision_ticket = loop.last %}
+                        {{ track_row('done', 'Решение проверки', icon_check, review_org_name, None, 'status-approved', 'Одобрен', date_str, note) }}
+                    {% elif note == 'Возвращён в исходное состояние.' %}
+                        {% set ns.has_decision_ticket = False %}
+                        {{ track_row('neutral', 'Решение проверки', icon_back, review_org_name, None, 'status-draft', 'Возвращён на рассмотрение', date_str, note) }}
+                    {% elif loop.last and merge_decision and version.status == 'Готов к удалению' %}
+                        {{ track_row('rejected', 'Решение проверки', icon_cross, review_org_name, None, 'status-delete', 'Готов к удалению', date_str, note) }}
+                    {% elif loop.last and version.status == 'Отправлен' %}
+                        {% set ns.pending_merged = True %}
+                        {{ track_row('active', 'Решение проверки', icon_clock, review_org_name, None, 'status-pending', 'На рассмотрении', date_str, note) }}
+                    {% else %}
+                        {% set ns.has_decision_ticket = False %}
+                        {{ track_row('warning', 'Решение проверки', icon_remark, review_org_name, None, 'status-warning', 'Есть замечания', date_str, note) }}
                     {% endif %}
-                </div>
-            </form>
-        </div>
+                {% endfor %}
+
+                {% set audit_str = version.audit_time.strftime('%d.%m.%Y %H:%M') if version.audit_time else None %}
+                {% if version.status == 'Отправлен' and ns.pending_merged %}
+                {% elif version.status == 'Отправлен' %}
+                    {{ track_row('active', 'Решение проверки', icon_clock, review_org_name, None, 'status-pending', 'На рассмотрении', None, None) }}
+                {% elif merge_decision %}
+                {% elif version.status == 'Есть замечания' %}
+                    {{ track_row('warning', 'Решение проверки', icon_remark, review_org_name, None, 'status-warning', 'Есть замечания', audit_str, 'Исправьте отчёт и отправьте его повторно') }}
+                {% elif version.status == 'Готов к удалению' %}
+                    {{ track_row('rejected', 'Решение проверки', icon_cross, review_org_name, None, 'status-delete', 'Готов к удалению', audit_str, 'Отчёт нельзя исправить, создайте новый') }}
+                {% elif version.status == 'Одобрен' and not ns.has_decision_ticket %}
+                    {{ track_row('done', 'Решение проверки', icon_check, review_org_name, None, 'status-approved', 'Одобрен', audit_str, None) }}
+                {% endif %}
+            </tbody>
+        </table>
     </div>
-    
-    {% if current_report and content and not tickets %}
-    <div class="ticket-header not-first-header">
-        <div class="messages-container">
-            <div class="messages-header">
-                <div class="messages-header__left">
-                    <h2 class="messages-header__title">
-                        <span>Данные отчета</span>
-                        <span>{{ content.status_report(current_version) if content else '' }}</span>
-                    </h2>
-                </div>
-            </div>
-            {{ content.report_dop_info(current_report, current_version) if content else '' }}
-        </div>
+</div>
+{% endmacro %}
+
+
+{% macro tickets_modal_body(version, auditor_info=None) %}
+{% set tickets_list = version.tickets or [] %}
+{% if version.sent_time or tickets_list %}
+    {{ tickets_track(version, tickets_list) }}
+{% else %}
+    <div class="tickets-modal-empty">
+        {{ icons.icon_tickets() }}
+        <p>Квитанции появятся после отправки отчёта на проверку.</p>
     </div>
-    <div class="ticket-header not-first-header">
-        <div class="messages-container">
-            <div class="messages-header">
-                <div class="messages-header__left">
-                    <h2 class="messages-header__title">
-                        {{ icons.icon_dif() }}
-                        <span>Прочее</span>
-                    </h2>
-                </div>
-            </div>
-            {{ content.report_time_info(current_report, current_version) if content else '' }}
-        </div>
+{% endif %}
+<div class="tickets-modal-footer">
+    <div class="tickets-modal-reviewer">
+        {% set review_org = report_review_org(version.report) %}
+        <span class="tickets-modal-reviewer-label">Проверяет</span>
+        <span>{{ review_org.full_name if review_org else 'региональное управление по надзору' }}</span>
+        <a class="instruction-link" href="https://energoeffect.gov.by/contact" target="_blank" rel="noopener">Контакты проверяющих</a>
     </div>
+    {% if tickets_list %}
+    <form method="POST" action="/print-version-tickets" class="tickets-modal-print">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="version_id" value="{{ version.id }}">
+        <button type="submit" class="app-btn app-btn--secondary">
+            {{ icons.icon_print() }}
+            <span>Печать всех квитанций</span>
+        </button>
+    </form>
     {% endif %}
 </div>
+{% endmacro %}
+
+
+{% macro tickets_area(current_report=None, current_version=None, tickets=None, auditor_info=None, csrf_token=None, content=None, current_user=None) %}
+{#  Панель проверяющего под таблицей раздела: квитанции и сообщение
+    организации слева, сведения об отчёте справа. Всё, что уже есть в
+    таблице квитанций (ФИО и телефон автора, дата отправки, статус), здесь
+    не повторяется. #}
+{% set version = current_version or (current_report.versions[0] if current_report and current_report.versions else None) %}
+{% set report = version.report if version else current_report %}
+{% set tickets_list = tickets if tickets else (version.tickets if version and version.tickets else []) %}
+{% set decided = version and version.status in ['Одобрен', 'Готов к удалению', 'Есть замечания'] %}
+{% set message_sent = version and version.hasNot %}
+{% set can_message = version and current_user and not current_user.is_reader and not decided and not message_sent %}
+<section class="review-panel" id="report-info-area">
+    <div class="review-main">
+        <div class="review-card review-card-flush" id="ticket-area">
+            <div class="review-card-head">
+                <h2 class="review-card-title">Квитанции отчёта</h2>
+                {% if tickets_list %}<span class="review-count">{{ tickets_list|length }}</span>{% endif %}
+                {% if tickets_list %}
+                <form method="POST" action="/print-version-tickets" class="review-print">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
+                    <input type="hidden" name="version_id" value="{{ version.id }}">
+                    <button type="submit" class="app-btn app-btn--secondary">
+                        {{ icons.icon_print() }}
+                        <span>Печать всех квитанций</span>
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+            {% if version and (version.sent_time or tickets_list) %}
+                {{ tickets_track(version, tickets_list) }}
+            {% else %}
+                <p class="review-empty">Квитанции появятся после отправки отчёта на проверку.</p>
+            {% endif %}
+        </div>
+
+        {% if can_message %}
+        <form method="POST" action="/send-comment" class="review-card review-composer">
+            <div class="review-card-head">
+                <h2 class="review-card-title">Сообщение организации</h2>
+            </div>
+            <p class="review-hint">
+                Опишите ошибки в отчёте — сообщение попадёт в квитанции, а организация получит его на почту
+                <span class="review-hint-email">{{ report.user.email if report and report.user else '' }}</span>.
+                Если ошибок нет, перенесите отчёт в «Одобр.» в списке проверки.
+            </p>
+            <textarea name="text" maxlength="399" required class="message-field__textarea" placeholder="Например: не заполнено примечание в строке 9010 раздела «Тепло»" oninput="updateCounter(this)"></textarea>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
+            <input type="hidden" name="version_id" value="{{ version.id }}">
+            <div class="review-composer-foot">
+                <span class="review-counter" id="messageCounter">0/399</span>
+                <button type="submit" class="app-btn" disabled>
+                    {{ icons.icon_send() }}
+                    <span>Отправить сообщение</span>
+                </button>
+            </div>
+        </form>
+        {% elif version and current_user and not current_user.is_reader and message_sent and not decided %}
+        <p class="review-note">Сообщение организации уже отправлено. Теперь перенесите отчёт в «Замеч.» или «Удал.» в списке проверки — следующее сообщение можно будет написать после смены статуса.</p>
+        {% elif version and current_user and not current_user.is_reader %}
+        <p class="review-note">Решение по отчёту уже принято, новые сообщения недоступны. Чтобы написать организации, сначала отмените решение в списке проверки.</p>
+        {% endif %}
+    </div>
+
+    {% if report %}
+    <aside class="review-card review-aside">
+        <div class="review-card-head">
+            <h2 class="review-card-title">Сведения об отчёте</h2>
+        </div>
+        {% set org = report.organization %}
+        <dl class="review-facts">
+            <dt>Организация</dt>
+            <dd>{{ org.full_name if org else '—' }}</dd>
+            <div class="review-facts-pair">
+                <div>
+                    <dt>ОКПО</dt>
+                    <dd>{{ org.okpo if org and org.okpo else '—' }}</dd>
+                </div>
+                <div>
+                    <dt>УНП</dt>
+                    <dd>{{ org.ynp if org and org.ynp else '—' }}</dd>
+                </div>
+            </div>
+            <dt>Регион</dt>
+            <dd>{{ org.region.name if org and org.region else '—' }}</dd>
+            <dt>Отчётный период</dt>
+            <dd>{{ report.quarter }} квартал {{ report.year }} года</dd>
+            <dt>Начало заполнения</dt>
+            <dd>{{ version.begin_time.strftime('%d.%m.%Y %H:%M') if version and version.begin_time else '—' }}</dd>
+            <dt>Последнее изменение</dt>
+            <dd>{{ version.change_time.strftime('%d.%m.%Y %H:%M') if version and version.change_time else '—' }}</dd>
+            <dt>Дата проверки</dt>
+            <dd>{{ version.audit_time.strftime('%d.%m.%Y %H:%M') if version and version.audit_time else 'Ещё не проверен' }}</dd>
+        </dl>
+    </aside>
+    {% endif %}
+</section>
 {% endmacro %}
 
 {% macro left_menu(active_tab) %}

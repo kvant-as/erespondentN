@@ -521,20 +521,28 @@ class AuditModule {
         });
     }
 
-    handleRollback(event) {
+    async handleRollback(event) {
+        event.preventDefault();
         const activeRow = document.querySelector('.report_row.active-report');
-        if (activeRow !== null) {
-            const ReportId = activeRow.dataset.id;
-            if (ReportId) {
-                const deleteForm = document.getElementById('deleteReport');
-                if (deleteForm) {
-                    deleteForm.action = '/rollbackreport/' + ReportId;
-                }
-            }
-        } else {
+        if (activeRow === null) {
             alert('Выберите отчет для отката');
-            event.preventDefault();
+            return;
         }
+        const ReportId = activeRow.dataset.id;
+        const deleteForm = document.getElementById('deleteReport');
+        if (!ReportId || !deleteForm) return;
+        this.hideContextMenu();
+
+        const name = activeRow.querySelector('td:nth-child(4) input')?.value || '';
+        const text = 'Решение по отчёту' + (name ? ' «' + name + '»' : '') +
+            ' будет отменено: отчёт вернётся в статус «На рассмотрении», организации придёт уведомление.';
+        const ok = window.appConfirm
+            ? await window.appConfirm({ title: 'Отменить решение?', text: text, confirmText: 'Отменить решение', icon: false })
+            : window.confirm(text);
+        if (!ok) return;
+
+        deleteForm.action = '/rollbackreport/' + ReportId;
+        deleteForm.submit();
     }
 
     handleScroll() {
@@ -841,7 +849,7 @@ class AuditModule {
                     ${report.has_not ? '<span class="report-ticket-dot" title="Есть квитанция — отчёт можно перенести в другой статус" aria-label="Есть квитанция"></span>' : ''}
                 </td>
                 <td style="padding: 4px;">
-                    <button class="open-report-btn" onclick="window.location.href='/reports/fuel/${report.version_id}'">   
+                    <button class="open-report-btn" onclick="window.location.href='/audit-area/fuel/${report.version_id}'">   
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                             <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
