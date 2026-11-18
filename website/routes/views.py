@@ -1,7 +1,7 @@
 from decimal import Decimal
 from io import BytesIO
 import os
-from flask import Blueprint, current_app, make_response, render_template, redirect, url_for, flash, request, jsonify, session, get_flashed_messages
+from flask import Blueprint, abort, current_app, make_response, render_template, redirect, url_for, flash, request, jsonify, session, get_flashed_messages
 from flask_login import current_user, login_required
 
 from website.ecp import check_certificate_expiry
@@ -149,7 +149,7 @@ def beginPage():
     user_data = User.query.filter(User.application_id == get_current_application_id()).count()
     organization_data = Organization.query.count()
     report_data = Report.query.count()
-    latest_news = News.query.filter(News.is_erespondentn == True).order_by(desc(News.id)).first()
+    latest_news = News.query.filter(News.application_id == get_current_application_id()).order_by(desc(News.id)).first()
 
     regions = Region.query.order_by(Region.number).all()
 
@@ -756,8 +756,10 @@ def FAQ():
 
 @views.route('/news/<int:id>', methods=['GET'])
 def news_post(id):
-    post = News.query.filter_by(id = id).first()
-    return render_template(f'news_id.html', 
+    post = News.query.filter_by(id=id, application_id=get_current_application_id()).first()
+    if not post:
+        abort(404)
+    return render_template(f'news_id.html',
         current_user=current_user,
         post=post
     )
@@ -788,7 +790,7 @@ def news():
     if page < 1:
         page = 1
 
-    base_query = News.query.filter(News.is_erespondentn == True).order_by(News.created_time.desc())
+    base_query = News.query.filter(News.application_id == get_current_application_id()).order_by(News.created_time.desc())
     total = base_query.count()
     total_pages = max(1, (total + NEWS_PER_PAGE - 1) // NEWS_PER_PAGE)
     if page > total_pages:
