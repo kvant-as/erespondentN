@@ -1,27 +1,25 @@
-{% extends "cm_admin/base.html" %}
-{% block title %}{{ site.brand }} · Сообщения администратору{% endblock %}
+{% extends "eres_admin/base.html" %}
+{% block title %}Сообщения администратору — {{ site.brand }}{% endblock %}
+{% block crumbs %}<span class="ea-crumbs">Обращения</span>{% endblock %}
+{% block page_title %}Сообщения администратору{% endblock %}
+{% block page_actions %}<span class="ea-total">Диалогов: {{ rows|length }}</span>{% endblock %}
 
 {% block content %}
-  <div class="cm-section-head">
-    <h1 class="cm-h1">Сообщения администратору</h1>
-    <a class="cm-link" href="{{ url_for('cm_admin.dashboard') }}">← к панели</a>
-  </div>
-
-  <div class="cm-rows">
-    {% for row in rows %}
-      <a class="cm-row" href="{{ row.url }}">
-        <div class="cm-row-block">
-          <span class="cm-row-title">{{ row.title }}</span>
-          {% if row.subtitle %}<span class="cm-row-sub">{{ row.subtitle }}</span>{% endif %}
-        </div>
-        {% if row.meta %}
-          <span class="cm-row-meta {{ 'cm-row-meta--unread' if row.unread }}">{{ row.meta }}</span>
-        {% endif %}
-      </a>
+  <section class="ea-card">
+    {% if rows %}
+      <div class="ea-list">
+        {% for row in rows %}
+          <a class="ea-list-row" href="{{ row.url }}">
+            <span class="ea-list-main">
+              <span class="ea-list-title">{{ row.title }}</span>
+              {% if row.subtitle %}<span class="ea-list-sub">{{ row.subtitle }}</span>{% endif %}
+            </span>
+            {% if row.meta %}<span class="ea-list-meta{{ ' is-accent' if row.unread }}">{{ row.meta }}</span>{% endif %}
+          </a>
+        {% endfor %}
+      </div>
     {% else %}
-      <div class="cm-empty">Обращений пока нет</div>
-    {% endfor %}
-  </div>
-
-  <p class="cm-muted">Всего диалогов: {{ rows|length }}</p>
+      <div class="ea-empty">{{ icon('message') }}<p>Сообщений пока нет. Здесь появятся обращения пользователей к администратору.</p></div>
+    {% endif %}
+  </section>
 {% endblock %}

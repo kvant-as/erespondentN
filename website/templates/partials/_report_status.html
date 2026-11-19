@@ -1,0 +1,5 @@
+{# Статус отчёта и раздел «Статус» меню — для обновления страницы отчёта
+   после правки данных без перезагрузки (см. refreshReportStatus в report.js). #}
+{% import 'macros/content.html' as content %}
+<div data-part="status">{{ content.status_report(current_version) }}</div>
+<ul data-part="actions">{{ content.report_status_actions(current_version, section_number) }}</ul>

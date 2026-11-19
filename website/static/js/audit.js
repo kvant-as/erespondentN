@@ -3,12 +3,15 @@ class AuditModule {
         this.currentStatus = document.getElementById('current-status')?.value || 'all_reports';
         this.yearFilter = document.getElementById('year-filter-value')?.value || '';
         this.quarterFilter = document.getElementById('quarter-filter-value')?.value || '';
+        this.sortOrder = new URLSearchParams(window.location.search).get('sort') === 'desc' ? 'desc' : 'asc';
         this.previousReportRow = null;
         this.selectedReportId = null;
         this.longPressTimer = null;
         this.LONG_PRESS_DELAY = 500;
         this.isLongPress = false;
         
+        this.returnKey = 'er-return-audit';
+        this.searchMode = 'name';
         this.currentPage = 1;
         this.pageSize = 50;
         this.totalPages = 1;
@@ -20,13 +23,47 @@ class AuditModule {
     }
 
     async init() {
-        await this.loadData(1);
+        const restore = window.ReturnPoint ? window.ReturnPoint.take(this.returnKey) : null;
+        if (restore) {
+            this.setSearchMode(restore.searchMode || 'name');
+            const input = document.getElementById('audit-search');
+            if (input && restore.searchText) input.value = restore.searchText;
+        }
+        // Регион проверяющего выставляется до первой загрузки, чтобы список
+        // грузился один раз (и не сбрасывал восстановленную страницу).
+        this.initCustomDropdown();
+        this.initSortDropdown();
+        this.updateDropdownFromUrl();
+        this.setDefaultRegionForAuthor(false);
+        await this.loadData(restore && restore.page ? restore.page : 1);
         this.attachEventListeners();
         this.attachGlobalEventListeners();
-        this.initCustomDropdown();
-        this.updateDropdownFromUrl();
-        this.setDefaultRegionForAuthor();
         this.setupPagination();
+        this.setupReturnPoint(restore);
+    }
+
+    // «Вернуться к отчетам» со страницы отчёта: список запоминает фильтры
+    // (они в адресе), страницу, поиск, выбранную строку и прокрутку.
+    setupReturnPoint(restore) {
+        if (!window.ReturnPoint) return;
+        let lastRowId = null;
+        document.addEventListener('click', (e) => {
+            const row = e.target.closest && e.target.closest('.report_row');
+            if (row) lastRowId = row.dataset.id;
+        }, true);
+        window.addEventListener('pagehide', () => {
+            const active = document.querySelector('.report_row.active-report');
+            window.ReturnPoint.save(this.returnKey, {
+                page: this.currentPage,
+                searchMode: this.searchMode,
+                searchText: document.getElementById('audit-search')?.value || '',
+                rowId: active ? active.dataset.id : lastRowId
+            });
+        });
+        if (!restore) return;
+        const row = restore.rowId ? document.querySelector(`.report_row[data-id="${restore.rowId}"]`) : null;
+        if (row && !row.classList.contains('active-report')) row.click();
+        window.ReturnPoint.scroll(restore, row);
     }
 
     attachGlobalEventListeners() {
@@ -48,57 +85,87 @@ class AuditModule {
         this.setupDownloadLinks();
     }
 
+    // Страницы списка: панель под таблицей (вне горизонтальной прокрутки),
+    // номера страниц с пропусками «…»; при одной странице панель скрыта.
     setupPagination() {
         const prevBtn = document.getElementById('prevPageBtn');
         const nextBtn = document.getElementById('nextPageBtn');
-        
-        if (prevBtn) {
-            prevBtn.addEventListener('click', () => {
-                if (this.currentPage > 1) {
-                    this.loadData(this.currentPage - 1);
-                }
+        const pages = document.getElementById('pagerPages');
+        if (prevBtn) prevBtn.addEventListener('click', () => this.goToPage(this.currentPage - 1));
+        if (nextBtn) nextBtn.addEventListener('click', () => this.goToPage(this.currentPage + 1));
+        if (pages) {
+            pages.addEventListener('click', (e) => {
+                const btn = e.target.closest('[data-page]');
+                if (btn) this.goToPage(Number(btn.dataset.page));
             });
         }
-        
-        if (nextBtn) {
-            nextBtn.addEventListener('click', () => {
-                if (this.currentPage < this.totalPages) {
-                    this.loadData(this.currentPage + 1);
-                }
-            });
+    }
+
+    async goToPage(page) {
+        if (this.isLoading || page < 1 || page > this.totalPages || page === this.currentPage) return;
+        await this.loadData(page);
+        const list = document.querySelector('.report-list');
+        if (list) {
+            const top = list.getBoundingClientRect().top + window.scrollY - 90;
+            window.scrollTo({ top: Math.max(top, 0), behavior: 'smooth' });
         }
+    }
+
+    pageWindow(current, total) {
+        const pages = new Set([1, total, current - 1, current, current + 1]);
+        if (current <= 3) [2, 3, 4].forEach(p => pages.add(p));
+        if (current >= total - 2) [total - 1, total - 2, total - 3].forEach(p => pages.add(p));
+        const sorted = [...pages].filter(p => p >= 1 && p <= total).sort((a, b) => a - b);
+        const out = [];
+        sorted.forEach((p, i) => {
+            if (i && p - sorted[i - 1] > 1) out.push(null);
+            out.push(p);
+        });
+        return out;
     }
 
     updatePaginationButtons() {
+        const pager = document.getElementById('auditPager');
         const prevBtn = document.getElementById('prevPageBtn');
         const nextBtn = document.getElementById('nextPageBtn');
-        const currentPageSpan = document.getElementById('currentPage');
-        const totalPagesSpan = document.getElementById('totalPages');
-        
-        if (prevBtn) {
-            prevBtn.disabled = this.currentPage <= 1;
-        }
-        if (nextBtn) {
-            nextBtn.disabled = this.currentPage >= this.totalPages;
-        }
-        if (currentPageSpan) {
-            currentPageSpan.textContent = this.currentPage;
-        }
-        if (totalPagesSpan) {
-            totalPagesSpan.textContent = this.totalPages || 1;
-        }
+        const pages = document.getElementById('pagerPages');
+        const totalPages = Math.max(this.totalPages || 1, 1);
+        if (pager) pager.hidden = totalPages <= 1;
+        if (prevBtn) prevBtn.disabled = this.currentPage <= 1;
+        if (nextBtn) nextBtn.disabled = this.currentPage >= totalPages;
+        if (!pages) return;
+        pages.innerHTML = '';
+        if (totalPages <= 1) return;
+        this.pageWindow(this.currentPage, totalPages).forEach(p => {
+            if (p === null) {
+                const gap = document.createElement('span');
+                gap.className = 'audit-pager-gap';
+                gap.textContent = '…';
+                pages.appendChild(gap);
+                return;
+            }
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'audit-pager-btn' + (p === this.currentPage ? ' is-current' : '');
+            btn.dataset.page = p;
+            btn.textContent = p;
+            btn.setAttribute('aria-label', 'Страница ' + p);
+            if (p === this.currentPage) btn.setAttribute('aria-current', 'page');
+            pages.appendChild(btn);
+        });
     }
 
     async loadData(page = 1) {
+        this.isLoading = true;
         const loadingSpinner = document.getElementById('loading-spinner');
         const reportsContent = document.getElementById('reports-content');
         const emptyState = document.getElementById('empty-state');
-        const paginationContainer = document.querySelector('.pagination-container');
+        const paginationContainer = document.getElementById('auditPager');
         
         if (loadingSpinner) loadingSpinner.style.display = 'flex';
         if (reportsContent) reportsContent.style.display = 'none';
         if (emptyState) emptyState.style.display = 'none';
-        if (paginationContainer) paginationContainer.style.display = 'none';
+        if (paginationContainer) paginationContainer.hidden = true;
 
         this.animateStatsLoading();
         this.currentPage = page;
@@ -115,7 +182,7 @@ class AuditModule {
                 this.renderReports(this.allReports, false);
                 
                 if (loadingSpinner) loadingSpinner.style.display = 'none';
-                if (paginationContainer) paginationContainer.style.display = 'flex';
+                
                 
                 this.updatePaginationButtons();
                 this.attachRowEventListeners();
@@ -124,6 +191,8 @@ class AuditModule {
             console.error('Error loading data:', error);
             if (loadingSpinner) loadingSpinner.style.display = 'none';
             this.showError('Ошибка загрузки данных');
+        } finally {
+            this.isLoading = false;
         }
     }
 
@@ -133,11 +202,10 @@ class AuditModule {
             year: this.yearFilter,
             quarter: this.quarterFilter,
             page: page,
-            per_page: this.pageSize
+            per_page: this.pageSize,
+            sort: this.sortOrder
         });
         
-        const searchName = document.getElementById('organization-filter')?.value;
-        const searchOkpo = document.getElementById('okpo-filter')?.value;
         
         let regionFilter = 'all';
         
@@ -149,8 +217,10 @@ class AuditModule {
             regionFilter = urlParams.get('region') || 'all';
         }
         
-        if (searchName) params.append('search_name', searchName);
-        if (searchOkpo) params.append('search_okpo', searchOkpo);
+        const search = this.searchParam();
+        if (search) params.append(search[0], search[1]);
+        const onlyReport = new URLSearchParams(window.location.search).get('report');
+        if (onlyReport) params.append('report', onlyReport);
         if (regionFilter && regionFilter !== '' && regionFilter !== 'all') {
             params.append('region', regionFilter);
         }
@@ -254,6 +324,9 @@ class AuditModule {
         
         if (statusText === 'Непросмотренный') {
             event.dataTransfer.setData('text/plain', reportId);
+            event.dataTransfer.effectAllowed = 'move';
+            this.dragHasTicket = row.dataset.hasTicket === 'true';
+            this.setDragGhost(event, row);
             row.classList.add('dragging');
             this.setDraggingState(true);
         } else {
@@ -265,6 +338,27 @@ class AuditModule {
         }
         row.classList.add('active-report');
         this.previousReportRow = row;
+    }
+
+    setDragGhost(event, row) {
+        // Своя карточка вместо стандартного «призрака» строки: название
+        // организации и подсказка, куда её можно бросить.
+        if (!event.dataTransfer || !event.dataTransfer.setDragImage) return;
+        const name = row.querySelector('td:nth-child(4) input')?.value || 'Отчёт';
+        const ghost = document.createElement('div');
+        ghost.className = 'report-drag-ghost';
+        const title = document.createElement('span');
+        title.className = 'report-drag-ghost-title';
+        title.textContent = name;
+        const hint = document.createElement('span');
+        hint.className = 'report-drag-ghost-hint';
+        hint.textContent = this.dragHasTicket
+            ? 'Перенесите на статус в меню'
+            : 'Можно только одобрить: для замечаний сначала напишите сообщение';
+        ghost.append(title, hint);
+        document.body.appendChild(ghost);
+        event.dataTransfer.setDragImage(ghost, 18, 18);
+        setTimeout(() => ghost.remove(), 0);
     }
 
     handleDragEnd(event) {
@@ -314,28 +408,17 @@ class AuditModule {
     }
 
     setDraggingState(isDragging) {
-        const with_remarks = document.querySelector('li[data-action="remarks"]');
-        const to_conf = document.querySelector('li[data-action="to_download"]');
-        const to_del = document.querySelector('li[data-action="to_delete"]');
-        
-        if (with_remarks) {
-            with_remarks.style.background = isDragging ? 'rgb(255, 231, 185)' : '';
-            with_remarks.style.color = isDragging ? 'black' : '';
-            with_remarks.style.padding = isDragging ? '20px 50px' : '';
-            with_remarks.style.marginBottom = isDragging ? '0' : '';
-        }
-        if (to_conf) {
-            to_conf.style.background = isDragging ? 'rgb(194, 255, 204)' : '';
-            to_conf.style.color = isDragging ? 'black' : '';
-            to_conf.style.padding = isDragging ? '20px 50px' : '';
-            to_conf.style.marginBottom = isDragging ? '0' : '';
-        }
-        if (to_del) {
-            to_del.style.background = isDragging ? 'rgb(255, 206, 206)' : '';
-            to_del.style.color = isDragging ? 'black' : '';
-            to_del.style.padding = isDragging ? '20px 50px' : '';
-            to_del.style.marginBottom = isDragging ? '0' : '';
-        }
+        const menu = document.querySelector('.menu_audit');
+        if (!menu) return;
+        menu.classList.toggle('is-drop-mode', isDragging);
+        // «Удал.» и «Замеч.» доступны только отчётам с квитанцией (синяя точка):
+        // без сообщения аудитора сервер такую смену статуса не примет.
+        const allowed = this.dragHasTicket ? ['remarks', 'to_download', 'to_delete'] : ['to_download'];
+        menu.querySelectorAll('li[data-action]').forEach(item => {
+            const isTarget = allowed.includes(item.dataset.action);
+            item.classList.toggle('drop-target', isDragging && isTarget);
+            if (!isDragging) item.classList.remove('is-drop-hover');
+        });
     }
 
     setupDropTargets() {
@@ -363,91 +446,184 @@ class AuditModule {
     }
 
     handleDragOver(event) {
+        if (!event.currentTarget.classList.contains('drop-target')) return;
         event.preventDefault();
     }
 
     handleDragEnter(event) {
+        if (!event.currentTarget.classList.contains('drop-target')) return;
         event.preventDefault();
-        event.currentTarget.classList.add('dragging');
+        event.currentTarget.classList.add('is-drop-hover');
     }
 
     handleDragLeave(event) {
         event.preventDefault();
-        event.currentTarget.classList.remove('dragging');
+        const item = event.currentTarget;
+        if (!event.relatedTarget || !item.contains(event.relatedTarget)) {
+            item.classList.remove('is-drop-hover');
+        }
     }
 
-    handleDrop(event) {
-        event.preventDefault();
+    async handleDrop(event) {
         const targetItem = event.currentTarget;
-        targetItem.classList.remove('dragging');
+        if (!targetItem.classList.contains('drop-target')) return;
+        event.preventDefault();
+        targetItem.classList.remove('is-drop-hover');
+        this.setDraggingState(false);
         const reportId = event.dataTransfer.getData('text/plain');
         const action = targetItem.dataset.action;
-        
+
         const form = document.getElementById('change-category-form');
         const reportIdInput = document.getElementById('report-id-input');
         const actionInput = document.getElementById('action-input');
-        
+
         const activeReport = document.querySelector('.active-report');
+        const previousRow = this.previousReportRow;
+        this.previousReportRow = null;
         if (activeReport && activeReport.dataset.id === reportId && form) {
+            const statuses = {
+                to_download: { title: 'Одобрить отчёт?', status: 'Одобрен', confirm: 'Одобрить', variant: 'success' },
+                remarks: { title: 'Вернуть отчёт с замечаниями?', status: 'Есть замечания', confirm: 'Вернуть с замечаниями', variant: 'warning' },
+                to_delete: { title: 'Отметить отчёт к удалению?', status: 'Готов к удалению', confirm: 'К удалению', variant: 'danger' },
+            };
+            const info = statuses[action];
+            if (info) {
+                const name = activeReport.querySelector('td:nth-child(4) input')?.value || '';
+                let text = 'Отчёт' + (name ? ' «' + name + '»' : '') + ' получит статус «' + info.status + '», организации придёт уведомление.';
+                if (action === 'to_delete') text += ' Исправить такой отчёт организация не сможет — нужно будет создать новый.';
+                const ok = window.appConfirm
+                    ? await window.appConfirm({ title: info.title, text: text, confirmText: info.confirm, variant: info.variant, icon: false })
+                    : window.confirm(text);
+                if (!ok) {
+                    if (previousRow) previousRow.classList.remove('active-report');
+                    return;
+                }
+            }
             if (reportIdInput) reportIdInput.value = reportId;
             if (actionInput) actionInput.value = action;
             form.submit();
         }
-        
-        if (this.previousReportRow) {
-            this.previousReportRow.classList.remove('active-report');
-            this.previousReportRow = null;
-        }
+
+        if (previousRow) previousRow.classList.remove('active-report');
     }
 
     setupNavigationItems() {
         const navItems = document.querySelectorAll('.menu_audit li[data-action]');
-        
+
         navItems.forEach(item => {
-            item.removeEventListener('click', this.handleNavClick);
-            this.handleNavClick = (event) => {
-                navItems.forEach(i => i.classList.remove('active_functions_menu'));
-                item.classList.add('active_functions_menu');
-                
+            item.addEventListener('click', () => {
                 const action = item.getAttribute('data-action');
-                const year = this.getQueryParam('year');
-                const quarter = this.getQueryParam('quarter');
-                const region = this.getQueryParam('region');
-                
-                let url = `/audit-area/${action}`;
-                const params = [];
-                if (year) params.push(`year=${year}`);
-                if (quarter) params.push(`quarter=${quarter}`);
-                if (region && region !== 'all') params.push(`region=${region}`);
-                if (params.length > 0) url += `?${params.join('&')}`;
-                
-                window.location.href = url;
-            };
-            item.addEventListener('click', this.handleNavClick);
+                if (action === this.currentStatus || this.isLoading) return;
+                this.switchStatus(action, true);
+            });
         });
-        
-        const currentAction = window.location.pathname.split('/').pop();
-        navItems.forEach(item => {
-            if (item.getAttribute('data-action') === currentAction) {
-                item.classList.add('active_functions_menu');
+
+        window.addEventListener('popstate', () => {
+            const action = window.location.pathname.split('/').pop();
+            this.sortOrder = new URLSearchParams(window.location.search).get('sort') === 'desc' ? 'desc' : 'asc';
+            this.updateSortUi();
+            if (action && action !== this.currentStatus) {
+                this.switchStatus(action, false);
+            } else {
+                this.loadData(1);
             }
+        });
+
+        this.highlightActiveStatus();
+    }
+
+    switchStatus(action, pushHistory) {
+        // Раздел меню переключается без перезагрузки страницы: меняются
+        // статус, адрес в строке браузера, таблица и счётчики (loadData).
+        this.currentStatus = action;
+        const statusInput = document.getElementById('current-status');
+        const exportStatusInput = document.getElementById('status-audit');
+        if (statusInput) statusInput.value = action;
+        if (exportStatusInput) exportStatusInput.value = action;
+
+        if (pushHistory) {
+            const url = new URL(window.location);
+            url.pathname = `/audit-area/${action}`;
+            window.history.pushState({ status: action }, '', url);
+        }
+        this.highlightActiveStatus();
+        if (this.previousReportRow) {
+            this.previousReportRow = null;
+        }
+        this.loadData(1);
+    }
+
+    highlightActiveStatus() {
+        document.querySelectorAll('.menu_audit li[data-action]').forEach(item => {
+            item.classList.toggle('active_functions_menu', item.getAttribute('data-action') === this.currentStatus);
         });
     }
 
-    handleRollback(event) {
-        const activeRow = document.querySelector('.report_row.active-report');
-        if (activeRow !== null) {
-            const ReportId = activeRow.dataset.id;
-            if (ReportId) {
-                const deleteForm = document.getElementById('deleteReport');
-                if (deleteForm) {
-                    deleteForm.action = '/rollbackreport/' + ReportId;
+    initSortDropdown() {
+        const dropdown = document.getElementById('sort-dropdown');
+        const trigger = document.getElementById('sort-trigger');
+        const menu = document.getElementById('sort-menu');
+        if (!dropdown || !trigger || !menu) return;
+
+        trigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dropdown.classList.toggle('open');
+        });
+        menu.querySelectorAll('.dropdown-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.stopPropagation();
+                dropdown.classList.remove('open');
+                const value = item.dataset.value === 'desc' ? 'desc' : 'asc';
+                if (value === this.sortOrder) return;
+                this.sortOrder = value;
+                this.updateSortUi();
+                const url = new URL(window.location);
+                if (value === 'desc') {
+                    url.searchParams.set('sort', 'desc');
+                } else {
+                    url.searchParams.delete('sort');
                 }
-            }
-        } else {
+                window.history.replaceState(window.history.state, '', url);
+                this.loadData(1);
+            });
+        });
+        document.addEventListener('click', () => dropdown.classList.remove('open'));
+        this.updateSortUi();
+    }
+
+    updateSortUi() {
+        const menu = document.getElementById('sort-menu');
+        const text = document.querySelector('#sort-trigger .dropdown-text');
+        if (!menu) return;
+        menu.querySelectorAll('.dropdown-item').forEach(item => {
+            const selected = item.dataset.value === this.sortOrder;
+            item.classList.toggle('selected', selected);
+            if (selected && text) text.textContent = item.textContent;
+        });
+    }
+
+    async handleRollback(event) {
+        event.preventDefault();
+        const activeRow = document.querySelector('.report_row.active-report');
+        if (activeRow === null) {
             alert('Выберите отчет для отката');
-            event.preventDefault();
+            return;
         }
+        const ReportId = activeRow.dataset.id;
+        const deleteForm = document.getElementById('deleteReport');
+        if (!ReportId || !deleteForm) return;
+        this.hideContextMenu();
+
+        const name = activeRow.querySelector('td:nth-child(4) input')?.value || '';
+        const text = 'Решение по отчёту' + (name ? ' «' + name + '»' : '') +
+            ' будет отменено: отчёт вернётся в статус «На рассмотрении», организации придёт уведомление.';
+        const ok = window.appConfirm
+            ? await window.appConfirm({ title: 'Отменить решение?', text: text, confirmText: 'Отменить решение', icon: false })
+            : window.confirm(text);
+        if (!ok) return;
+
+        deleteForm.action = '/rollbackreport/' + ReportId;
+        deleteForm.submit();
     }
 
     handleScroll() {
@@ -650,19 +826,13 @@ class AuditModule {
     }
 
     animateStatsLoading() {
-        const statElements = [
-            document.querySelector('[data-action="not_viewed"] .count-reports span'),
-            document.querySelector('[data-action="to_delete"] .count-reports span'),
-            document.querySelector('[data-action="remarks"] .count-reports span'),
-            document.querySelector('[data-action="to_download"] .count-reports span'),
-            document.querySelector('[data-action="all_reports"] .count-reports span')
-        ];
-        
-        statElements.forEach(element => {
-            if (element) {
-                element.classList.add('stat-loading');
+        // Пока грузятся новые данные, числа остаются на месте (только слегка
+        // пульсируют) — иначе «...» меняет ширину плиток и меню прыгает.
+        document.querySelectorAll('.menu_audit .count-reports span').forEach(element => {
+            if (!/^\d+$/.test(element.textContent.trim())) {
                 element.textContent = '...';
             }
+            element.classList.add('stat-loading');
         });
     }
 
@@ -730,14 +900,14 @@ class AuditModule {
         if (emptyState) emptyState.style.display = 'none';
         if (reportsContent) reportsContent.style.display = 'block';
 
-        const sortedReports = [...reports].sort((a, b) => {
-            return new Date(b.sent_datetime) - new Date(a.sent_datetime);
-        });
-        
+        // Порядок задаёт сервер (параметр sort, по дате поступления) —
+        // здесь строки не пересортировываются, иначе порядок ломался бы
+        // между страницами пагинации.
+        const rows = reports.map(report => this.getReportRowHTML(report)).join('');
         if (append) {
-            tbody.innerHTML += sortedReports.map(report => this.getReportRowHTML(report)).join('');
+            tbody.innerHTML += rows;
         } else {
-            tbody.innerHTML = sortedReports.map(report => this.getReportRowHTML(report)).join('');
+            tbody.innerHTML = rows;
         }
     }
 
@@ -755,11 +925,12 @@ class AuditModule {
     getReportRowHTML(report) {
         const formattedDate = this.formatDate(report.sent_time);
         return `
-            <tr class="report_row ${report.has_not ? 'hascomment-row' : ''}" data-id="${report.id}" draggable="true">
-                <td>
+            <tr class="report_row" data-id="${report.id}" data-has-ticket="${report.has_not ? 'true' : 'false'}" draggable="true">
+                <td class="report-ticket-cell">
+                    ${report.has_not ? '<span class="report-ticket-dot" title="Есть квитанция — отчёт можно перенести в другой статус" aria-label="Есть квитанция"></span>' : ''}
                 </td>
                 <td style="padding: 4px;">
-                    <button class="open-report-btn" onclick="window.location.href='/audit-area/report/${report.version_id}'">   
+                    <button class="open-report-btn" onclick="window.location.href='/audit-area/fuel/${report.version_id}'">   
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                             <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -913,10 +1084,10 @@ class AuditModule {
         const isAuditor = regionMenu?.dataset?.isAuditor === 'true';
         const userRegionDigit = regionMenu?.dataset?.userRegionDigit;
 
-        document.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('selected'));
+        document.querySelectorAll('#region-menu .dropdown-item').forEach(i => i.classList.remove('selected'));
 
         if (isAuditor && userRegionDigit) {
-            const targetItem = document.querySelector(`.dropdown-item[data-value="${userRegionDigit}"]`);
+            const targetItem = document.querySelector(`#region-menu .dropdown-item[data-value="${userRegionDigit}"]`);
             const dropdownText = document.querySelector('#region-dropdown .dropdown-text');
             if (targetItem && dropdownText) {
                 targetItem.classList.add('selected');
@@ -926,7 +1097,7 @@ class AuditModule {
         }
 
         if (regionFromUrl && regionFromUrl !== '' && regionFromUrl !== 'all') {
-            const targetItem = document.querySelector(`.dropdown-item[data-value="${regionFromUrl}"]`);
+            const targetItem = document.querySelector(`#region-menu .dropdown-item[data-value="${regionFromUrl}"]`);
             if (targetItem) {
                 targetItem.classList.add('selected');
                 const dropdownText = document.querySelector('#region-dropdown .dropdown-text');
@@ -937,7 +1108,7 @@ class AuditModule {
             }
         }
         
-        const allItem = document.querySelector('.dropdown-item[data-value=""]');
+        const allItem = document.querySelector('#region-menu .dropdown-item[data-value=""]');
         if (allItem) {
             allItem.classList.add('selected');
             const dropdownText = document.querySelector('#region-dropdown .dropdown-text');
@@ -948,7 +1119,7 @@ class AuditModule {
         return false;
     }
 
-    setDefaultRegionForAuthor() {
+    setDefaultRegionForAuthor(reload = true) {
         const regionMenu = document.getElementById('region-menu');
         if (!regionMenu) return;
         
@@ -958,10 +1129,10 @@ class AuditModule {
         const urlParams = new URLSearchParams(window.location.search);
         const regionFromUrl = urlParams.get('region');
 
-        document.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('selected'));
+        document.querySelectorAll('#region-menu .dropdown-item').forEach(i => i.classList.remove('selected'));
 
         if (isAuditor && userRegionDigit) {
-            const targetItem = document.querySelector(`.dropdown-item[data-value="${userRegionDigit}"]`);
+            const targetItem = document.querySelector(`#region-menu .dropdown-item[data-value="${userRegionDigit}"]`);
             const dropdownText = document.querySelector('#region-dropdown .dropdown-text');
             
             if (targetItem && dropdownText) {
@@ -971,14 +1142,14 @@ class AuditModule {
                 const url = new URL(window.location);
                 url.searchParams.set('region', userRegionDigit);
                 window.history.replaceState({}, '', url);
-                
-                this.filterReports();
+
+                if (reload) this.filterReports();
             }
             return;
         }
         
         if (regionFromUrl && regionFromUrl !== '' && regionFromUrl !== 'all') {
-            const urlTargetItem = document.querySelector(`.dropdown-item[data-value="${regionFromUrl}"]`);
+            const urlTargetItem = document.querySelector(`#region-menu .dropdown-item[data-value="${regionFromUrl}"]`);
             if (urlTargetItem) {
                 urlTargetItem.classList.add('selected');
                 const dropdownText = document.querySelector('#region-dropdown .dropdown-text');
@@ -989,7 +1160,7 @@ class AuditModule {
             }
         }
         
-        const allItem = document.querySelector('.dropdown-item[data-value=""]');
+        const allItem = document.querySelector('#region-menu .dropdown-item[data-value=""]');
         if (allItem) {
             allItem.classList.add('selected');
             const dropdownText = document.querySelector('#region-dropdown .dropdown-text');
@@ -1000,8 +1171,6 @@ class AuditModule {
     }
 
     async filterReports() {
-        const searchName = document.getElementById('organization-filter')?.value || '';
-        const searchOkpo = document.getElementById('okpo-filter')?.value || '';
 
         const selectedItem = document.querySelector('#region-menu .dropdown-item.selected');
         let regionFilter = selectedItem?.dataset.value || 'all';
@@ -1009,12 +1178,12 @@ class AuditModule {
         const loadingSpinner = document.getElementById('loading-spinner');
         const reportsContent = document.getElementById('reports-content');
         const emptyState = document.getElementById('empty-state');
-        const paginationContainer = document.querySelector('.pagination-container');
+        const paginationContainer = document.getElementById('auditPager');
         
         if (loadingSpinner) loadingSpinner.style.display = 'flex';
         if (reportsContent) reportsContent.style.display = 'none';
         if (emptyState) emptyState.style.display = 'none';
-        if (paginationContainer) paginationContainer.style.display = 'none';
+        if (paginationContainer) paginationContainer.hidden = true;
 
         this.currentPage = 1;
         this.allReports = [];
@@ -1024,15 +1193,18 @@ class AuditModule {
                 status: this.currentStatus,
                 year: this.yearFilter,
                 quarter: this.quarterFilter,
-                search_name: searchName,
-                search_okpo: searchOkpo,
                 page: 1,
-                per_page: this.pageSize
+                per_page: this.pageSize,
+                sort: this.sortOrder
             });
             
             if (regionFilter && regionFilter !== '' && regionFilter !== 'all') {
                 params.append('region', regionFilter);
             }
+            const search = this.searchParam();
+            if (search) params.append(search[0], search[1]);
+            const onlyReportParam = new URLSearchParams(window.location.search).get('report');
+            if (onlyReportParam) params.append('report', onlyReportParam);
             
             const response = await fetch(`/api/audit-data?${params}`);
             const data = await response.json();
@@ -1046,7 +1218,7 @@ class AuditModule {
                 this.renderReports(this.allReports, false);
                 
                 if (loadingSpinner) loadingSpinner.style.display = 'none';
-                if (paginationContainer) paginationContainer.style.display = 'flex';
+                
                 
                 this.updatePaginationButtons();
                 this.attachRowEventListeners();
@@ -1087,26 +1259,50 @@ class AuditModule {
         }
     }
 
+    // Поиск: одно поле и выбор, по чему искать — наименование, ОКПО или УНП.
+    searchParam() {
+        const value = (document.getElementById('audit-search')?.value || '').trim();
+        if (!value) return null;
+        const names = { name: 'search_name', okpo: 'search_okpo', unp: 'search_unp' };
+        return [names[this.searchMode] || 'search_name', value];
+    }
+
+    setSearchMode(mode) {
+        let placeholder = '';
+        document.querySelectorAll('.af-mode-btn').forEach(btn => {
+            const active = btn.dataset.searchMode === mode;
+            btn.classList.toggle('is-active', active);
+            btn.setAttribute('aria-checked', active ? 'true' : 'false');
+            if (active) placeholder = btn.dataset.placeholder || '';
+        });
+        this.searchMode = mode;
+        const input = document.getElementById('audit-search');
+        if (input) {
+            input.placeholder = placeholder;
+            input.inputMode = mode === 'name' ? 'text' : 'numeric';
+        }
+    }
+
     attachEventListeners() {
-        const organizationFilter = document.getElementById('organization-filter');
-        const okpoFilter = document.getElementById('okpo-filter');
-        
+        if (this.searchBound) return;
+        this.searchBound = true;
+        const input = document.getElementById('audit-search');
         let searchTimeout;
         const handleSearch = () => {
             clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(() => {
-                this.filterReports();
-            }, 300);
+            searchTimeout = setTimeout(() => this.filterReports(), 300);
         };
-
-        if (organizationFilter) {
-            organizationFilter.removeEventListener('input', handleSearch);
-            organizationFilter.addEventListener('input', handleSearch);
-        }
-        if (okpoFilter) {
-            okpoFilter.removeEventListener('input', handleSearch);
-            okpoFilter.addEventListener('input', handleSearch);
-        }
+        if (input) input.addEventListener('input', handleSearch);
+        document.querySelectorAll('.af-mode-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (btn.dataset.searchMode === this.searchMode) return;
+                this.setSearchMode(btn.dataset.searchMode);
+                if (input) {
+                    input.focus();
+                    if (input.value.trim()) this.filterReports();
+                }
+            });
+        });
     }
 
     escapeHtml(text) {

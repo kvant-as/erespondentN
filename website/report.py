@@ -42,6 +42,28 @@ def to_decimal(value):
     except (ValueError, InvalidOperation, TypeError, AttributeError):
         return Decimal('0.00')
 
+SERVICE_PRODUCT_CODES = ('9001', '9010', '9100')
+
+
+def ordered_section_rows(version_id, section_number):
+    """Строки раздела отчёта в порядке показа — одинаковом на странице и в
+    Excel: обычные строки сверху (сначала без заданного порядка — новые, по
+    убыванию id, затем по sort_order из перетаскивания), служебные
+    9001/9010/9100 всегда внизу по коду."""
+    from sqlalchemy import case, desc
+    is_service = Sections.code_product.in_(SERVICE_PRODUCT_CODES)
+    return Sections.query.filter_by(
+        id_version=version_id,
+        section_number=section_number
+    ).order_by(
+        case((is_service, 1), else_=0).asc(),
+        case((is_service, Sections.code_product), else_=None).asc(),
+        case((Sections.sort_order.is_(None), 0), else_=1).asc(),
+        Sections.sort_order.asc(),
+        desc(Sections.id)
+    ).all()
+
+
 def check_version_editable(version):
     if not version:
         flash('Версия не найдена.', 'error')
@@ -52,8 +74,17 @@ def check_version_editable(version):
     return True
 
 def update_version_status(version):
+    """Любое изменение отчёта переводит версию в «Заполнение». Если отчёт
+    вернули с замечаниями, первое изменение записывается квитанцией
+    «Внесение изменений» (CHANGE_NOTE): время первой правки — begin_time,
+    последней — version.change_time."""
     if version:
-        version.change_time = current_utc_time()
+        now = current_utc_time()
+        if version.status == 'Есть замечания':
+            from .models import Ticket
+            db.session.add(Ticket(version_report_id=version.id, luck=False, note=CHANGE_NOTE, begin_time=now,
+                                  user_id=current_user.id if current_user.is_authenticated else None))
+        version.change_time = now
         version.status = "Заполнение"
         db.session.commit()
 
@@ -181,10 +212,38 @@ def redirect_back(version, section_number=None):
             return redirect(url_for('views.report_section', report_type=report_type, id=version.id))
     return redirect(request.referrer)
 
+APPROVED_NOTE = 'Ошибок нет, отчет одобрен.'
+ROLLBACK_NOTE = 'Возвращён в исходное состояние.'
+CANCEL_NOTE = 'Отправка отменена организацией.'
+CHANGE_NOTE = 'Организация внесла изменения в отчёт.'
+SENT_NOTE = 'Отчёт направлен на проверку.'
+SERVICE_NOTES = (CANCEL_NOTE, CHANGE_NOTE, SENT_NOTE)
+
+
+def current_review_ticket(version, create=False):
+    """Квитанция проверки текущей отправки отчёта — последняя квитанция,
+    созданная после даты отправки. Сообщение проверяющего записывается в
+    неё, а смена статуса меняет её же, новые квитанции не создаются."""
+    from .models import Ticket
+    query = Ticket.query.filter(Ticket.version_report_id == version.id,
+                                or_(Ticket.note.is_(None), Ticket.note.notin_(SERVICE_NOTES)))
+    if version.sent_time:
+        query = query.filter(Ticket.begin_time >= version.sent_time)
+    ticket = query.order_by(Ticket.id.desc()).first()
+    if ticket is None and create:
+        ticket = Ticket(version_report_id=version.id, luck=False, begin_time=current_utc_time())
+        db.session.add(ticket)
+    return ticket
+
+
 def cancel_sending(id):
     current_version = Version_report.query.filter_by(id=id).first()
     if current_version.status == 'Отправлен':
+        from .models import Ticket
         current_version.status = 'Заполнение'
+        db.session.add(Ticket(version_report_id=current_version.id, luck=False,
+                              note=CANCEL_NOTE, begin_time=current_utc_time(),
+                              user_id=current_user.id if current_user.is_authenticated else None))
         db.session.commit()
         flash('Отправка отчета была отменена! Новый статус отчета - "Заполнение".', 'succes')
     else:
@@ -309,7 +368,10 @@ def control_func(id):
 
     return redirect(request.referrer) 
 
-def get_reports_by_status(status, year=None, quarter=None, region=None):
+def get_reports_by_status(status, year=None, quarter=None, region=None, sort='asc'):
+    # Порядок по дате поступления (sent_time): по умолчанию сначала ранние —
+    # проверяющие разбирают отчёты в порядке очереди.
+    sent_order = Version_report.sent_time.desc().nullslast() if sort == 'desc' else Version_report.sent_time.asc().nullslast()
     def translate_status(status):
         status_map = {
             'not_viewed': 'Отправлен',
@@ -356,7 +418,7 @@ def get_reports_by_status(status, year=None, quarter=None, region=None):
                 )
             else:
                 return []
-        return query.order_by(Version_report.sent_time.desc()).all()
+        return query.order_by(sent_order).all()
     
     else:
         if current_user.organization and current_user.organization.region:
@@ -373,7 +435,7 @@ def get_reports_by_status(status, year=None, quarter=None, region=None):
             return query.filter(
                 or_(*[Version_report.status == s for s in statuses]),
                 *filters
-            ).order_by(Version_report.sent_time.desc()).all()
+            ).order_by(sent_order).all()
             
         else:
             trans_status = translate_status(status)
@@ -386,6 +448,6 @@ def get_reports_by_status(status, year=None, quarter=None, region=None):
                 return query.filter(
                     Version_report.status == trans_status,
                     *filters
-                ).order_by(Version_report.sent_time.desc()).all()
+                ).order_by(sent_order).all()
             else:
                 return []

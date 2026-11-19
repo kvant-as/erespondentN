@@ -1,7 +1,7 @@
 from decimal import Decimal
 from io import BytesIO
 import os
-from flask import Blueprint, current_app, make_response, render_template, redirect, url_for, flash, request, jsonify, session, get_flashed_messages
+from flask import Blueprint, abort, current_app, make_response, render_template, redirect, url_for, flash, request, jsonify, session, get_flashed_messages
 from flask_login import current_user, login_required
 
 from website.ecp import check_certificate_expiry
@@ -18,8 +18,10 @@ from website.report import (
     to_decimal, 
     update_aggregated_sections, 
     update_section_fields, 
-    update_version_status, 
-    get_reports_by_status 
+    update_version_status,
+    get_reports_by_status,
+    ordered_section_rows,
+    SERVICE_PRODUCT_CODES
     )
 
 from website.organization import create_new_organization, get_current_quarter, update_organization_data_with_delay, validate_okpo, validate_ynp
@@ -35,9 +37,6 @@ from datetime import datetime, timedelta
 from common_models.timeutils import current_utc_time, get_previous_quarter, get_report_year
 from common_models import get_current_application_id
 
-from reportlab.lib.pagesizes import letter
-from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.pdfbase import pdfmetrics
 
 views = Blueprint('views', __name__)
 
@@ -45,6 +44,31 @@ views = Blueprint('views', __name__)
 def inject_online_users():
     from common_models import count_online
     return dict(online_users_count=count_online(current_app.config.get('APP_NAME')))
+
+@views.app_template_global()
+def report_review_org(report):
+    """Организация, которая проверяет отчёт, — региональное управление по
+    надзору региона организации отчёта (для таблицы квитанций)."""
+    from ..ticket_track import review_org_for
+    return review_org_for(report)
+
+
+@views.app_template_global()
+def ticket_track_rows(version, tickets=None):
+    """Строки таблицы квитанций (см. website/ticket_track.py)."""
+    from ..ticket_track import track_rows
+    return track_rows(version, tickets)
+
+
+def _can_review_reports(user):
+    return bool(user.is_admin or user.is_region_auditor or user.is_reader)
+
+
+def _is_reviewer(user, report):
+    """Отчёт открыл не автор, а проверяющий (аудитор, читатель, администратор):
+    на тех же страницах разделов ему показываются свои кнопки и квитанции."""
+    return report.user_id != user.id and _can_review_reports(user)
+
 
 def owner_only(f):
     @wraps(f)
@@ -55,7 +79,7 @@ def owner_only(f):
             flash('Версия отчета не найдена', 'error')
             return redirect(url_for('views.report_area', user=current_user))
         report = version.report
-        if report.user_id != current_user.id and current_user.is_admin == False and current_user.is_region_auditor == False:
+        if report.user_id != current_user.id and not _can_review_reports(current_user):
             flash('Недостаточно прав для доступа к этому отчёту', 'error')
             return redirect(url_for('views.report_area', user=current_user))
         return f(*args, **kwargs)
@@ -68,9 +92,12 @@ def profile_complete(f):
             flash('Требуется авторизация', 'error')
             return redirect(url_for('views.login'))  
           
-        if not current_user.last_name or not current_user.first_name or not current_user.telephone or not current_user.organization_id:
-            flash('Пожалуйста, заполните полностью свой профиль', 'error')
+        if not current_user.last_name or not current_user.first_name or not current_user.telephone:
+            flash('Пожалуйста, заполните личные данные в профиле', 'error')
             return redirect(url_for('views.profile_common'))
+        if not current_user.organization_id:
+            flash('Укажите организацию по УНП', 'error')
+            return redirect(url_for('views.profile_org'))
                 
         return f(*args, **kwargs)
     
@@ -121,7 +148,7 @@ def beginPage():
     user_data = User.query.filter(User.application_id == get_current_application_id()).count()
     organization_data = Organization.query.count()
     report_data = Report.query.count()
-    latest_news = News.query.filter(News.is_erespondentn == True).order_by(desc(News.id)).first()
+    latest_news = News.query.filter(News.application_id == get_current_application_id()).order_by(desc(News.id)).first()
 
     regions = Region.query.order_by(Region.number).all()
 
@@ -170,7 +197,7 @@ def forgot_password():
 
 @views.route('/code', methods=['GET'])
 def code():
-    return render_template('code.html', user=current_user
+    return render_template('code.html', user=current_user, email=(session.get('temp_user') or {}).get('email')
             )
     
 @views.route('/test', methods=['GET'])
@@ -262,12 +289,97 @@ def profile():
 @login_required
 @session_required
 def profile_common():
-    count_reports = Report.query.filter_by(user_id=current_user.id).count()
-    return render_template('profile_common.html', 
-                        user=current_user, 
-                        count_reports=count_reports,
+    return render_template('profile_common.html',
+                        user=current_user,
                         active_tab = 'common'
                         )
+
+
+@views.route('/profile/organization', methods=['GET'])
+@login_required
+@session_required
+def profile_org():
+    """Раздел «Организация» профиля — данные организации из ЕГР, обновление и смена по УНП."""
+    return render_template('profile_org.html',
+                        user=current_user,
+                        can_change_org=_can_change_org(current_user),
+                        active_tab = 'org'
+                        )
+
+
+def _can_change_org(user):
+    """Организация выбирается при регистрации; сменить её может только администратор."""
+    return bool(user.is_admin)
+
+
+@views.route('/register/personal', methods=['GET'])
+def register_personal():
+    """Шаг 3 регистрации — личные данные (см. auth.register_personal)."""
+    temp_user = session.get('temp_user') or {}
+    if current_user.is_authenticated:
+        return redirect(url_for('views.profile'))
+    if not temp_user.get('email_verified'):
+        flash('Сначала подтвердите электронную почту', 'error')
+        return redirect(url_for('views.sign'))
+    return render_template('register_personal.html', user=current_user, email=temp_user.get('email'),
+                           personal=temp_user.get('personal') or {})
+
+
+@views.route('/register/organization', methods=['GET'])
+def register_org():
+    """Шаг 4 регистрации — организация по УНП из ЕГР (см. auth.register_organization)."""
+    temp_user = session.get('temp_user') or {}
+    if current_user.is_authenticated:
+        return redirect(url_for('views.profile'))
+    if not temp_user.get('email_verified'):
+        flash('Сначала подтвердите электронную почту', 'error')
+        return redirect(url_for('views.sign'))
+    if not temp_user.get('personal_done'):
+        return redirect(url_for('views.register_personal'))
+    return render_template('register_org.html', user=current_user, email=temp_user.get('email'))
+
+
+@views.route('/profile/organization/refresh', methods=['POST'])
+@login_required
+@session_required
+def profile_org_refresh():
+    """Кнопка «Обновить данные организации» — данные привязанной организации из ЕГР по её УНП."""
+    from ..egr_org import EgrError, refresh_from_egr
+
+    org = current_user.organization
+    if not org:
+        return jsonify({'success': False, 'error': 'Организация не выбрана'}), 400
+    try:
+        changes = refresh_from_egr(org)
+    except EgrError as exc:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(exc)}), 502
+    db.session.commit()
+    current_app.logger.info(f'EGR refresh org {org.id} (УНП {org.ynp}) by user {current_user.id}: {len(changes)} changes')
+    return jsonify({'success': True, 'changes': [{'field': f, 'old': o, 'new': n} for f, o, n in changes]})
+
+
+@views.route('/profile/organization/change', methods=['POST'])
+@login_required
+@session_required
+def profile_org_change():
+    """Выбор организации по УНП из ЕГР: смена — только администратором,
+    первичный выбор — у старых аккаунтов, созданных без организации."""
+    from ..egr_org import EgrError, upsert_from_egr
+
+    if current_user.organization_id and not _can_change_org(current_user):
+        flash('Сменить организацию может только администратор', 'error')
+        return redirect(url_for('views.profile_org'))
+    try:
+        organization, created = upsert_from_egr(request.form.get('unp', ''))
+    except EgrError as exc:
+        db.session.rollback()
+        flash(str(exc), 'error')
+        return redirect(url_for('views.profile_org'))
+    current_user.organization = organization
+    db.session.commit()
+    flash(f'Организация изменена: {organization.short_name or organization.full_name}', 'success')
+    return redirect(url_for('views.profile_org'))
 
 @views.route('/profile/session', methods=['GET'])
 @login_required
@@ -376,17 +488,50 @@ def get_auditor_info_by_user(current_user):
         'organization': region_management_org.full_name or 'Не указано',
     }
 
+_section_rows = ordered_section_rows
+
+
+def _can_reorder(version, report):
+    """Менять порядок строк может только автор и только пока отчёт можно
+    редактировать (не отправлен и не одобрен)."""
+    return bool(version and report and report.user_id == current_user.id
+                and version.status not in ('Отправлен', 'Одобрен'))
+
+
 @views.route('/reports/<string:report_type>/<int:id>', methods=['GET'])
 @profile_complete
 @login_required
 @session_required
 @owner_only
 def report_section(report_type, id):
+    """Раздел отчёта у автора. Проверяющий (аудитор, читатель, администратор
+    на чужом отчёте) работает с тем же разделом по /audit-area/<раздел>/<id>."""
+    current_version = Version_report.query.filter_by(id=id).first()
+    if _is_reviewer(current_user, current_version.report):
+        return redirect(url_for('views.audit_section', report_type=report_type, id=id, **request.args))
+    return _render_report_section(report_type, id)
+
+
+@views.route('/audit-area/<string:report_type>/<int:id>', methods=['GET'])
+@profile_complete
+@login_required
+@session_required
+@owner_only
+def audit_section(report_type, id):
+    """Раздел отчёта у проверяющего: те же таблицы, свои кнопки и квитанции."""
+    current_version = Version_report.query.filter_by(id=id).first()
+    if not _is_reviewer(current_user, current_version.report):
+        return redirect(url_for('views.report_section', report_type=report_type, id=id, **request.args))
+    return _render_report_section(report_type, id)
+
+
+def _render_report_section(report_type, id):
     current_version = Version_report.query.filter_by(id=id).first()
     current_report = Report.query.filter_by(id=current_version.report_id).first()
-    
-    auditor_info = get_auditor_info_by_user(current_user)
-    
+    is_reviewer = _is_reviewer(current_user, current_report)
+
+    auditor_info = None if is_reviewer else get_auditor_info_by_user(current_user)
+
     report_config = {
         'fuel': {'section_number': 1, 'product_filter': DirProduct.IsFuel},
         'heat': {'section_number': 2, 'product_filter': DirProduct.IsHeat},
@@ -400,22 +545,13 @@ def report_section(report_type, id):
     section_number = config['section_number']
     product_filter = config['product_filter']
 
-    dirProduct = DirProduct.query.filter(
+    dirProduct = [] if is_reviewer else DirProduct.query.filter(
         product_filter == True,
         ~DirProduct.CodeProduct.in_(['9001', '9010', '9100']),
         DirProduct.DateEnd.is_(None)
     ).order_by(asc(DirProduct.CodeProduct)).all()
 
-    sections = Sections.query.filter_by(
-        id_version=current_version.id, 
-        section_number=section_number
-    ).order_by(
-        case(
-            (Sections.code_product.in_(['9001', '9010', '9100']), 1),
-            else_=0
-        ).asc(),
-        desc(Sections.id)
-    ).all()
+    sections = _section_rows(current_version.id, section_number)
     return render_template('report_table.html', 
         id_report = id,
         section_number=section_number,
@@ -424,10 +560,31 @@ def report_section(report_type, id):
         current_user=current_user, 
         current_report=current_report,
         current_version=current_version,
-        SentModal = True,
+        SentModal = not is_reviewer,
         auditor_info=auditor_info,
-        report_type=report_type
+        report_type=report_type,
+        is_reviewer=is_reviewer,
+        can_reorder=_can_reorder(current_version, current_report)
     )
+
+
+@views.route('/reports/<string:report_type>/<int:id>/partial/status', methods=['GET'])
+@profile_complete
+@login_required
+@session_required
+@owner_only
+def report_status_partial(report_type, id):
+    """Статус отчёта и кнопки раздела «Статус» — после правки данных статус
+    меняется (например, на «Заполнение»), и страница обновляет их без перезагрузки."""
+    report_config = {'fuel': 1, 'heat': 2, 'electro': 3}
+    if report_type not in report_config:
+        return render_template('404.html'), 404
+    current_version = Version_report.query.filter_by(id=id).first()
+    if current_version is None:
+        return render_template('404.html'), 404
+    return render_template('partials/_report_status.html',
+                           current_version=current_version,
+                           section_number=report_config[report_type])
 
 
 @views.route('/reports/<string:report_type>/<int:id>/partial/rows', methods=['GET'])
@@ -445,19 +602,47 @@ def report_section_rows(report_type, id):
     section_number = report_config[report_type]
     current_version = Version_report.query.filter_by(id=id).first()
 
-    sections = Sections.query.filter_by(
-        id_version=current_version.id,
-        section_number=section_number
-    ).order_by(
-        case(
-            (Sections.code_product.in_(['9001', '9010', '9100']), 1),
-            else_=0
-        ).asc(),
-        desc(Sections.id)
-    ).all()
+    sections = _section_rows(current_version.id, section_number)
     return render_template('partials/_section_rows.html',
                            sections=sections,
-                           section_number=section_number)
+                           section_number=section_number,
+                           can_reorder=_can_reorder(current_version, current_version.report))
+
+
+@views.route('/reports/<string:report_type>/<int:id>/reorder', methods=['POST'])
+@login_required
+@session_required
+@owner_only
+def report_section_reorder(report_type, id):
+    """Сохраняет порядок строк раздела, заданный перетаскиванием. Приходит
+    список id строк сверху вниз; служебные строки (9001/9010/9100) в нём не
+    участвуют — они всегда внизу."""
+    report_config = {'fuel': 1, 'heat': 2, 'electro': 3}
+    if report_type not in report_config:
+        return jsonify({'success': False, 'message': 'Неизвестный раздел'}), 404
+    current_version = Version_report.query.get(id)
+    if not _can_reorder(current_version, current_version.report):
+        return jsonify({'success': False, 'message': 'Порядок строк этого отчёта сейчас изменить нельзя'}), 403
+
+    payload = request.get_json(silent=True) or {}
+    try:
+        ordered_ids = [int(x) for x in payload.get('ids', [])]
+    except (TypeError, ValueError):
+        return jsonify({'success': False, 'message': 'Некорректные данные'}), 400
+
+    rows = Sections.query.filter(
+        Sections.id_version == current_version.id,
+        Sections.section_number == report_config[report_type],
+        ~Sections.code_product.in_(SERVICE_PRODUCT_CODES)
+    ).all()
+    by_id = {row.id: row for row in rows}
+    if len(ordered_ids) != len(set(ordered_ids)) or set(ordered_ids) != set(by_id):
+        return jsonify({'success': False, 'message': 'Список строк устарел, обновите страницу'}), 409
+
+    for position, row_id in enumerate(ordered_ids, start=1):
+        by_id[row_id].sort_order = position
+    db.session.commit()
+    return jsonify({'success': True})
 
 
 @views.route('/reports/report-info/<int:id>', methods=['GET'])
@@ -466,19 +651,24 @@ def report_section_rows(report_type, id):
 @session_required
 @owner_only
 def report_info(id):
+    """Отдельной страницы квитанций больше нет: у автора они открываются
+    модальным окном, у проверяющего — под таблицей раздела. Старый адрес
+    ведёт туда же."""
     current_version = Version_report.query.filter_by(id=id).first()
-    current_report = Report.query.filter_by(id=current_version.report_id).first()
-    
-    auditor_info = get_auditor_info_by_user(current_user)
-    
-    return render_template('report_review.html', 
-        current_user=current_user, 
-        current_report=current_report,
-        current_version=current_version,
-        SentModal = True,
-        auditor_info=auditor_info,
-        section_number = 4
-    )
+    if _is_reviewer(current_user, current_version.report):
+        return redirect(url_for('views.audit_section', report_type='fuel', id=id, tickets_cont='true'))
+    return redirect(url_for('views.report_section', report_type='fuel', id=id, tickets='1'))
+
+
+@views.route('/reports/<int:id>/tickets', methods=['GET'])
+@profile_complete
+@login_required
+@session_required
+@owner_only
+def report_tickets(id):
+    """Содержимое модального окна «Квитанции отчета» (подгружается через fetch)."""
+    current_version = Version_report.query.filter_by(id=id).first()
+    return render_template('partials/_tickets_modal.html', version=current_version)
 
 
 @views.route('/audit-area/<status>', methods=['GET'])
@@ -490,12 +680,17 @@ def audit_area(status):
     year_filter = request.args.get('year', '')
     quarter_filter = request.args.get('quarter', '')
     region_filter = request.args.get('region', '')
-    
+    single_report = None
+    report_param = request.args.get('report', type=int)
+    if report_param:
+        single_report = Report.query.get(report_param)
+
     return render_template('audit_area.html',
                            current_user=current_user,
                            year_filter=year_filter,
                            quarter_filter=quarter_filter,
                            region_filter=region_filter,
+                           single_report=single_report,
                            previous_quarter=get_previous_quarter(),
                            previous_year=get_report_year(),
                            status_reports=status)
@@ -515,22 +710,30 @@ def api_audit_data():
     
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 50, type=int)
-    
-    reports = get_reports_by_status(status, year_filter, quarter_filter, region_filter)
-    
-    if search_name or search_okpo:
+    sort = 'desc' if request.args.get('sort') == 'desc' else 'asc'
+
+    reports = get_reports_by_status(status, year_filter, quarter_filter, region_filter, sort)
+
+    only_report = request.args.get('report', type=int)
+    if only_report:
+        reports = [r for r in reports if r.id == only_report]
+
+    search_unp = (request.args.get('search_unp') or '').strip()
+    search_name = (search_name or '').strip()
+    search_okpo = (search_okpo or '').strip()
+    if search_name or search_okpo or search_unp:
         filtered_reports = []
         for report in reports:
-            match_name = True
-            match_okpo = True
-            
-            if search_name:
-                match_name = search_name.lower() in report.organization.full_name.lower()
-            if search_okpo:
-                match_okpo = search_okpo in str(report.organization.okpo)
-                
-            if match_name and match_okpo:
-                filtered_reports.append(report)
+            org = report.organization
+            if org is None:
+                continue
+            if search_name and search_name.lower() not in (org.full_name or '').lower():
+                continue
+            if search_okpo and search_okpo not in (org.okpo or ''):
+                continue
+            if search_unp and search_unp not in (org.ynp or ''):
+                continue
+            filtered_reports.append(report)
         reports = filtered_reports
     
     total_count = len(reports)
@@ -571,37 +774,9 @@ def api_audit_data():
         'page': page,
         'per_page': per_page,
         'has_more': end < total_count,
-        'count': len(reports_data)
+        'count': len(reports_data),
+        'sort': sort
     })  
-
-@views.route('/audit-area/report/<int:id>', methods=['GET'])
-@login_required
-@session_required
-@profile_complete
-@auditors_only
-def audit_report(id):
-    dirUnit = DirUnit.query.filter_by().all()
-    dirProduct = DirProduct.query.filter_by().all()
-    current_version = Version_report.query.filter_by(id=id).first()
-    current_report = Report.query.filter_by(id=current_version.report_id).first()
-    tickets = Ticket.query.filter_by(version_report_id = current_version.id).all()
-    sections_fuel = Sections.query.filter_by(id_version=current_version.id, section_number=1).order_by(asc(Sections.code_product)).all()
-    sections_heat = Sections.query.filter_by(id_version=current_version.id, section_number=2).order_by(asc(Sections.code_product)).all()
-    sections_electro = Sections.query.filter_by(id_version=current_version.id, section_number=3).order_by(asc(Sections.code_product)).all()
-
-    return render_template('audit_report.html', 
-        id_report = id,
-        sections_fuel=sections_fuel,   
-        sections_heat=sections_heat,  
-        sections_electro=sections_electro,      
-        dirUnit=dirUnit,
-        dirProduct=dirProduct,
-        current_user=current_user, 
-        current_report=current_report,
-        current_version=current_version,
-        tickets=tickets
-    )
-
 
 @views.route('/FAQ', methods=['GET'])
 def FAQ():
@@ -611,8 +786,10 @@ def FAQ():
 
 @views.route('/news/<int:id>', methods=['GET'])
 def news_post(id):
-    post = News.query.filter_by(id = id).first()
-    return render_template(f'news_id.html', 
+    post = News.query.filter_by(id=id, application_id=get_current_application_id()).first()
+    if not post:
+        abort(404)
+    return render_template(f'news_id.html',
         current_user=current_user,
         post=post
     )
@@ -643,7 +820,7 @@ def news():
     if page < 1:
         page = 1
 
-    base_query = News.query.filter(News.is_erespondentn == True).order_by(News.created_time.desc())
+    base_query = News.query.filter(News.application_id == get_current_application_id()).order_by(News.created_time.desc())
     total = base_query.count()
     total_pages = max(1, (total + NEWS_PER_PAGE - 1) // NEWS_PER_PAGE)
     if page > total_pages:
@@ -1167,7 +1344,14 @@ def sent_version(id):
     if request.method == 'POST':
         uploaded_file = request.files.get('certificate')
         current_version = Version_report.query.filter_by(id=id).first()
-        
+        if current_version is None:
+            abort(404)
+        # Отправить отчёт может только его владелец.
+        if current_version.report is None or current_version.report.user_id != current_user.id:
+            current_app.logger.warning(f'Send denied: user {current_user.id} tried to send version {current_version.id}')
+            flash('Отправить можно только свой отчёт', 'error')
+            return redirect(request.referrer or url_for('views.report_area'))
+
         if current_version.status == 'Отправлен':
             flash('Отчет уже отправлен', 'error')
             return redirect(request.referrer)
@@ -1193,8 +1377,16 @@ def sent_version(id):
             return redirect(request.referrer)
 
         current_version.status = 'Отправлен'
-        if current_version.sent_time is None:
-            current_version.sent_time = current_utc_time()
+        current_version.hasNot = False
+        # Дата отправки обновляется при каждой отправке: квитанция проверки
+        # относится к последней отправке (см. report.current_review_ticket).
+        # Каждая отправка записывается квитанцией SENT_NOTE с автором — так в
+        # таблице квитанций видны все отправки, а не только последняя.
+        from ..report import SENT_NOTE
+        sent_at = current_utc_time()
+        current_version.sent_time = sent_at
+        db.session.add(Ticket(version_report_id=current_version.id, luck=False, note=SENT_NOTE,
+                              begin_time=sent_at, user_id=current_user.id))
         db.session.commit()
 
         flash('Сертификат валидный, отчет отправлен на проверку.', 'successful')
@@ -1206,6 +1398,109 @@ def sent_version(id):
 def cancle_sent_version(id):
     from ..report import cancel_sending
     return cancel_sending(id)
+
+STATUS_TABS = {'Отправлен': 'not_viewed', 'Есть замечания': 'remarks',
+               'Одобрен': 'to_download', 'Готов к удалению': 'to_delete'}
+
+
+def apply_review_decision(version, status_itog, note=None, replace_note=False):
+    """Решение проверяющего по отчёту: записывается в квитанцию проверки
+    (последнюю после отправки), меняет статус версии и уведомляет
+    организацию сообщением и письмом. note — замечания проверяющего, они
+    попадают в квитанцию и в уведомление; replace_note — текст формы
+    заменяет текст квитанции, даже пустой. Возвращает False, если письмо
+    отправить не удалось (сам статус при этом уже сохранён)."""
+    from ..report import current_review_ticket, APPROVED_NOTE, ROLLBACK_NOTE
+    report = version.report
+    review_ticket = current_review_ticket(version, create=True)
+    review_ticket.user_id = current_user.id
+    if note or replace_note:
+        review_ticket.note = note[:500] if note else None
+    if status_itog == 'Одобрен':
+        review_ticket.luck = True
+        if not review_ticket.note or review_ticket.note == ROLLBACK_NOTE:
+            review_ticket.note = APPROVED_NOTE
+    else:
+        review_ticket.luck = False
+        if review_ticket.note == APPROVED_NOTE:
+            review_ticket.note = None
+
+    version.hasNot = False
+    version.status = status_itog
+    version.audit_time = current_utc_time()
+
+    text = (f"Статус вашего отчета за {report.year} год {report.quarter} квартал был изменен "
+            f"на «{status_itog}». Дополнительные сведения можно просмотреть в квитанции.")
+    if note and status_itog != 'Одобрен':
+        text += f" Замечания проверяющего: {note}"
+    recipient = report.user
+    if recipient is not None:
+        db.session.add(Message(text=text, recipient_id=recipient.id))
+    db.session.commit()
+
+    if recipient is None or not recipient.email:
+        return True
+    try:
+        send_email(text, recipient.email, 'notification')
+    except Exception as e:
+        current_app.logger.warning(f'Review decision email failed for version {version.id}: {e}')
+        return False
+    return True
+
+
+@views.route('/review-decision', methods=['POST'])
+@login_required
+@session_required
+def review_decision():
+    """Форма «Решение по отчёту»: замечания и статус за одно действие.
+    Без текста отчёт можно только одобрить; с текстом — вернуть с ошибками
+    или отметить к удалению (текст уходит в квитанцию и организации)."""
+    back = request.referrer or url_for('views.audit_area', status='not_viewed')
+    if current_user.is_reader or not _can_review_reports(current_user):
+        flash('У вас нет доступа к этому действию', 'error')
+        return redirect(back)
+
+    version = Version_report.query.filter_by(id=request.form.get('version_id')).first()
+    if version is None:
+        flash('Отчет не найден', 'error')
+        return redirect(back)
+    if version.status != 'Отправлен':
+        flash('Решение по этому отчёту уже принято. Чтобы изменить его, сначала отмените решение в списке проверки', 'error')
+        return redirect(back)
+
+    status_itog = {'approve': 'Одобрен', 'remarks': 'Есть замечания',
+                   'delete': 'Готов к удалению'}.get(request.form.get('decision'))
+    if status_itog is None:
+        flash('Неизвестное действие', 'error')
+        return redirect(back)
+
+    text = ' '.join((request.form.get('text') or '').split())
+    if status_itog == 'Одобрен' and text:
+        flash('Отчёт с замечаниями нельзя одобрить: очистите поле или выберите «Есть ошибки»', 'error')
+        return redirect(back)
+    if status_itog != 'Одобрен' and not text:
+        flash('Опишите ошибки в отчёте — без них организация не поймёт, что исправить', 'error')
+        return redirect(back)
+
+    report = version.report
+    try:
+        email_ok = apply_review_decision(version, status_itog, text or None, replace_note=True)
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Не удалось сохранить решение: {e}', 'error')
+        return redirect(back)
+
+    org_name = report.organization.full_name if report.organization else 'организации'
+    flash(f'Отчёт «{org_name}» за {report.year} год {report.quarter} квартал: «{status_itog}»', 'success')
+    if not email_ok:
+        flash('Решение сохранено, но письмо организации отправить не удалось', 'warning')
+    # Назад в список проверки, из которого открыли отчёт (адрес с фильтрами
+    # передаёт форма); принимается только локальный адрес списка.
+    return_to = (request.form.get('return_to') or '').strip()
+    if return_to.startswith('/audit-area/') and '//' not in return_to and '\\' not in return_to:
+        return redirect(return_to)
+    return redirect(url_for('views.audit_area', status='not_viewed', year=report.year, quarter=report.quarter))
+
 
 @views.route('/change-category-report', methods=['POST'])
 @login_required 
@@ -1258,7 +1553,7 @@ def change_category_report():
         
         if not current_version.hasNot and action != 'to_download':
             flash('Необходимо уточнить о каких ошибках идет речь', 'error')
-            return redirect(url_for('views.audit_report', id=current_version.id, tickets_cont='true'))
+            return redirect(url_for('views.audit_section', report_type='fuel', id=current_version.id, tickets_cont='true'))
         
         status_itog = None
         
@@ -1268,52 +1563,19 @@ def change_category_report():
             status_itog = 'Есть замечания'
         elif action == 'to_download':
             status_itog = 'Одобрен'
-            try:
-                ticket_message = Ticket(
-                    note="Ошибок нет, отчет одобрен.",
-                    luck=True,
-                    version_report_id=current_version.id
-                )
-                db.session.add(ticket_message)
-                db.session.flush()
-            except Exception as e:
-                db.session.rollback()
-                flash(f'Ошибка при создании квитанции: {str(e)}', 'error')
-                return redirect(request.referrer or url_for('views.index'))
         elif action == 'to_delete':
             status_itog = 'Готов к удалению'
         else:
             flash('Неизвестное действие', 'error')
             return redirect(request.referrer or url_for('views.index'))
-        
+
         try:
-            current_version.hasNot = False
-            current_version.status = status_itog
-            current_version.audit_time = current_utc_time()
-            db.session.commit()
+            email_ok = apply_review_decision(current_version, status_itog)
         except Exception as e:
             db.session.rollback()
             flash(f'Ошибка при обновлении статуса версии отчета: {str(e)}', 'error')
             return redirect(request.referrer or url_for('views.index'))
-        
-        try:
-            user_message_text = f"Статус вашего отчета за {report.year} год {report.quarter} квартал был изменен на «{status_itog}». Дополнительные сведения можно просмотреть в квитанции."
-            
-            user_message = Message(
-                text=user_message_text,
-                recipient_id=recipient_user.id
-            )
-            db.session.add(user_message)
-            db.session.commit()
-        except Exception as e:
-            db.session.rollback()
-            flash(f'Ошибка при создании уведомления: {str(e)}', 'error')
-            return redirect(request.referrer or url_for('views.index'))
-        
-        try:
-            send_email(user_message_text, recipient_user.email, 'notification')
-        except Exception as e:
-            print(f'Ошибка отправки email: {str(e)}')
+        if not email_ok:
             flash('Статус изменен, но возникла ошибка при отправке уведомления на email.', 'warning')
         
         flash(f'Статус отчета "{organization_name}" за {report.year} год {report.quarter} квартал был изменен на «{status_itog}»', 'success')
@@ -1344,26 +1606,32 @@ def rollbackreport(id):
 
                 if audit_time + timedelta(days=92) <= current_utc_time():
                     flash('Прошло больше 3-ех месяцев, статус отчета изменить нельзя', 'error')
-                else: 
+                else:
+                    from ..report import current_review_ticket, APPROVED_NOTE
                     current_version.status = "Отправлен"
-                    current_version.hasNot = False
-                 
+                    # Квитанция проверки остаётся той же: решение снимается,
+                    # сообщение проверяющего (если было) сохраняется, и
+                    # статус можно сразу выбрать заново без нового сообщения.
+                    review_ticket = current_review_ticket(current_version)
+                    if review_ticket is not None:
+                        review_ticket.user_id = current_user.id
+                        review_ticket.luck = False
+                        if review_ticket.note == APPROVED_NOTE:
+                            review_ticket.note = None
+                    current_version.hasNot = bool(review_ticket is not None and review_ticket.note)
+
                     user_message = Message(
                         text = f"Статус отчета был изменен аудитором на «Отправлен».",
-                        # sender_id = recipient_user.id,    
-                        recipient_id = recipient_user.id      
+                        recipient_id = recipient_user.id
                     )
                     db.session.add(user_message)
                     db.session.commit()
-                    
-                    ticket_message = Ticket(
-                        note="Возвращён в исходное состояние.",
-                        luck=False,
-                        version_report_id=current_version.id
-                    )
-                    db.session.add(ticket_message)
-                    db.session.commit()
                     flash('Статус отчёта был изменён на «Непросмотренный»', 'success')
+                    referrer = request.referrer or ''
+                    if 'report=' in referrer and '/audit-area/' in referrer:
+                        rep = current_version.report
+                        return redirect(url_for('views.audit_area', status='not_viewed', year=rep.year,
+                                                quarter=rep.quarter, report=rep.id))
             else:
                 flash('Статус отчёта уже установлен как «Непросмотренный»', 'error')
             return redirect(request.referrer)
@@ -1389,32 +1657,36 @@ def send_comment():
         
         cleaned_text = ' '.join(text.split())
         current_version = Version_report.query.filter_by(id=version_id).first()
-        current_report = Report.query.get_or_404(version_id)
-        
+        current_report = current_version.report if current_version else None
+
+        if current_version and current_version.hasNot:
+            flash('Сообщение по этому отчёту уже отправлено. Смените статус отчёта, прежде чем писать снова', 'error')
+            return redirect(request.referrer or url_for('views.audit_area', status='not_viewed'))
+
         if current_version:
-            new_comment = Ticket(
-                note = cleaned_text,
-                version_report_id = current_version.id
-            )
-            db.session.add(new_comment)
+            from ..report import current_review_ticket
+            review_ticket = current_review_ticket(current_version, create=True)
+            review_ticket.user_id = current_user.id
+            review_ticket.note = cleaned_text[:500]
+            review_ticket.luck = False
             current_version.hasNot = True
             db.session.commit()
-            flash('Сообщение отправлено, теперь можно сменить статус', 'success')
-        
+            flash('Сообщение записано в квитанцию проверки. Теперь выберите статус отчёта', 'success')
+
             status_mapping = {
                 'Отправлен': 'not_viewed',
                 'Есть замечания': 'remarks',
                 'Одобрен': 'to_download',
                 'Готов к удалению': 'to_delete'
             }
+            url_status = status_mapping.get(current_version.status, 'all_reports')
 
-            current_status = current_version.status
-            url_status = status_mapping.get(current_status, 'all_reports')
-
-            return redirect(url_for('views.audit_area', 
+            # На странице проверки — только этот отчёт, чтобы сразу сменить статус.
+            return redirect(url_for('views.audit_area',
                                 status=url_status,
                                 year=current_report.year,
-                                quarter=current_report.quarter))
+                                quarter=current_report.quarter,
+                                report=current_report.id))
         else:
             flash('Отчет не найден', 'error') 
             return redirect(request.referrer)
@@ -1433,121 +1705,32 @@ def export_version(id):
     return generate_excel_report(id)
 
 
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import letter
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
-from io import BytesIO
-from flask import make_response
-import os
-
 @views.route('/print-version-tickets', methods=['POST'])
-@login_required 
+@login_required
 @session_required
 def print_version_tickets():
-    if request.method == 'POST':
-        version_id = request.form.get('version_id')
-        
-        tickets = Ticket.query.filter_by(version_report_id=version_id).all()
-        
-        if not tickets:
-            flash("Квитанции не найдены.", "error")
-            return redirect(request.referrer)
+    """Квитанции отчёта в PDF — те же строки, что в таблице квитанций
+    (website/ticket_pdf.py). Печатать может владелец отчёта и проверяющие."""
+    back = request.referrer or url_for('views.report_area')
+    version = Version_report.query.filter_by(id=request.form.get('version_id')).first()
+    if version is None or version.report is None:
+        flash('Отчёт не найден', 'error')
+        return redirect(back)
+    report = version.report
+    if report.user_id != current_user.id and not _can_review_reports(current_user):
+        flash('Нет доступа к квитанциям этого отчёта', 'error')
+        return redirect(back)
+    if not version.sent_time and not version.tickets:
+        flash('Квитанции не найдены.', 'error')
+        return redirect(back)
 
-        version_report = tickets[0].version_report
-        report = version_report.report
-
-        buffer = BytesIO()
-        c = canvas.Canvas(buffer, pagesize=letter)
-        
-        left_margin = 72
-        right_margin = 72
-        page_width = letter[0]
-        max_text_width = page_width - left_margin - right_margin
-
-        font_path_bold = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static', 'fonts', 'Montserrat-Bold.ttf')
-        font_path_regular = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static', 'fonts', 'Montserrat-Regular.ttf')
-        pdfmetrics.registerFont(TTFont('MontserratBold', font_path_bold))
-        pdfmetrics.registerFont(TTFont('MontserratRegular', font_path_regular))
-
-        def draw_wrapped_text(c, text, x, y, font_name, font_size, max_width):
-            c.setFont(font_name, font_size)
-            lines = []
-            words = text.split(' ')
-            current_line = []
-            
-            for word in words:
-                test_line = ' '.join(current_line + [word])
-                if c.stringWidth(test_line, font_name, font_size) <= max_width:
-                    current_line.append(word)
-                else:
-                    if current_line:
-                        lines.append(' '.join(current_line))
-                    current_line = [word]
-            
-            if current_line:
-                lines.append(' '.join(current_line))
-            
-            for line in lines:
-                if y < 50:
-                    c.showPage()
-                    y = 750
-                c.drawString(x, y, line)
-                y -= font_size + 4
-            
-            return y
-
-        c.setFont("MontserratBold", 16)
-        c.drawString(left_margin, 750, "Квитанции по отчету")
-        
-        c.setFont("MontserratRegular", 12)
-        c.drawString(left_margin, 725, f"ОКПО: {report.organization.okpo}")
-        c.drawString(left_margin, 705, f"Год: {report.year}, Квартал: {report.quarter}")
-        c.drawString(left_margin, 685, f"Всего квитанций: {len(tickets)}")
-        
-        y_position = 640
-
-        for idx, ticket in enumerate(tickets):
-            if y_position < 120:
-                c.showPage()
-                c.setFont("MontserratBold", 16)
-                c.drawString(left_margin, 750, "Квитанции по отчету (продолжение)")
-                c.setFont("MontserratRegular", 12)
-                c.drawString(left_margin, 725, f"ОКПО: {report.organization.okpo}")
-                c.drawString(left_margin, 705, f"Год: {report.year}, Квартал: {report.quarter}")
-                y_position = 680
-
-            c.setFont("MontserratBold", 12)
-            c.drawString(left_margin, y_position, f"Квитанция #{idx + 1}")
-            y_position -= 20
-            
-            c.setFont("MontserratRegular", 10)
-            c.drawString(left_margin, y_position, f"Дата обработки: {ticket.begin_time.strftime('%Y-%m-%d %H:%M') if ticket.begin_time else 'Не указана'}")
-            y_position -= 20
-            
-            c.setFont("MontserratBold", 12)
-            c.drawString(left_margin, y_position, "Результат: ")
-            c.setFont("MontserratRegular", 12)
-            result = "Отчет одобрен, ошибок нет" if ticket.luck else "Отчет не принят в обработку"
-            c.drawString(left_margin + 70, y_position, result)
-            y_position -= 20
-            
-            if not ticket.luck and ticket.note:
-                c.setFont("MontserratBold", 12)
-                c.drawString(left_margin, y_position, "Причина:")
-                c.setFont("MontserratRegular", 12)
-                y_position = draw_wrapped_text(c, ticket.note, left_margin + 65, y_position, "MontserratRegular", 11, max_text_width - 65)
-            
-            y_position -= 25
-
-        c.save()
-        buffer.seek(0)
-
-        response = make_response(buffer.getvalue())
-        response.headers['Content-Type'] = 'application/pdf'
-        response.headers['Content-Disposition'] = 'attachment; filename=' + f"kvitancii_{report.organization.okpo}_{report.year}_{report.quarter}.pdf"
-        
-        return response
+    from ..ticket_pdf import build_tickets_pdf
+    pdf = build_tickets_pdf(version)
+    okpo = (report.organization.okpo if report.organization else None) or report.id
+    response = make_response(pdf)
+    response.headers['Content-Type'] = 'application/pdf'
+    response.headers['Content-Disposition'] = f'attachment; filename=kvitancii_{okpo}_{report.year}_{report.quarter}.pdf'
+    return response
 
 
 @views.route('/send-for-admin', methods=['POST'])
@@ -1570,6 +1753,13 @@ def send_for_admin():
         if not question_type:
             flash('Выберите тип вопроса', 'error')
             return redirect(url_for('views.beginPage'))
+
+        # Организация теперь выбирается и обновляется по УНП из ЕГР
+        # (регистрация и профиль → «Организация»), заявки администратору
+        # на добавление или изменение организации больше не принимаются.
+        if question_type in ('organization-none', 'organization-edit'):
+            flash('Данные организации загружаются из ЕГР по УНП: обновите их в профиле, раздел «Организация»', 'error')
+            return redirect(url_for('views.profile_org') if current_user.organization_id else url_for('views.beginPage'))
         
         if question_type == 'organization-none':
             if not organization_name or not organization_okpo or not organization_ynp or not organization_region:
