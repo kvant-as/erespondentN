@@ -2,9 +2,15 @@
    отдельно маршрутом /reports/<type>/<id>/partial/rows — для обновления
    таблицы без полной перезагрузки страницы (см. report.js). #}
 {% for row in sections %}
-<tr class = "section_row" data-id="{{ row.id }}" >
-    <td>
+{% set reorderable = can_reorder and row.code_product not in ['9001', '9010', '9100'] %}
+<tr class = "section_row{% if reorderable %} is-reorderable{% endif %}" data-id="{{ row.id }}" >
+    <td class="section-grip-cell">
         <input type = "hidden" name = "id_section" value = "{{ row.id }}" readonly>
+        {% if reorderable %}
+        <span class="section-grip" draggable="true" title="Перетащите, чтобы изменить порядок (или Alt + ↑/↓ у выбранной строки)" aria-label="Переместить строку">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>
+        </span>
+        {% endif %}
     </td>
     <td>
         <input class = "product-name_fuel" type = "text" value = "{{ row.product.NameProduct }}" readonly>

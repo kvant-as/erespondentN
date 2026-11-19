@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Организация - ErespondentN{% endblock %}
+{% block content %}
+{{ content.blurback() }}
+<div class="page_log_reg">
+    <div class="reg-flow">
+        {{ content.reg_steps(4) }}
+        <div class="log_reg_contener">
+        <div class="log_reg_img"></div>
+        <div class="log-reg-form reg-org-form">
+            <form action="{{ url_for('auth.register_organization') }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="unp" data-egr-unp>
+                <div class="link_cont reg-head">
+                    <a class="active">Ваша организация</a>
+                </div>
+                <div class="glass-info-block reg-info">
+                    <p>Введите УНП организации, за которую вы будете сдавать отчёты. Аккаунт <strong>{{ email }}</strong> будет создан после выбора организации.</p>
+                </div>
+                {{ content.egr_lookup('reg') }}
+                <div class="log_buttons_area">
+                    <button type="submit" class="submit_button app-btn" data-egr-submit data-loading-text="Создаём аккаунт…" disabled>
+                        {{ icons.icon_send() }}
+                        <span>Выбрать и создать аккаунт</span>
+                    </button>
+                </div>
+                <div class="forgot_cont">
+                    <a class="under-link" href="{{ url_for('views.register_personal') }}">Назад к личным данным</a>
+                </div>
+            </form>
+        </div>
+    </div>
+    </div>
+</div>
+<script src="{{ url_for('static', filename='js/egr_org.js') }}"></script>
+{% endblock %}

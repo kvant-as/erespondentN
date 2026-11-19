@@ -21,6 +21,7 @@
     <section class="modern-contact">
         <div class="contact-glass">
             <h2 class="contact-title">Контакты</h2>
+            
             <div class="contact-methods">
                 <div class="contact-method">
                     <div class="contact-icon">
@@ -31,6 +32,18 @@
                         <div class="contact-value">Пн-Пт: 9:00 - 18:00</div>
                     </div>
                 </div>
+
+                                
+                <a href="https://energoeffect.gov.by/contact" class="contact-method support-link" target="_blank" rel="noopener">
+                    <div class="contact-icon">
+                        {{ icons.icon_smart_phone() }}
+                    </div>
+                    <div class="contact-info">
+                        <div class="contact-type">Контакты управлений и департамента</div>
+                        <div class="contact-value link">Перейти к списку</div>
+                    </div>
+                </a>
+
                 {% if current_user.is_authenticated%}
                 <a href="/#news_row" class="contact-method support-link" id="supportLink">
                     <div class="contact-icon">
@@ -42,8 +55,9 @@
                     </div>
                 </a>
                 {% endif %}
-                
-                <a href="tel:+375173385051" class="contact-method">
+
+
+                <!-- <a href="tel:+375173385051" class="contact-method">
                     <div class="contact-icon">
                         {{ icons.icon_smart_phone() }}
                     </div>
@@ -51,7 +65,7 @@
                         <div class="contact-type">Телефон приемной</div>
                         <div class="contact-value">+375 17 338-50-51</div>
                     </div>
-                </a> 
+                </a>  -->
                 
                 <a href="tel:+375172315563" class="contact-method">
                     <div class="contact-icon">

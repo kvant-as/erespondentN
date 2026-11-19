@@ -58,6 +58,12 @@ def create_app():
         ('is_region_auditor', 'Аудитор'),
     )
     app.config['SESSION_DEFAULT_REDIRECT'] = 'views.profile'
+
+    # ЕГР (egr.gov.by) — организация при регистрации и обновление её данных
+    # по УНП (common_models.egr). EGR_API_KEY — ключ доступа, если ЕГР его выдал.
+    app.config['EGR_API_BASE'] = os.getenv('EGR_API_BASE', 'https://egr.gov.by/api/v2/egr')
+    app.config['EGR_API_KEY'] = os.getenv('EGR_API_KEY')
+    app.config['EGR_TIMEOUT'] = float(os.getenv('EGR_TIMEOUT', 15))
     app.config['SESSION_ENFORCE_IN_DEBUG'] = True
 
     db.init_app(app)

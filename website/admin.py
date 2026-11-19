@@ -1,24 +1,25 @@
-"""ErespondentN admin — model registry for the shared engine (common_models.admin)."""
+"""ErespondentN admin — описание моделей для движка eres-admin."""
 
 from werkzeug.security import generate_password_hash
 
-from common_models.admin import AdminSite, Field as F
+from eres_admin import AdminSite, Field as F
 from common_models import (
-    count_online, get_current_application_id,
-    User, Application, UserAppActivity, Organization, Region, News,
+    db, current_utc_time, count_online, get_current_application_id,
+    User, Application, UserAppActivity, UserAppDailyActivity, Organization, Region, News,
     Report, Version_report, Ticket, DirUnit, DirProduct, Sections, Message,
 )
 
 site = AdminSite(
     brand="ErespondentN",
-    accent="#0073c0",
-    accent_2="#005fa3",
+    db=db,
+    code="erespondentn",
     site_endpoint="views.beginPage",
     login_endpoint="views.login",
     logout_endpoint="auth.logout",
+    now=current_utc_time,
 )
 
-site.link("Сообщения администратору", "admin_messages.list_view", group="Обращения")
+site.link("Сообщения администратору", "admin_messages.list_view", group="Обращения", icon="message")
 
 
 def _scope_to_this_app(query):
@@ -62,11 +63,18 @@ def _org_account_emails(org):
 def _news_on_save(obj, creating):
     """Держим published_at в синхроне с галочкой «Опубликовано»."""
     from common_models import current_utc_time
+    if creating:
+        obj.application_id = get_current_application_id()
     if getattr(obj, "is_published", False):
         if not obj.published_at:
             obj.published_at = current_utc_time()
     else:
         obj.published_at = None
+
+
+def _news_scope_to_this_app(query):
+    """Новость принадлежит одному приложению — админка видит только свои."""
+    return query.filter(News.application_id == get_current_application_id())
 
 
 # --------------------------------------------------------------------------- #
@@ -133,8 +141,9 @@ site.register(
 site.register(
     News, name="Новости", group="Основные", stat_label="Новостей",
     list_display=["id", "title", "created_time", "views_count"],
-    list_badges=["is_published", "is_enplans", "is_erespondentn"],
+    list_badges=["is_published"],
     search=["title", "text"],
+    scope_query=_news_scope_to_this_app,
     on_save=_news_on_save,
     fields=[
         F("title", "Заголовок", required=True),
@@ -143,8 +152,8 @@ site.register(
           upload_to="static/img/news", accept="image/*"),
         F("is_published", "Опубликовано", type="bool", default=True,
           help="Снимите галочку, чтобы скрыть новость с сайта"),
-        F("is_erespondentn", "Показывать в ErespondentN", type="bool", default=True),
-        F("is_enplans", "Показывать в EnPlans", type="bool"),
+        F("application_id", "Приложение", readonly=True, display=_user_application_display,
+          help="Новость создаётся только для текущего приложения (ErespondentN) — не редактируется."),
         F("views_count", "Просмотры", type="int"),
     ],
 )
@@ -267,11 +276,63 @@ site.register(
 
 # --------------------------------------------------------------------------- #
 
+def _version_status_rows():
+    rows = (
+        db.session.query(Version_report.status, db.func.count(Version_report.id))
+        .group_by(Version_report.status)
+        .order_by(db.func.count(Version_report.id).desc())
+        .limit(6)
+        .all()
+    )
+    return [(status or "Без статуса", n) for status, n in rows]
+
+
+def _report_year_rows():
+    rows = (
+        db.session.query(Report.year, db.func.count(Report.id))
+        .filter(Report.year.isnot(None))
+        .group_by(Report.year)
+        .order_by(Report.year.desc())
+        .limit(5)
+        .all()
+    )
+    return [(f"{year} год", n) for year, n in rows]
+
+
+def _daily_activity_scope(query):
+    return query.filter(UserAppDailyActivity.app == "erespondentn")
+
+
+site.register(
+    UserAppDailyActivity, name="Активность по дням", group="Служебные", key="user-app-daily-activity",
+    readonly=True, order_by="-day", per_page=50,
+    list_display=["day", "user", ("ticks", "Минут в приложении"), "first_at", "last_at"],
+    scope_query=_daily_activity_scope,
+)
+
 site.dashboard(
     greeting_attr="first_name",
     stats=["news", "report", "organization", "user"],
     online_count=lambda: count_online("erespondentn"),
+    charts=[
+        {"title": "Активные пользователи", "model": UserAppDailyActivity, "date_attr": "day",
+         "distinct": "user_id", "scope": _daily_activity_scope},
+        {"title": "Отправленные отчёты", "model": Version_report, "date_attr": "sent_time"},
+        {"title": "Новые пользователи", "model": User, "date_attr": "begin_time", "scope": _scope_to_this_app},
+        {"title": "Сообщения", "model": Message, "date_attr": "create_time"},
+    ],
+    breakdowns=[
+        {"title": "Версии отчётов по статусам", "rows": _version_status_rows, "icon": "layers"},
+        {"title": "Отчёты по годам", "rows": _report_year_rows, "icon": "file"},
+    ],
     actions=[
+        {
+            "label": "Создать тестовых проверяющих",
+            "description": "По аккаунту на каждое региональное управление: auditor.r<номер региона>@test.local, пароль Test12345!",
+            "endpoint": "dbs.create_test_auditors",
+            "method": "post",
+            "confirm": "Создать недостающие тестовые аккаунты проверяющих для всех региональных управлений? Существующие аккаунты не изменятся.",
+        },
         # {
         #     "label": "Привязать старые аккаунты к erespondentN",
         #     "endpoint": "dbs.backfill_user_applications",

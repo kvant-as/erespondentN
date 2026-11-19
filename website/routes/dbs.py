@@ -36,6 +36,25 @@ def backfill_user_applications():
 
     return jsonify({'message': f'Готово: {updated} аккаунтов привязано к erespondentN.'})
 
+
+@dbs.route('/create-test-auditors', methods=['POST'])
+@login_required
+def create_test_auditors():
+    """Кнопка в админке: по тестовому проверяющему на каждое региональное
+    управление (см. website/test_auditors.py). Повторное нажатие создаёт
+    только недостающие аккаунты."""
+    if not current_user.is_admin:
+        return jsonify({'message': 'Требуются права администратора'}), 403
+
+    from ..test_auditors import ensure_test_auditors, TEST_PASSWORD
+    rows = ensure_test_auditors()
+    if not rows:
+        return jsonify({'message': 'Региональных управлений не найдено — создавать некого.'})
+    created = [email for email, _, is_new in rows if is_new]
+    emails = ', '.join(email for email, _, _ in rows)
+    head = f'Создано: {len(created)}, уже были: {len(rows) - len(created)}.' if created else 'Все тестовые аккаунты уже есть.'
+    return jsonify({'message': f'{head} Пароль {TEST_PASSWORD}. Почты: {emails}'})
+
 # @dbs.route('/units', methods=['POST', 'GET'])
 # def units():
 #     if request.method == 'GET':

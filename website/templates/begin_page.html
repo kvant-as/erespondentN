@@ -13,19 +13,19 @@
             <div class = "hellow_buttonarea"> 
                 {% if current_user.is_authenticated%}
                     {% if user.is_admin or not (user.is_region_auditor or user.is_reader) %}
-                        <button onclick="window.location.href='/reports'" class="blue_btn">
+                        <button onclick="window.location.href='/reports'" class="app-btn">
                             {{ icons.icon_add() }}
                             <span>Подать отчет</span>
                         </button>
                     {% elif user.is_region_auditor or user.is_reader %}
-                        <button onclick="window.location.href='/audit-area/not_viewed?year={{previous_year}}&quarter={{previous_quarter}}';" class = "blue_btn">
+                        <button onclick="window.location.href='/audit-area/not_viewed?year={{previous_year}}&quarter={{previous_quarter}}';" class = "app-btn">
                             {{ icons.icon_search() }}
                             <span>Просмотр отчетов</span>
                         </button> 
                     {% endif %}
 
                 {% else %}
-                    <button onclick="window.location.href='/login'" class = "blue_btn">
+                    <button onclick="window.location.href='/login'" class = "app-btn">
                         {{ icons.icon_login() }}
                         <span>Войти</span>
                     </button>
@@ -92,23 +92,28 @@
         </div>
     {%else%}
     {%endif%}
-    {%if current_user.is_authenticated%}
         <div class="askquestion-row">
             <div class="askquestion_form">
                 <div class="askquestion_name">Форма обратной связи</div>
+                {% if not current_user.is_authenticated %}
+                <div class="glass-info-block askquestion-guest-note">
+                    <p>Отправлять вопросы могут только зарегистрированные пользователи.
+                    <a href="/login" class="instruction-link">Войдите</a> или
+                    <a href="/sign" class="instruction-link">зарегистрируйтесь</a>, чтобы задать вопрос.</p>
+                </div>
+                {% endif %}
                 <script id="currentUserOrg" type="application/json">{{ user_org | tojson }}</script>
                 <form action="/send-for-admin" method="POST" id="askquestion-form">
+                    <fieldset class="askquestion-fieldset"{% if not current_user.is_authenticated %} disabled{% endif %}>
                     <div class="form-group">
                         <select name="askquestion_type" id="questionType" required>
                             <option value="">Выберите тип вопроса</option>
-                            <option value="organization-none">Нет организации в списке</option>
-                            {% if user_org %}
-                                <option value="organization-edit">Изменить данные организации</option>
-                            {% endif %}
                             <option value="other">Другое</option>
                         </select>
                     </div>
 
+                    {# Блоки «Нет организации в списке» и «Изменить данные организации» отключены:
+                       организация выбирается и обновляется по УНП из ЕГР (регистрация, профиль → «Организация»).
                     {% if user_org %}
                         <div id="organizationEditInfo" class="search-org-container" style="display: none;">
                             <div class="form-group">
@@ -198,6 +203,7 @@
                             <div id="addRegionSelectionStatus" class="region-selection-status">Регион не выбран</div>
                         </div>
                     </div>
+                    #}
 
                     <div class="form-group">
                         <label for="problemDescription">Ваш вопрос</label>
@@ -206,7 +212,7 @@
                     
                     <div class="form-group">
                         <label for="email">Email</label>
-                        <input type="text" name="email" id="email" value="{{current_user.email}}" readonly>
+                        <input type="text" name="email" id="email" value="{{ current_user.email if current_user.is_authenticated else '' }}" placeholder="Доступно после входа" readonly>
                     </div>
 
                     <input type="hidden" name="selected_org_id" id="selectedOrgId">
@@ -217,15 +223,14 @@
 
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     
-                    <button type="submit" class="blue_btn" id="send-btn">
+                    <button type="submit" class="app-btn" id="send-btn">
                         {{ icons.icon_send() }}
-                        <span>Отправить вопрос</span>
+                        <span>{% if current_user.is_authenticated %}Отправить вопрос{% else %}Войдите, чтобы отправить вопрос{% endif %}</span>
                     </button>
+                    </fieldset>
                 </form>
             </div>
         </div>
-    {%else%}
-    {%endif%}
 </div>
 <script src="{{ url_for('static', filename='js/question_form.js') }}"></script>
 {% endblock %}
