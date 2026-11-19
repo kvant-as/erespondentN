@@ -162,12 +162,29 @@
 </div>
 
 {% if is_reviewer %}
-<div id="reviewModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="reviewModalTitle">
+<div id="reviewModal" class="modal" role="dialog" aria-modal="true" aria-label="Квитанции и решение по отчёту">
     <div class="modal-content review-modal">
-        <div class="modal-header">
-            <h3 class="change-position" id="reviewModalTitle">
-                {% if current_user.is_reader %}Квитанции отчёта{% else %}Квитанции и сообщение организации{% endif %}
-            </h3>
+        {% set review_org_head = current_report.organization if current_report else None %}
+        <div class="modal-header review-modal-header">
+            {% if current_report %}
+            <dl class="review-modal-meta">
+                <div class="review-modal-meta-org"><dt>Организация</dt><dd>{{ review_org_head.full_name if review_org_head else 'не указана' }}</dd></div>
+                {% if review_org_head and review_org_head.ynp %}<div><dt>УНП</dt><dd>{{ review_org_head.ynp }}</dd></div>{% endif %}
+                {% if review_org_head and review_org_head.okpo %}<div><dt>ОКПО</dt><dd>{{ review_org_head.okpo }}</dd></div>{% endif %}
+                <div><dt>Период</dt><dd>{{ current_report.quarter }} квартал {{ current_report.year }} г.</dd></div>
+            </dl>
+            {% endif %}
+            {% if current_version and current_version.tickets %}
+            <form method="POST" action="/print-version-tickets" class="review-modal-print">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="version_id" value="{{ current_version.id }}">
+                <button type="submit" class="app-btn app-btn--secondary">
+                    {{ icons.icon_print() }}
+                    <span>Печать квитанций</span>
+                    <span class="review-modal-count">{{ current_version.tickets|length }}</span>
+                </button>
+            </form>
+            {% endif %}
             {{ icons.icon_close() }}
         </div>
         {{ content.tickets_area(
@@ -331,7 +348,7 @@
         </div>
         <div class="answer-highlight-second">
             <div class="highlight-icon">💡</div>
-            <p><strong>Отредактируйте активные</strong> параметры. Если у вас возникнут вопросы, пожалуйста, ознакомьтесь с <a href="/FAQ#report-filling" class="instruction-link">инструкцией</a> по работе.</p>
+            <p>Отредактируйте активные параметры. Если у вас возникнут вопросы, пожалуйста, ознакомьтесь с <a href="/FAQ#report-filling" class="instruction-link">инструкцией</a> по работе.</p>
         </div>
         <form method="POST" action="/change-section" id="changeSectionForm">
             <table class="modal_table">

@@ -326,6 +326,13 @@ site.dashboard(
         {"title": "Отчёты по годам", "rows": _report_year_rows, "icon": "file"},
     ],
     actions=[
+        {
+            "label": "Создать тестовых проверяющих",
+            "description": "По аккаунту на каждое региональное управление: auditor.r<номер региона>@test.local, пароль Test12345!",
+            "endpoint": "dbs.create_test_auditors",
+            "method": "post",
+            "confirm": "Создать недостающие тестовые аккаунты проверяющих для всех региональных управлений? Существующие аккаунты не изменятся.",
+        },
         # {
         #     "label": "Привязать старые аккаунты к erespondentN",
         #     "endpoint": "dbs.backfill_user_applications",

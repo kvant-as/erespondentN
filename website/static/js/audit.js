@@ -10,6 +10,8 @@ class AuditModule {
         this.LONG_PRESS_DELAY = 500;
         this.isLongPress = false;
         
+        this.returnKey = 'er-return-audit';
+        this.searchMode = 'name';
         this.currentPage = 1;
         this.pageSize = 50;
         this.totalPages = 1;
@@ -21,14 +23,47 @@ class AuditModule {
     }
 
     async init() {
-        await this.loadData(1);
-        this.attachEventListeners();
-        this.attachGlobalEventListeners();
+        const restore = window.ReturnPoint ? window.ReturnPoint.take(this.returnKey) : null;
+        if (restore) {
+            this.setSearchMode(restore.searchMode || 'name');
+            const input = document.getElementById('audit-search');
+            if (input && restore.searchText) input.value = restore.searchText;
+        }
+        // Регион проверяющего выставляется до первой загрузки, чтобы список
+        // грузился один раз (и не сбрасывал восстановленную страницу).
         this.initCustomDropdown();
         this.initSortDropdown();
         this.updateDropdownFromUrl();
-        this.setDefaultRegionForAuthor();
+        this.setDefaultRegionForAuthor(false);
+        await this.loadData(restore && restore.page ? restore.page : 1);
+        this.attachEventListeners();
+        this.attachGlobalEventListeners();
         this.setupPagination();
+        this.setupReturnPoint(restore);
+    }
+
+    // «Вернуться к отчетам» со страницы отчёта: список запоминает фильтры
+    // (они в адресе), страницу, поиск, выбранную строку и прокрутку.
+    setupReturnPoint(restore) {
+        if (!window.ReturnPoint) return;
+        let lastRowId = null;
+        document.addEventListener('click', (e) => {
+            const row = e.target.closest && e.target.closest('.report_row');
+            if (row) lastRowId = row.dataset.id;
+        }, true);
+        window.addEventListener('pagehide', () => {
+            const active = document.querySelector('.report_row.active-report');
+            window.ReturnPoint.save(this.returnKey, {
+                page: this.currentPage,
+                searchMode: this.searchMode,
+                searchText: document.getElementById('audit-search')?.value || '',
+                rowId: active ? active.dataset.id : lastRowId
+            });
+        });
+        if (!restore) return;
+        const row = restore.rowId ? document.querySelector(`.report_row[data-id="${restore.rowId}"]`) : null;
+        if (row && !row.classList.contains('active-report')) row.click();
+        window.ReturnPoint.scroll(restore, row);
     }
 
     attachGlobalEventListeners() {
@@ -50,45 +85,74 @@ class AuditModule {
         this.setupDownloadLinks();
     }
 
+    // Страницы списка: панель под таблицей (вне горизонтальной прокрутки),
+    // номера страниц с пропусками «…»; при одной странице панель скрыта.
     setupPagination() {
         const prevBtn = document.getElementById('prevPageBtn');
         const nextBtn = document.getElementById('nextPageBtn');
-        
-        if (prevBtn) {
-            prevBtn.addEventListener('click', () => {
-                if (this.currentPage > 1) {
-                    this.loadData(this.currentPage - 1);
-                }
-            });
-        }
-        
-        if (nextBtn) {
-            nextBtn.addEventListener('click', () => {
-                if (this.currentPage < this.totalPages) {
-                    this.loadData(this.currentPage + 1);
-                }
+        const pages = document.getElementById('pagerPages');
+        if (prevBtn) prevBtn.addEventListener('click', () => this.goToPage(this.currentPage - 1));
+        if (nextBtn) nextBtn.addEventListener('click', () => this.goToPage(this.currentPage + 1));
+        if (pages) {
+            pages.addEventListener('click', (e) => {
+                const btn = e.target.closest('[data-page]');
+                if (btn) this.goToPage(Number(btn.dataset.page));
             });
         }
     }
 
+    async goToPage(page) {
+        if (this.isLoading || page < 1 || page > this.totalPages || page === this.currentPage) return;
+        await this.loadData(page);
+        const list = document.querySelector('.report-list');
+        if (list) {
+            const top = list.getBoundingClientRect().top + window.scrollY - 90;
+            window.scrollTo({ top: Math.max(top, 0), behavior: 'smooth' });
+        }
+    }
+
+    pageWindow(current, total) {
+        const pages = new Set([1, total, current - 1, current, current + 1]);
+        if (current <= 3) [2, 3, 4].forEach(p => pages.add(p));
+        if (current >= total - 2) [total - 1, total - 2, total - 3].forEach(p => pages.add(p));
+        const sorted = [...pages].filter(p => p >= 1 && p <= total).sort((a, b) => a - b);
+        const out = [];
+        sorted.forEach((p, i) => {
+            if (i && p - sorted[i - 1] > 1) out.push(null);
+            out.push(p);
+        });
+        return out;
+    }
+
     updatePaginationButtons() {
+        const pager = document.getElementById('auditPager');
         const prevBtn = document.getElementById('prevPageBtn');
         const nextBtn = document.getElementById('nextPageBtn');
-        const currentPageSpan = document.getElementById('currentPage');
-        const totalPagesSpan = document.getElementById('totalPages');
-        
-        if (prevBtn) {
-            prevBtn.disabled = this.currentPage <= 1;
-        }
-        if (nextBtn) {
-            nextBtn.disabled = this.currentPage >= this.totalPages;
-        }
-        if (currentPageSpan) {
-            currentPageSpan.textContent = this.currentPage;
-        }
-        if (totalPagesSpan) {
-            totalPagesSpan.textContent = this.totalPages || 1;
-        }
+        const pages = document.getElementById('pagerPages');
+        const totalPages = Math.max(this.totalPages || 1, 1);
+        if (pager) pager.hidden = totalPages <= 1;
+        if (prevBtn) prevBtn.disabled = this.currentPage <= 1;
+        if (nextBtn) nextBtn.disabled = this.currentPage >= totalPages;
+        if (!pages) return;
+        pages.innerHTML = '';
+        if (totalPages <= 1) return;
+        this.pageWindow(this.currentPage, totalPages).forEach(p => {
+            if (p === null) {
+                const gap = document.createElement('span');
+                gap.className = 'audit-pager-gap';
+                gap.textContent = '…';
+                pages.appendChild(gap);
+                return;
+            }
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'audit-pager-btn' + (p === this.currentPage ? ' is-current' : '');
+            btn.dataset.page = p;
+            btn.textContent = p;
+            btn.setAttribute('aria-label', 'Страница ' + p);
+            if (p === this.currentPage) btn.setAttribute('aria-current', 'page');
+            pages.appendChild(btn);
+        });
     }
 
     async loadData(page = 1) {
@@ -96,12 +160,12 @@ class AuditModule {
         const loadingSpinner = document.getElementById('loading-spinner');
         const reportsContent = document.getElementById('reports-content');
         const emptyState = document.getElementById('empty-state');
-        const paginationContainer = document.querySelector('.pagination-container');
+        const paginationContainer = document.getElementById('auditPager');
         
         if (loadingSpinner) loadingSpinner.style.display = 'flex';
         if (reportsContent) reportsContent.style.display = 'none';
         if (emptyState) emptyState.style.display = 'none';
-        if (paginationContainer) paginationContainer.style.display = 'none';
+        if (paginationContainer) paginationContainer.hidden = true;
 
         this.animateStatsLoading();
         this.currentPage = page;
@@ -118,7 +182,7 @@ class AuditModule {
                 this.renderReports(this.allReports, false);
                 
                 if (loadingSpinner) loadingSpinner.style.display = 'none';
-                if (paginationContainer) paginationContainer.style.display = 'flex';
+                
                 
                 this.updatePaginationButtons();
                 this.attachRowEventListeners();
@@ -142,8 +206,6 @@ class AuditModule {
             sort: this.sortOrder
         });
         
-        const searchName = document.getElementById('organization-filter')?.value;
-        const searchOkpo = document.getElementById('okpo-filter')?.value;
         
         let regionFilter = 'all';
         
@@ -155,8 +217,10 @@ class AuditModule {
             regionFilter = urlParams.get('region') || 'all';
         }
         
-        if (searchName) params.append('search_name', searchName);
-        if (searchOkpo) params.append('search_okpo', searchOkpo);
+        const search = this.searchParam();
+        if (search) params.append(search[0], search[1]);
+        const onlyReport = new URLSearchParams(window.location.search).get('report');
+        if (onlyReport) params.append('report', onlyReport);
         if (regionFilter && regionFilter !== '' && regionFilter !== 'all') {
             params.append('region', regionFilter);
         }
@@ -400,7 +464,7 @@ class AuditModule {
         }
     }
 
-    handleDrop(event) {
+    async handleDrop(event) {
         const targetItem = event.currentTarget;
         if (!targetItem.classList.contains('drop-target')) return;
         event.preventDefault();
@@ -408,22 +472,39 @@ class AuditModule {
         this.setDraggingState(false);
         const reportId = event.dataTransfer.getData('text/plain');
         const action = targetItem.dataset.action;
-        
+
         const form = document.getElementById('change-category-form');
         const reportIdInput = document.getElementById('report-id-input');
         const actionInput = document.getElementById('action-input');
-        
+
         const activeReport = document.querySelector('.active-report');
+        const previousRow = this.previousReportRow;
+        this.previousReportRow = null;
         if (activeReport && activeReport.dataset.id === reportId && form) {
+            const statuses = {
+                to_download: { title: 'Одобрить отчёт?', status: 'Одобрен', confirm: 'Одобрить', variant: 'success' },
+                remarks: { title: 'Вернуть отчёт с замечаниями?', status: 'Есть замечания', confirm: 'Вернуть с замечаниями', variant: 'warning' },
+                to_delete: { title: 'Отметить отчёт к удалению?', status: 'Готов к удалению', confirm: 'К удалению', variant: 'danger' },
+            };
+            const info = statuses[action];
+            if (info) {
+                const name = activeReport.querySelector('td:nth-child(4) input')?.value || '';
+                let text = 'Отчёт' + (name ? ' «' + name + '»' : '') + ' получит статус «' + info.status + '», организации придёт уведомление.';
+                if (action === 'to_delete') text += ' Исправить такой отчёт организация не сможет — нужно будет создать новый.';
+                const ok = window.appConfirm
+                    ? await window.appConfirm({ title: info.title, text: text, confirmText: info.confirm, variant: info.variant, icon: false })
+                    : window.confirm(text);
+                if (!ok) {
+                    if (previousRow) previousRow.classList.remove('active-report');
+                    return;
+                }
+            }
             if (reportIdInput) reportIdInput.value = reportId;
             if (actionInput) actionInput.value = action;
             form.submit();
         }
-        
-        if (this.previousReportRow) {
-            this.previousReportRow.classList.remove('active-report');
-            this.previousReportRow = null;
-        }
+
+        if (previousRow) previousRow.classList.remove('active-report');
     }
 
     setupNavigationItems() {
@@ -1038,7 +1119,7 @@ class AuditModule {
         return false;
     }
 
-    setDefaultRegionForAuthor() {
+    setDefaultRegionForAuthor(reload = true) {
         const regionMenu = document.getElementById('region-menu');
         if (!regionMenu) return;
         
@@ -1061,8 +1142,8 @@ class AuditModule {
                 const url = new URL(window.location);
                 url.searchParams.set('region', userRegionDigit);
                 window.history.replaceState({}, '', url);
-                
-                this.filterReports();
+
+                if (reload) this.filterReports();
             }
             return;
         }
@@ -1090,8 +1171,6 @@ class AuditModule {
     }
 
     async filterReports() {
-        const searchName = document.getElementById('organization-filter')?.value || '';
-        const searchOkpo = document.getElementById('okpo-filter')?.value || '';
 
         const selectedItem = document.querySelector('#region-menu .dropdown-item.selected');
         let regionFilter = selectedItem?.dataset.value || 'all';
@@ -1099,12 +1178,12 @@ class AuditModule {
         const loadingSpinner = document.getElementById('loading-spinner');
         const reportsContent = document.getElementById('reports-content');
         const emptyState = document.getElementById('empty-state');
-        const paginationContainer = document.querySelector('.pagination-container');
+        const paginationContainer = document.getElementById('auditPager');
         
         if (loadingSpinner) loadingSpinner.style.display = 'flex';
         if (reportsContent) reportsContent.style.display = 'none';
         if (emptyState) emptyState.style.display = 'none';
-        if (paginationContainer) paginationContainer.style.display = 'none';
+        if (paginationContainer) paginationContainer.hidden = true;
 
         this.currentPage = 1;
         this.allReports = [];
@@ -1114,8 +1193,6 @@ class AuditModule {
                 status: this.currentStatus,
                 year: this.yearFilter,
                 quarter: this.quarterFilter,
-                search_name: searchName,
-                search_okpo: searchOkpo,
                 page: 1,
                 per_page: this.pageSize,
                 sort: this.sortOrder
@@ -1124,6 +1201,10 @@ class AuditModule {
             if (regionFilter && regionFilter !== '' && regionFilter !== 'all') {
                 params.append('region', regionFilter);
             }
+            const search = this.searchParam();
+            if (search) params.append(search[0], search[1]);
+            const onlyReportParam = new URLSearchParams(window.location.search).get('report');
+            if (onlyReportParam) params.append('report', onlyReportParam);
             
             const response = await fetch(`/api/audit-data?${params}`);
             const data = await response.json();
@@ -1137,7 +1218,7 @@ class AuditModule {
                 this.renderReports(this.allReports, false);
                 
                 if (loadingSpinner) loadingSpinner.style.display = 'none';
-                if (paginationContainer) paginationContainer.style.display = 'flex';
+                
                 
                 this.updatePaginationButtons();
                 this.attachRowEventListeners();
@@ -1178,26 +1259,50 @@ class AuditModule {
         }
     }
 
+    // Поиск: одно поле и выбор, по чему искать — наименование, ОКПО или УНП.
+    searchParam() {
+        const value = (document.getElementById('audit-search')?.value || '').trim();
+        if (!value) return null;
+        const names = { name: 'search_name', okpo: 'search_okpo', unp: 'search_unp' };
+        return [names[this.searchMode] || 'search_name', value];
+    }
+
+    setSearchMode(mode) {
+        let placeholder = '';
+        document.querySelectorAll('.af-mode-btn').forEach(btn => {
+            const active = btn.dataset.searchMode === mode;
+            btn.classList.toggle('is-active', active);
+            btn.setAttribute('aria-checked', active ? 'true' : 'false');
+            if (active) placeholder = btn.dataset.placeholder || '';
+        });
+        this.searchMode = mode;
+        const input = document.getElementById('audit-search');
+        if (input) {
+            input.placeholder = placeholder;
+            input.inputMode = mode === 'name' ? 'text' : 'numeric';
+        }
+    }
+
     attachEventListeners() {
-        const organizationFilter = document.getElementById('organization-filter');
-        const okpoFilter = document.getElementById('okpo-filter');
-        
+        if (this.searchBound) return;
+        this.searchBound = true;
+        const input = document.getElementById('audit-search');
         let searchTimeout;
         const handleSearch = () => {
             clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(() => {
-                this.filterReports();
-            }, 300);
+            searchTimeout = setTimeout(() => this.filterReports(), 300);
         };
-
-        if (organizationFilter) {
-            organizationFilter.removeEventListener('input', handleSearch);
-            organizationFilter.addEventListener('input', handleSearch);
-        }
-        if (okpoFilter) {
-            okpoFilter.removeEventListener('input', handleSearch);
-            okpoFilter.addEventListener('input', handleSearch);
-        }
+        if (input) input.addEventListener('input', handleSearch);
+        document.querySelectorAll('.af-mode-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (btn.dataset.searchMode === this.searchMode) return;
+                this.setSearchMode(btn.dataset.searchMode);
+                if (input) {
+                    input.focus();
+                    if (input.value.trim()) this.filterReports();
+                }
+            });
+        });
     }
 
     escapeHtml(text) {

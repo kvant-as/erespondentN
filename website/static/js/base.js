@@ -14,6 +14,63 @@
 
 // setInterval(updateOnlineCount, 30000);
 
+// Точка возврата к списку отчётов. Список (/reports у организации,
+// /audit-area/... у проверяющего) при уходе со страницы запоминает своё
+// состояние в sessionStorage этой вкладки: адрес с фильтрами, страницу,
+// поиск, сортировку, выбранную строку и прокрутку. Кнопка «Вернуться к
+// отчетам» открывает сохранённый адрес и просит список восстановиться;
+// обычный переход в список через меню открывает его с нуля.
+var ReturnPoint = (function() {
+    function read(key) {
+        try { return JSON.parse(sessionStorage.getItem(key) || 'null'); } catch (e) { return null; }
+    }
+    function write(key, data) {
+        try { sessionStorage.setItem(key, JSON.stringify(data)); } catch (e) {}
+    }
+    return {
+        save: function(key, extra) {
+            var data = Object.assign({}, extra || {}, {
+                url: window.location.pathname + window.location.search,
+                scrollY: Math.round(window.scrollY || 0)
+            });
+            write(key, data);
+        },
+        take: function(key) {
+            var flag = null;
+            try {
+                flag = sessionStorage.getItem(key + ':restore');
+                sessionStorage.removeItem(key + ':restore');
+            } catch (e) {}
+            var data = read(key);
+            if (!flag || !data || !data.url || data.url.split('?')[0] !== window.location.pathname) return null;
+            return data;
+        },
+        url: function(key) {
+            var data = read(key);
+            return data && data.url ? data.url : null;
+        },
+        arm: function(key) {
+            try { sessionStorage.setItem(key + ':restore', '1'); } catch (e) {}
+        },
+        go: function(key, fallback) {
+            var data = read(key);
+            try { sessionStorage.setItem(key + ':restore', '1'); } catch (e) {}
+            window.location.href = (data && data.url) || fallback;
+            return false;
+        },
+        scroll: function(state, row) {
+            requestAnimationFrame(function() {
+                if (state && state.scrollY) {
+                    window.scrollTo(0, state.scrollY);
+                } else if (row) {
+                    row.scrollIntoView({ block: 'center' });
+                }
+            });
+        }
+    };
+})();
+window.ReturnPoint = ReturnPoint;
+
 // Окно подтверждения (#confirmModal в base.html). Возвращает Promise:
 // true — пользователь нажал кнопку подтверждения, false — отменил
 // (кнопка «Отмена», крестик, клик по фону или Esc).
@@ -33,6 +90,8 @@ function appConfirm(options) {
     modal.querySelector('#confirmModalTitle').textContent = options.title || 'Подтвердите удаление';
     modal.querySelector('#confirmModalText').textContent = options.text || '';
     okBtn.querySelector('span').textContent = options.confirmText || 'Удалить';
+    var variant = options.variant || 'danger';
+    okBtn.className = 'app-btn' + (variant === 'primary' ? '' : ' app-btn--' + variant);
     var okIcon = okBtn.querySelector('svg');
     if (okIcon) okIcon.style.display = options.icon === false ? 'none' : '';
 
@@ -1970,3 +2029,43 @@ document.addEventListener('DOMContentLoaded', function() {
     statsRow ? observer.observe(statsRow) : startAnimation();
 })();
 
+// Список отчётов организации: запоминаем сортировку, выбранную (или
+// последнюю открытую) строку и прокрутку; восстанавливаем по кнопке
+// «Вернуться к отчетам».
+document.addEventListener('DOMContentLoaded', function() {
+    if (window.location.pathname !== '/reports') return;
+    var table = document.getElementById('report-table');
+    if (!table) return;
+    var KEY = 'er-return-reports';
+    var lastRowId = null;
+
+    document.addEventListener('click', function(e) {
+        var row = e.target.closest && e.target.closest('.report_row');
+        if (row) lastRowId = row.dataset.id;
+    }, true);
+
+    window.addEventListener('pagehide', function() {
+        var sorted = table.querySelector('th[data-sort-direction]');
+        var active = table.querySelector('.report_row.active-report');
+        ReturnPoint.save(KEY, {
+            sortCol: sorted ? sorted.getAttribute('data-sort-col') : null,
+            sortDir: sorted ? sorted.getAttribute('data-sort-direction') : null,
+            rowId: active ? active.dataset.id : lastRowId
+        });
+    });
+
+    var state = ReturnPoint.take(KEY);
+    if (!state) return;
+    setTimeout(function() {
+        if (state.sortCol) {
+            var label = table.querySelector('th[data-sort-col="' + state.sortCol + '"] .sort-label');
+            if (label) {
+                label.click();
+                if (state.sortDir === 'desc') label.click();
+            }
+        }
+        var row = state.rowId ? table.querySelector('.report_row[data-id="' + state.rowId + '"]') : null;
+        if (row && !row.classList.contains('active-report')) row.click();
+        ReturnPoint.scroll(state, row);
+    }, 0);
+});

@@ -108,6 +108,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (link_changefuel_modal) link_changefuel_modal.disabled = true;
         bindSectionRows();
         syncPodRowActions();
+        refreshReportStatus();
     }
 
     // ------------------------------------------------------------------
@@ -588,28 +589,63 @@ document.addEventListener('DOMContentLoaded', function() {
     // ------------------------------------------------------------------
     //  Кнопки статуса отчёта в под-меню
     // ------------------------------------------------------------------
-    if (document.getElementById('control-report-btn')) {
-        document.getElementById('control-report-btn').addEventListener('click', function() {
-            document.getElementById('control-report-form').submit();
-        });
+    // Кнопки раздела «Статус» перерисовываются после правки данных
+    // (refreshReportStatus), поэтому обработчики вешаются функцией.
+    function bindStatusButtons() {
+        var control = document.getElementById('control-report-btn');
+        if (control) {
+            control.addEventListener('click', function() {
+                document.getElementById('control-report-form').submit();
+            });
+        }
+        var agreed = document.getElementById('agreed-report-btn');
+        if (agreed) {
+            agreed.addEventListener('click', function() {
+                document.getElementById('agreed-report-form').submit();
+            });
+        }
+        var sent = document.getElementById('sent-report-btn');
+        if (sent) {
+            handleModal(document.getElementById('SentModal'), sent);
+        }
+        var cancel = document.getElementById('cancel-sending-btn');
+        if (cancel) {
+            cancel.addEventListener('click', async function() {
+                var text = 'Отчёт будет снят с проверки и вернётся в статус «Заполнение». Чтобы отправить его снова, нужно заново пройти контроль, согласовать и подписать ЭЦП.';
+                var ok = window.appConfirm
+                    ? await window.appConfirm({ title: 'Отменить отправку?', text: text, confirmText: 'Отменить отправку', icon: false })
+                    : window.confirm(text);
+                if (!ok) return;
+                document.getElementById('cancel-sending-form').submit();
+            });
+        }
     }
-    if (document.getElementById('agreed-report-btn')) {
-        document.getElementById('agreed-report-btn').addEventListener('click', function() {
-            document.getElementById('agreed-report-form').submit();
-        });
-    }
-    if (document.getElementById('sent-report-btn')) {
-        handleModal(document.getElementById('SentModal'), document.getElementById('sent-report-btn'));
-    }
-    if (document.getElementById('cancel-sending-btn')) {
-        document.getElementById('cancel-sending-btn').addEventListener('click', async function() {
-            var text = 'Отчёт будет снят с проверки и вернётся в статус «Заполнение». Чтобы отправить его снова, нужно заново пройти контроль, согласовать и подписать ЭЦП.';
-            var ok = window.appConfirm
-                ? await window.appConfirm({ title: 'Отменить отправку?', text: text, confirmText: 'Отменить отправку', icon: false })
-                : window.confirm(text);
-            if (!ok) return;
-            document.getElementById('cancel-sending-form').submit();
-        });
+    bindStatusButtons();
+
+    // После правки данных статус отчёта меняется на сервере (например,
+    // «Контроль пройден» → «Заполнение»): обновляем статус в строке
+    // навигации и кнопки раздела «Статус».
+    async function refreshReportStatus() {
+        var route = currentReportRoute();
+        var actions = document.querySelector('[data-status-actions]');
+        if (!route || !actions || window.location.pathname.indexOf('/reports/') !== 0) return;
+        try {
+            var resp = await fetch('/reports/' + route.type + '/' + route.id + '/partial/status', {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            if (!resp.ok || resp.redirected) return;
+            var doc = new DOMParser().parseFromString(await resp.text(), 'text/html');
+            var status = doc.querySelector('[data-part="status"]');
+            var fresh = doc.querySelector('[data-part="actions"] [data-status-actions]');
+            var badge = document.querySelector('[data-report-status]');
+            if (badge && status) badge.innerHTML = status.innerHTML;
+            if (fresh) {
+                actions.replaceWith(document.importNode(fresh, true));
+                bindStatusButtons();
+            }
+        } catch (e) {
+            console.error('[report] refreshReportStatus error', e);
+        }
     }
     if (document.getElementById('export-table-btn')) {
         document.getElementById('export-table-btn').addEventListener('click', function() {
@@ -949,26 +985,88 @@ function updateCounter(textarea) {
     }
 }
 
-// «Вернуться к отчетам» у проверяющего: назад в список проверки, а если
-// страница открылась после редиректа на квитанции — на шаг дальше.
-function smartBack() {
-    const ref = document.referrer;
-    if (ref.includes('tickets_cont=true') && history.length > 2) {
-        history.go(-2);
-    } else if (history.length > 1) {
-        history.back();
-    } else {
-        window.location.href = '/audit-area/not_viewed';
-    }
-}
-
 window.scrollToTickets = scrollToTickets;
 window.openReviewModal = openReviewModal;
 window.updateCounter = updateCounter;
-window.smartBack = smartBack;
+
+// Форма «Решение по отчёту»: одна главная кнопка меняется вместе с полем —
+// пустое поле «Одобрить», есть текст «Вернуть с замечаниями»; «К удалению»
+// доступно только с текстом и спрашивает подтверждение. Сервер проверяет
+// то же самое. Поле растёт по тексту, счётчик виден ближе к лимиту.
+function initReviewDecision(form) {
+    const textarea = form.querySelector('[data-review-text]');
+    const counter = form.querySelector('[data-review-counter]');
+    const main = form.querySelector('[data-review-main]');
+    const label = form.querySelector('[data-review-main-label]');
+    const needsText = form.querySelectorAll('[data-review-needs-text]');
+    if (!textarea || !main) return;
+    const max = parseInt(textarea.getAttribute('maxlength'), 10) || 399;
+    const maxHeight = 280;
+    let sending = false;
+
+    function grow() {
+        textarea.style.height = 'auto';
+        const next = Math.min(textarea.scrollHeight + 2, maxHeight);
+        textarea.style.height = next + 'px';
+        textarea.style.overflowY = textarea.scrollHeight + 2 > maxHeight ? 'auto' : 'hidden';
+    }
+
+    function sync() {
+        const len = textarea.value.length;
+        const hasText = textarea.value.trim().length > 0;
+        if (counter) {
+            counter.hidden = len < max * 0.7;
+            counter.textContent = len + '/' + max;
+            counter.classList.toggle('is-near', len > max * 0.9);
+        }
+        const mode = hasText ? 'remarks' : 'approve';
+        main.value = mode;
+        main.dataset.mode = mode;
+        main.classList.toggle('app-btn--success', !hasText);
+        main.classList.toggle('app-btn--warning', hasText);
+        if (label) label.textContent = hasText ? 'Вернуть с замечаниями' : 'Одобрить';
+        needsText.forEach(function(btn) { btn.disabled = !hasText; });
+    }
+
+    textarea.addEventListener('input', function() { sync(); grow(); });
+    form.addEventListener('submit', async function(e) {
+        const btn = e.submitter;
+        if (sending) {
+            e.preventDefault();
+            return;
+        }
+        const decision = btn ? btn.value : '';
+        const asks = {
+            approve: { title: 'Одобрить отчёт?', text: 'Отчёт получит статус «Одобрен», организации придёт уведомление.', confirm: 'Одобрить', variant: 'success' },
+            remarks: { title: 'Вернуть отчёт с замечаниями?', text: 'Отчёт получит статус «Есть замечания»: организация получит ваш текст на почту и сможет исправить отчёт.', confirm: 'Вернуть с замечаниями', variant: 'warning' },
+            delete: { title: 'Отметить отчёт к удалению?', text: (btn && btn.dataset.confirm) || 'Отчёт получит статус «Готов к удалению».', confirm: 'К удалению', variant: 'danger' },
+        };
+        const ask = asks[decision];
+        if (ask && !form.dataset.confirmed) {
+            e.preventDefault();
+            const ok = window.appConfirm
+                ? await window.appConfirm({ title: ask.title, text: ask.text, confirmText: ask.confirm, variant: ask.variant, icon: false })
+                : window.confirm(ask.text);
+            if (!ok) return;
+            form.dataset.confirmed = '1';
+            form.requestSubmit(btn);
+            return;
+        }
+        const back = form.querySelector('[data-review-return]');
+        if (back && window.ReturnPoint) {
+            back.value = window.ReturnPoint.url('er-return-audit') || '';
+            if (back.value) window.ReturnPoint.arm('er-return-audit');
+        }
+        sending = true;
+        form.classList.add('is-sending');
+    });
+    sync();
+    grow();
+}
 
 document.addEventListener('DOMContentLoaded', function() {
-    const textarea = document.querySelector('.message-field__textarea');
+    document.querySelectorAll('[data-review-decision]').forEach(initReviewDecision);
+    const textarea = document.querySelector('.message-field__textarea:not([data-review-text])');
     if (textarea) updateCounter(textarea);
     if (new URLSearchParams(window.location.search).get('tickets_cont') === 'true') {
         scrollToTickets();
