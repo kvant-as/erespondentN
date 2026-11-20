@@ -263,3 +263,33 @@ def mark_all_read_api():
 # /profile) удалена вместе с формой ответа: непрочитанные обращения к
 # администратору теперь отмечаются прочитанными при открытии переписки в
 # админ-панели, см. routes/admin_messages.py.
+
+
+@api.route('/admin/unread-count', methods=['GET'])
+def admin_unread_count():
+    """Число непрочитанных обращений к администратору — для виджета на
+    телефоне (Scriptable). Доступ по токену ADMIN_WIDGET_TOKEN (заголовок
+    Authorization: Bearer ...), без сессии; наружу отдаются только числа.
+    Считается так же, как в разделе «Сообщения администратору»
+    (routes/admin_messages.py): сообщения пользователей этого приложения."""
+    from common_models import User, get_current_application_id, widget_token_status
+    status = widget_token_status()
+    if status is None:
+        return jsonify({'error': 'not found'}), 404
+    if not status:
+        return jsonify({'error': 'unauthorized'}), 401
+
+    unread = (
+        db.session.query(Message.id, Message.sender_id)
+        .join(User, User.id == Message.sender_id)
+        .filter(Message.to_admin == True, Message.is_read == False,
+                User.application_id == get_current_application_id())
+        .all()
+    )
+    response = jsonify({
+        'app': 'erespondentn',
+        'unread': len(unread),
+        'threads': len({sender_id for _, sender_id in unread}),
+    })
+    response.headers['Cache-Control'] = 'no-store'
+    return response
